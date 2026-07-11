@@ -1,0 +1,414 @@
+{% extends "templates/web.html" %}
+{% block navbar %}{% endblock %}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block style %}
+<link rel="stylesheet" href="/meta_ads/index.css">
+<link rel="stylesheet" href="/meta_ads/mobile.css">
+{% endblock %}
+
+{% block script %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/meta_ads/index.js"></script>
+{% endblock %}
+
+{% block page_content %}
+{% if no_access %}
+<style>
+    .ma-na-screen {
+        position: fixed; inset: 0;
+        display: flex; align-items: center; justify-content: center;
+        background: #f5f6f8;
+        font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        z-index: 1000;
+    }
+    .ma-na-card {
+        background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+        padding: 28px 32px; max-width: 480px; width: calc(100% - 40px);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .ma-na-brand {
+        display: flex; align-items: center; gap: 8px;
+        font-size: 13px; font-weight: 600; color: #111827;
+        padding-bottom: 12px; border-bottom: 1px solid #f1f1f3;
+    }
+    .ma-na-dot { width: 8px; height: 8px; border-radius: 50%; background: #b91c1c; }
+    .ma-na-body { font-size: 14px; color: #374151; line-height: 1.55; margin-top: 16px; }
+    .ma-na-body code {
+        background: #f3f4f6; border: 1px solid #e5e7eb;
+        padding: 1px 6px; border-radius: 4px;
+        font-family: 'IBM Plex Mono', ui-monospace, monospace;
+        font-size: 13px; color: #111827;
+    }
+    .ma-na-roles { margin: 10px 0 0 18px; padding: 0; }
+    .ma-na-roles li { margin: 4px 0; }
+    .ma-na-hint { margin-top: 14px; font-size: 13px; color: #6b7280; }
+</style>
+<div class="ma-na-screen">
+    <div class="ma-na-card">
+        <div class="ma-na-brand">
+            <span class="ma-na-dot"></span>
+            <span>ERP · No permitido</span>
+        </div>
+        <div class="ma-na-body">
+            No tienes permiso para acceder a <b>Marketing Intelligence (Meta Ads)</b>.
+            Se requiere alguno de los siguientes roles:
+            <ul class="ma-na-roles">
+                {% for r in required_roles %}
+                <li><code>{{ r }}</code></li>
+                {% endfor %}
+            </ul>
+            <p class="ma-na-hint">
+                Contacta a un administrador para que te asigne el rol correspondiente.
+            </p>
+        </div>
+    </div>
+</div>
+{% else %}
+<script>
+window.MA_CAN_EDIT = {{ 'true' if can_edit else 'false' }};
+window.META_ADS_CHATWOOT = {
+  url: "{{ chatwoot_base_url|e }}",
+  account_id: {{ chatwoot_account_id|int }}
+};
+</script>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div>
+          <h1>Intelligence</h1>
+          <p>Marketing Pro</p>
+        </div>
+        <button id="toggleFilters" class="btn btn-primary mobile-only" style="width: auto; padding: 6px 12px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;">
+           Filtros
+        </button>
+      </div>
+    </div>
+    <div class="sidebar-content" id="filterPanel">
+      <div class="control-group">
+        <label class="control-label">Cuenta Publicitaria</label>
+        <select id="accountSelect" class="select">
+          <option value="">Cargando cuentas...</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label class="control-label">Desde</label>
+        <input type="date" id="dateFrom" class="select">
+      </div>
+      <div class="control-group">
+        <label class="control-label">Hasta</label>
+        <input type="date" id="dateTo" class="select">
+      </div>
+      <div class="control-group">
+        <label class="control-label">Nivel de Análisis</label>
+        <select id="levelSelect" class="select">
+          <option value="tabs" selected>Campañas / Conjuntos / Anuncios</option>
+          <option value="account">Resumen de Cuenta</option>
+          <option value="post">Publicaciones (Insights)</option>
+        </select>
+      </div>
+      
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+        <button id="loadBtn" class="btn btn-primary">Actualizar Informe</button>
+        <button id="accountsBtn" class="btn btn-secondary">Recargar Orígenes</button>
+      </div>
+
+      <div class="control-group" style="margin-top: 24px; padding-top: 24px; border-top: 1px dotted var(--border);">
+        <label class="control-label">Token de Acceso Externo</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="password" id="customToken" class="select" placeholder="EAAB..." style="flex: 1;">
+          <button id="setTokenBtn" class="btn btn-secondary" style="width: auto; padding: 0 12px;">OK</button>
+        </div>
+        <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 4px;">Pega un token temporal para ver otras cuentas.</p>
+      </div>
+    </div>
+
+    <div class="sidebar-footer" style="padding: 24px; border-top: 1px solid var(--border); margin-top: auto;">
+      <div class="info-row" style="font-size: 0.75rem; margin-bottom: 8px;">
+        <span class="info-label">Estado API</span>
+        <span class="info-value" id="sidebarStatus" style="color: var(--success);">Conectado</span>
+      </div>
+      <div class="info-row" style="font-size: 0.75rem;">
+        <span class="info-label">Fila activa</span>
+        <span class="info-value" id="sidebarRow">-</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <h2>Reporte General de Rendimiento</h2>
+      <div class="status-badge status-success">
+        <span class="status-dot dot"></span>
+        <span>Sincronización Activa</span>
+      </div>
+    </header>
+
+    <div id="breadcrumb" class="hidden" style="padding: 12px 40px 0; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; flex-wrap: wrap;">
+      <button id="breadcrumbBack" class="btn btn-secondary" style="width:auto; padding:5px 12px; font-size:0.8rem;">← Volver</button>
+      <button id="breadcrumbCampaigns" class="btn btn-secondary" style="width:auto; padding:5px 12px; font-size:0.8rem; display:none;">⬆ Campañas</button>
+      <span style="color: var(--text-muted);">Campañas</span>
+      <span id="breadcrumbSep2" style="color: var(--text-muted); display:none;">/</span>
+      <span id="breadcrumbCampaignName" style="color: var(--text-muted);"></span>
+      <span id="breadcrumbSep3" style="color: var(--text-muted); display:none;">/</span>
+      <span id="breadcrumbName" style="color: var(--text-muted);"></span>
+      <span id="breadcrumbSep4" style="color: var(--text-muted); display:none;">/</span>
+      <span id="breadcrumbAdName" style="font-weight: 600; color: var(--text);"></span>
+    </div>
+
+    <div class="view-container">
+      <section class="stats-grid">
+        <div class="card stat-card" style="position:relative;">
+          <span class="stat-label">Imp. Gastado <span class="stat-tooltip-trigger">?</span><span class="stat-tooltip">Presupuesto total consumido en el periodo seleccionado. Suma del gasto de todas las campañas/anuncios visibles. Se obtiene del campo <code>spend</code> de la API de Meta. Se muestra en soles (PEN).</span></span>
+          <div class="stat-value" id="mSpend">-</div>
+          <div class="stat-meta" id="mSpendS">Presupuesto ejecutado</div>
+        </div>
+        <div class="card stat-card" style="position:relative;">
+          <span class="stat-label">Impresiones <span class="stat-tooltip-trigger">?</span><span class="stat-tooltip">Total de veces que se mostraron los anuncios, incluyendo repeticiones. Si una persona ve el anuncio 3 veces, cuenta como 3 impresiones. Suma de todas las impresiones de los elementos visibles.</span></span>
+          <div class="stat-value" id="mImpressions">-</div>
+          <div class="stat-meta" id="mImpressionsS">Visualizaciones totales</div>
+        </div>
+        <div class="card stat-card" style="position:relative;">
+          <span class="stat-label">Clics únicos <span class="stat-tooltip-trigger">?</span><span class="stat-tooltip">Total de clics realizados sobre los anuncios (todos los tipos de clic). Suma de clics de todos los elementos visibles. Incluye clics en enlace, en la página, reacciones y comentarios.</span></span>
+          <div class="stat-value" id="mClicks">-</div>
+          <div class="stat-meta" id="mClicksS">Interés generado</div>
+        </div>
+        <div class="card stat-card" style="position:relative;">
+          <span class="stat-label">Resultados <span class="stat-tooltip-trigger">?</span><span class="stat-tooltip">Conversiones principales según el objetivo de cada campaña. Se determina por el tipo de acción que coincide con el objetivo (leads, compras, clics, mensajes, etc.). Suma de resultados de todos los elementos visibles.</span></span>
+          <div class="stat-value" id="mResults">-</div>
+          <div class="stat-meta" id="mResultsS">Conversiones efectivas</div>
+        </div>
+      </section>
+
+      <section class="content-grid detail-hidden" id="contentGrid">
+        <div class="table-section">
+          <div class="tab-bar" id="tabBar">
+            <button class="tab-btn tab-active" data-tab="campaign" id="tabCampaign">
+              Campañas
+              <span class="tab-badge hidden" id="badgeCampaign">1 seleccionado <button class="tab-clear-btn" id="clearCampaign">×</button></span>
+            </button>
+            <button class="tab-btn" data-tab="adset" id="tabAdset">
+              Conjuntos de anuncios
+              <span class="tab-badge hidden" id="badgeAdset">1 seleccionado <button class="tab-clear-btn" id="clearAdset">×</button></span>
+            </button>
+            <button class="tab-btn" data-tab="ad" id="tabAd">
+              Anuncios
+            </button>
+            <button class="tab-btn" data-tab="leads" id="tabLeads" style="display:none;">
+              Leads
+              <span class="tab-badge hidden" id="badgeLeads">0</span>
+            </button>
+          </div>
+          <div class="table-header">
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <h3 id="tableTitle" style="margin:0;">Campañas</h3>
+              <select id="accountFilterInline" class="select" style="width:auto; min-width:160px; max-width:220px; font-size:0.78rem; padding:5px 10px; height:32px;">
+                <option value="">Cargando cuentas...</option>
+              </select>
+              <div style="position:relative; display:flex; align-items:center;">
+                <svg style="position:absolute; left:8px; width:14px; height:14px; color:var(--text-muted); pointer-events:none;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="search" id="nameSearch" placeholder="Buscar por nombre..." class="select" style="padding:5px 10px 5px 28px; height:32px; font-size:0.78rem; min-width:200px;">
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <select id="etiquetaFilter" class="select" style="width:auto; min-width:140px; font-size:0.78rem; padding:5px 10px; height:32px;">
+                <option value="">Todas las etiquetas</option>
+              </select>
+              <select id="statusFilter" class="select" style="width:auto; min-width:130px; font-size:0.78rem; padding:5px 10px; height:32px;">
+                <option value="">Todos los estados</option>
+                <option value="ACTIVE">Activa</option>
+                <option value="PAUSED">Pausada</option>
+                <option value="CAMPAIGN_PAUSED">Pausada (campaña)</option>
+                <option value="ADSET_PAUSED">Pausada (conjunto)</option>
+                <option value="ARCHIVED">Archivada</option>
+                <option value="DELETED">Eliminada</option>
+                <option value="WITH_ISSUES">Con problemas</option>
+              </select>
+              <button id="toggleDetailBtn" class="btn btn-secondary" style="width:auto; padding:6px 14px; font-size:0.78rem;">Ver detalle</button>
+              <span class="count-badge" id="rowCountBadge">0 Registros</span>
+            </div>
+            </div>
+          
+          <div id="leadsTableWrap" class="table-scroll desktop-only" style="display:none;">
+            <div style="display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--border); flex-wrap:wrap;">
+              <span style="font-size:0.78rem; font-weight:600; color:var(--text-muted);">Filtrar etiquetas:</span>
+              <div class="lead-etiqueta-chips" id="leadEtiquetaChips"></div>
+              <div style="display:flex; align-items:center; gap:4px; margin-left:auto;">
+                <button class="lead-filter-mode-btn active" id="leadFilterOr" style="padding:3px 10px; font-size:0.72rem; border-radius:12px; border:1px solid var(--border); background:var(--primary); color:#fff; cursor:pointer;">Cualquiera</button>
+                <button class="lead-filter-mode-btn" id="leadFilterAnd" style="padding:3px 10px; font-size:0.72rem; border-radius:12px; border:1px solid var(--border); background:#fff; cursor:pointer;">Todas</button>
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Lead</th>
+                  <th>WhatsApp</th>
+                  <th>Etiquetas</th>
+                  <th>Responsable</th>
+                  <th>Notas</th>
+                  <th>Fecha</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="leadsTableBody"></tbody>
+            </table>
+          </div>
+
+          <div id="mainTableFilters" style="display:flex; align-items:center; gap:10px; padding:12px 24px; border-bottom:1px solid var(--border); flex-wrap:wrap;">
+            <span style="font-size:0.78rem; font-weight:600; color:var(--text-muted);">Filtrar leads por etiqueta:</span>
+            <div class="main-etiqueta-chips" id="mainEtiquetaChips"></div>
+            <div style="display:flex; align-items:center; gap:4px; margin-left:auto;">
+              <button class="main-filter-mode-btn active" id="mainFilterOr" style="padding:3px 10px; font-size:0.72rem; border-radius:12px; border:1px solid var(--border); background:var(--primary); color:#fff; cursor:pointer;">Cualquiera</button>
+              <button class="main-filter-mode-btn" id="mainFilterAnd" style="padding:3px 10px; font-size:0.72rem; border-radius:12px; border:1px solid var(--border); background:#fff; cursor:pointer;">Todas</button>
+            </div>
+          </div>
+
+          <div id="mainTableScroll" class="table-scroll desktop-only">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:44px; padding:12px 8px 12px 24px;"><input type="checkbox" id="selectAllChk" style="accent-color:var(--primary); width:15px; height:15px; cursor:pointer;"></th>
+                  <th data-sort="name"><span class="th-wrap">Nombre / Identificador<span class="th-tooltip-trigger">?</span><span class="th-tooltip">Nombre de la campaña, conjunto de anuncios o anuncio. Viene directamente de Meta Ads. Haz clic para navegar al nivel siguiente.</span></span></th>
+                  <th data-sort="delivery"><span class="th-wrap">Estado<span class="th-tooltip-trigger">?</span><span class="th-tooltip">Estado actual del elemento: Activa, Pausada, Archivada, Eliminada o Con problemas. Se obtiene del campo <code>effective_status</code> de la API de Meta.</span></span></th>
+                  <th style="white-space:normal; min-width:60px; line-height:1.3;"><span class="th-wrap">Leads ERP<span class="th-tooltip-trigger">?</span><span class="th-tooltip">Cantidad total de leads registrados en el ERP asociados a este elemento mediante su etiqueta. Se calcula sumando todos los leads cuya etiqueta coincide con la asignada en el ERP a este anuncio/conjunto/campaña.</span></span></th>
+                  <th style="white-space:normal; min-width:60px; line-height:1.3;"><span class="th-wrap">Leads (filtro)<span class="th-tooltip-trigger">?</span><span class="th-tooltip">Cantidad de leads filtrados según las etiquetas seleccionadas en los chips superiores. Si no hay etiquetas seleccionadas, muestra "-". El modo "Cualquiera" (OR) cuenta leads con al menos una etiqueta seleccionada; "Todas" (AND) requiere que tengan todas las etiquetas.</span></span></th>
+                  <th data-sort="ventas" style="white-space:normal; min-width:60px; line-height:1.3;"><span class="th-wrap">Leads Cliente<span class="th-tooltip-trigger">?</span><span class="th-tooltip">Número de leads que se convirtieron en clientes reales (ventas cerradas). Se obtiene del ERP cruzando la etiqueta del anuncio con las oportunidades de venta cerradas exitosamente.</span></span></th>
+                  <th data-sort="cpa" style="white-space:normal; min-width:80px; line-height:1.3;"><span class="th-wrap">Costo por Venta<span class="th-tooltip-trigger">?</span><span class="th-tooltip">Cuánto costó en publicidad cada venta cerrada. Se calcula como: <code>Gasto total ÷ Leads Cliente</code>. Un valor menor indica mayor eficiencia. Solo se muestra cuando hay al menos 1 venta.</span></span></th>
+                  <th data-sort="roas" style="white-space:normal; min-width:70px; line-height:1.3;"><span class="th-wrap">ROAS<span class="th-tooltip-trigger">?</span><span class="th-tooltip">Return on Ad Spend (Retorno de Inversión Publicitaria). Se calcula como: <code>Ingresos totales generados ÷ Gasto publicitario</code>. Un ROAS de 3x significa que por cada S/1 invertido, se generaron S/3 en ventas. Mayor es mejor.</span></span></th>
+                  <th data-sort="results"><span class="th-wrap">Resultados<span class="th-tooltip-trigger">?</span><span class="th-tooltip">Cantidad de conversiones principales según el objetivo de la campaña. Se determina buscando en las <code>actions</code> de Meta el tipo de acción que coincide con el objetivo (ej: leads, purchases, link_clicks, messaging conversations). Es la métrica que Meta considera como "resultado" del anuncio.</span></span></th>
+                  <th data-sort="reach"><span class="th-wrap">Alcance<span class="th-tooltip-trigger">?</span><span class="th-tooltip">Número de personas únicas que vieron al menos una vez tu anuncio. A diferencia de las impresiones, no cuenta visualizaciones repetidas de la misma persona. Viene del campo <code>reach</code> de la API de Meta.</span></span></th>
+                  <th data-sort="cpr" style="white-space:normal; min-width:80px; line-height:1.3;"><span class="th-wrap">Costo por resultado<span class="th-tooltip-trigger">?</span><span class="th-tooltip">Cuánto costó en promedio cada resultado (conversión). Se calcula como: <code>Gasto total ÷ Resultados</code>. Un valor menor indica que estás obteniendo conversiones más baratas. Viene del campo <code>cost_per_result</code> calculado por Meta.</span></span></th>
+                  <th data-sort="spend"><span class="th-wrap">Imp. Gastado<span class="th-tooltip-trigger">?</span><span class="th-tooltip">Presupuesto total consumido (invertido) en este elemento durante el periodo seleccionado. Incluye todo el gasto de Meta Ads. Viene del campo <code>spend</code> de la API. Se muestra en soles (PEN).</span></span></th>
+                  <th data-sort="impressions"><span class="th-wrap">Impr.<span class="th-tooltip-trigger">?</span><span class="th-tooltip">Número total de veces que se mostró tu anuncio, incluyendo visualizaciones repetidas por la misma persona. Si una persona ve el anuncio 3 veces, cuenta como 3 impresiones. Viene del campo <code>impressions</code> de la API de Meta.</span></span></th>
+                  <th data-sort="clicks" style="white-space:normal; min-width:70px; line-height:1.3;"><span class="th-wrap">Clics (todos)<span class="th-tooltip-trigger">?</span><span class="th-tooltip">Total de clics realizados sobre el anuncio, incluyendo clics en el enlace, en la página, reacciones, comentarios, etc. Viene del campo <code>clicks (all)</code> de la API de Meta. Es más amplio que los "clics en enlace" porque cuenta cualquier interacción de clic.</span></span></th>
+                  <th data-sort="ctr" style="white-space:normal; min-width:70px; line-height:1.3;"><span class="th-wrap">CTR % (todos)<span class="th-tooltip-trigger">?</span><span class="th-tooltip">Click-Through Rate (Tasa de Clics). Se calcula como: <code>Clics totales ÷ Impresiones × 100</code>. Indica qué porcentaje de personas que vieron el anuncio hicieron clic. Un CTR alto indica que el anuncio es relevante y atractivo. Viene del campo <code>ctr (all)</code> de Meta.</span></span></th>
+                  <th data-sort="cpc" style="white-space:normal; min-width:70px; line-height:1.3;"><span class="th-wrap">CPC (todos)<span class="th-tooltip-trigger">?</span><span class="th-tooltip">Costo por Clic. Se calcula como: <code>Gasto total ÷ Clics totales</code>. Indica cuánto pagas en promedio por cada clic recibido. Un CPC menor significa que estás atrayendo tráfico más barato. Viene del campo <code>cpc (all)</code> de Meta.</span></span></th>
+                </tr>
+              </thead>
+              <tbody id="tableBody">
+                <tr><td colspan="16" style="padding: 60px; text-align: center; color: var(--text-muted);">Cargando inteligencia de Meta...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div id="mobileList" class="mobile-only">
+             <!-- Mobile cards go here -->
+          </div>
+        </div>
+
+        <aside class="detail-column desktop-only hidden" id="detailColumn">
+          <div class="card detail-card">
+            <h3 style="margin: 0; font-size: 1rem;">Ficha Analítica</h3>
+            <div class="info-row"><span class="info-label">Nombre</span><span id="dName" class="info-value">-</span></div>
+            <div class="info-row"><span class="info-label">Estado</span><span id="dStatus" class="info-value">-</span></div>
+            <div class="info-row"><span class="info-label">Objetivo</span><span id="dObjective" class="info-value">-</span></div>
+            <div class="info-row"><span class="info-label">Rango</span><span id="dRange" class="info-value">-</span></div>
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border);">
+              <p style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin: 0 0 8px;">Todos los Actions (debug)</p>
+              <div id="dAllActions" style="font-size: 0.7rem; display: grid; gap: 4px;"></div>
+            </div>
+          </div>
+
+          <div class="card detail-card" style="margin-top: 24px;">
+            <h3 style="margin: 0; font-size: 0.9rem;">Tendencia de Rendimiento</h3>
+            <div style="height: 200px; margin-top: 16px;">
+              <canvas id="trendChart"></canvas>
+            </div>
+          </div>
+
+          <div class="card detail-card" style="margin-top: 24px;">
+            <h3 style="margin: 0; font-size: 0.9rem;">Desglose de Conversiones</h3>
+            <div id="actionList" style="margin-top: 16px; display: grid; gap: 8px;"></div>
+          </div>
+        </aside>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- Row Detail Modal -->
+<div id="rowDetailModal" class="row-detail-modal hidden">
+  <div class="rdm-overlay" onclick="window.closeRowDetailModal()"></div>
+  <div class="rdm-content">
+    <div class="rdm-header">
+      <div>
+        <h3 id="rdmTitle" style="margin:0; font-size:1.1rem; font-weight:700;">Detalle</h3>
+        <p id="rdmSubtitle" style="margin:4px 0 0; font-size:0.78rem; color:var(--text-muted);"></p>
+      </div>
+      <button onclick="window.closeRowDetailModal()" style="background:none;border:none;font-size:1.6rem;cursor:pointer;color:var(--text-muted);line-height:1;">&times;</button>
+    </div>
+    <div class="rdm-stats" id="rdmStats"></div>
+    <div class="rdm-body" id="rdmBody">
+      <div style="text-align:center; padding:40px; color:var(--text-muted);">Cargando...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Campaign Modal -->
+<div id="editCampModal" class="edit-camp-modal hidden">
+  <div class="ecm-overlay" onclick="window.closeEditCampModal()"></div>
+  <div class="ecm-content">
+    <div class="ecm-header">
+      <h3 id="ecmTitle" style="margin:0; font-size:1.1rem; font-weight:700;">Editar Configuración</h3>
+      <button onclick="window.closeEditCampModal()" style="background:none;border:none;font-size:1.6rem;cursor:pointer;color:var(--text-muted);line-height:1;">&times;</button>
+    </div>
+    <div class="ecm-body" id="ecmBody">
+      <div style="text-align:center; padding:40px; color:var(--text-muted);">Cargando...</div>
+    </div>
+    <div class="ecm-footer" id="ecmFooter">
+      <div style="display:flex; gap:8px; justify-content:flex-end; width:100%;">
+        <button class="btn btn-secondary" style="width:auto; padding:8px 20px;" onclick="window.closeEditCampModal()">{% if can_edit %}Cancelar{% else %}Cerrar{% endif %}</button>
+        {% if can_edit %}
+        <button class="btn btn-primary" style="width:auto; padding:8px 20px;" id="ecmSaveBtn" onclick="window.guardarEditCamp()">Guardar y Sincronizar</button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Save Result Log Modal -->
+<div id="ecmLogModal" class="ecm-log-modal hidden">
+  <div class="ecm-log-modal-overlay" onclick="window.closeEcmLogModal()"></div>
+  <div class="ecm-log-modal-content">
+    <div class="ecm-log-modal-header">
+      <h3 id="ecmLogTitle" style="margin:0; font-size:1rem; font-weight:700; display:flex; align-items:center; gap:8px;"></h3>
+      <button onclick="window.closeEcmLogModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-muted);line-height:1;">&times;</button>
+    </div>
+    <div class="ecm-log-modal-body" id="ecmLogBody"></div>
+    <div class="ecm-log-modal-footer">
+      <button class="btn btn-primary" style="width:auto; padding:8px 24px;" onclick="window.closeEcmLogModal()">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="ma-toast" id="maToast"></div>
+
+<!-- Mobile Modal (Bottom Sheet) -->
+<div id="mobileModal" class="mobile-modal hidden">
+  <div class="modal-overlay" onclick="window.closeMobileModal()"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="mDName">Detalle de Campaña</h3>
+      <button onclick="window.closeMobileModal()" class="close-btn">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="card detail-card" style="border: 0; padding: 0; box-shadow: none;">
+        <div class="info-row"><span class="info-label">Estado</span><span id="mDStatus" class="info-value">-</span></div>
+        <div class="info-row"><span class="info-label">Objetivo</span><span id="mDObjective" class="info-value">-</span></div>
+        <div class="info-row"><span class="info-label">Rango</span><span id="mDRange" class="info-value">-</span></div>
+      </div>
+      <div class="card detail-card" style="margin-top: 24px; border: 0; padding: 0; box-shadow: none;">
+        <h3 style="margin: 0; font-size: 0.9rem;">Tendencia</h3>
+        <div style="height: 180px; margin-top: 16px;">
+          <canvas id="mTrendChart"></canvas>
+        </div>
+      </div>
+      <div id="mActionList" style="margin-top: 24px; display: grid; gap: 10px;"></div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

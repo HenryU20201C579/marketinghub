@@ -1,0 +1,289 @@
+{% extends "templates/web.html" %}
+
+{% block navbar %}{% endblock %}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block title %}Configurar WhatsApp{% endblock %}
+
+{% block style %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/_shared/design_system.css">
+<link rel="stylesheet" href="/_shared/components.css">
+<link rel="stylesheet" href="/integraciones/whatsapp/index.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+{% endblock %}
+
+{% block page_content %}
+{% if no_access %}
+<div class="wa-na-screen">
+    <div class="wa-na-card">
+        <div class="wa-na-brand"><span class="wa-na-dot"></span><span>VentaHub - No permitido</span></div>
+        <div class="wa-na-body">
+            No tienes permiso para acceder a <b>Configurar WhatsApp</b>.
+            Se requiere el rol:
+            <ul class="wa-na-roles">{% for r in required_roles %}<li><code>{{ r }}</code></li>{% endfor %}</ul>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="wa-wrap">
+    <header class="wa-head">
+        <a href="/integraciones" class="wa-back"><i data-lucide="arrow-left"></i> Volver</a>
+        <h1><i data-lucide="message-circle"></i> Conectar WhatsApp a Chatwoot</h1>
+        <p class="wa-sub">Detectamos automaticamente tus numeros de WhatsApp Business desde Meta y creamos las bandejas (Inboxes) en Chatwoot con un click.</p>
+    </header>
+
+    <div class="wa-toolbar">
+        <button type="button" id="btn-detectar" class="wa-btn wa-btn-primary">
+            <i data-lucide="search"></i> Detectar numeros
+        </button>
+        <div id="wa-status" class="wa-status"></div>
+    </div>
+
+    <div id="wa-empty" class="wa-empty" style="display: none;">
+        <i data-lucide="phone-off"></i>
+        <p>Pulsa <b>Detectar numeros</b> para buscar tus WhatsApp Business Accounts asociadas al token de Meta.</p>
+    </div>
+
+    <div id="wa-numeros-wrap" style="display: none;">
+        <table class="wa-table">
+            <thead>
+                <tr>
+                    <th>Numero</th>
+                    <th>Nombre verificado</th>
+                    <th>WhatsApp Business Account</th>
+                    <th>Estado</th>
+                    <th class="right">Accion</th>
+                </tr>
+            </thead>
+            <tbody id="wa-tbody"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Conectar -->
+<div id="wa-modal-conectar" class="wa-modal-overlay" style="display: none;">
+    <div class="wa-modal">
+        <div class="wa-modal-header">
+            <h3><i data-lucide="link"></i> Conectar a Chatwoot</h3>
+            <button type="button" class="wa-modal-close" data-close><i data-lucide="x"></i></button>
+        </div>
+        <div class="wa-modal-body">
+            <p class="wa-modal-info" id="modal-info"></p>
+            <div class="wa-field">
+                <label for="modal-nombre">Nombre del Inbox en Chatwoot</label>
+                <input type="text" id="modal-nombre" placeholder="Ginbak WhatsApp">
+                <small>Como aparecera en Chatwoot y en los reportes.</small>
+            </div>
+        </div>
+        <div class="wa-modal-footer">
+            <button type="button" class="wa-btn wa-btn-ghost" data-close>Cancelar</button>
+            <button type="button" id="btn-confirmar-conectar" class="wa-btn wa-btn-primary">
+                <i data-lucide="check"></i> Crear bandeja
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const $ = (id) => document.getElementById(id);
+    let currentTarget = null;
+
+    async function apiPost(method, args) {
+        const body = new URLSearchParams();
+        for (const [k, v] of Object.entries(args || {})) body.append(k, v);
+        const r = await fetch("/api/method/" + method, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-Frappe-CSRF-Token": (window.frappe?.csrf_token || ""),
+            },
+            body: body.toString(),
+        });
+        const data = await r.json();
+        return data.message || {};
+    }
+
+    function setStatus(msg, kind) {
+        const el = $("wa-status");
+        el.textContent = msg || "";
+        el.className = "wa-status " + (kind ? "wa-status-" + kind : "");
+    }
+
+    function fmtPhoneNumber(display) {
+        if (!display) return "—";
+        return display.startsWith("+") ? display : "+" + display;
+    }
+
+    function renderTabla(numeros, inboxesByPnid) {
+        const tbody = $("wa-tbody");
+        const empty = $("wa-empty");
+        const wrap = $("wa-numeros-wrap");
+
+        if (!numeros || numeros.length === 0) {
+            wrap.style.display = "none";
+            empty.style.display = "block";
+            empty.querySelector("p").textContent = "No se detectaron numeros WhatsApp con este token. Verifica que el token tenga los permisos whatsapp_business_management y whatsapp_business_messaging.";
+            return;
+        }
+
+        empty.style.display = "none";
+        wrap.style.display = "block";
+        tbody.innerHTML = numeros.map(n => {
+            const inbox = inboxesByPnid[n.phone_number_id];
+            const conectado = !!inbox;
+            const qual = n.quality_rating || "—";
+            const verif = n.code_verification_status === "VERIFIED";
+            const badgeEstado = verif
+                ? '<span class="wa-badge wa-badge-ok">Verificado</span>'
+                : '<span class="wa-badge wa-badge-warn">' + (n.code_verification_status || "Sin verificar") + '</span>';
+            const badgeConexion = conectado
+                ? '<span class="wa-badge wa-badge-ok">Conectado</span> <span class="wa-sub-txt">Inbox: ' + (inbox.name || inbox.id) + '</span>'
+                : '<span class="wa-badge wa-badge-off">Sin conectar</span>';
+            const accion = conectado
+                ? '<button type="button" class="wa-btn wa-btn-danger wa-btn-sm" data-action="desconectar" data-inbox="' + inbox.id + '" data-nombre="' + (inbox.name || "").replace(/"/g,"&quot;") + '"><i data-lucide="unlink"></i> Desconectar</button>'
+                : '<button type="button" class="wa-btn wa-btn-primary wa-btn-sm" data-action="conectar" data-pnid="' + n.phone_number_id + '" data-waba="' + n.waba_id + '" data-phone="' + fmtPhoneNumber(n.display_phone_number) + '" data-verified="' + (n.verified_name || "").replace(/"/g,"&quot;") + '"><i data-lucide="link"></i> Conectar</button>';
+
+            return `
+            <tr>
+                <td class="wa-mono">${fmtPhoneNumber(n.display_phone_number)}</td>
+                <td>${n.verified_name || "—"}</td>
+                <td>${n.waba_name || n.waba_id}<div class="wa-sub-txt">${n.business_name || ""}</div></td>
+                <td>${badgeEstado}<div class="wa-sub-txt">${badgeConexion}</div></td>
+                <td class="right">${accion}</td>
+            </tr>
+            `;
+        }).join("");
+
+        if (window.lucide) lucide.createIcons();
+    }
+
+    async function detectar() {
+        const btn = $("btn-detectar");
+        btn.disabled = true;
+        setStatus("Consultando Meta y Chatwoot...", "info");
+        try {
+            const [numRes, ibRes] = await Promise.all([
+                apiPost("marketinghub.www.integraciones.whatsapp.index.detectar_numeros", {}),
+                apiPost("marketinghub.www.integraciones.whatsapp.index.listar_inboxes", {}),
+            ]);
+            if (!numRes.ok) {
+                setStatus("Error Meta: " + (numRes.error || "desconocido"), "err");
+                return;
+            }
+            if (!ibRes.ok) {
+                setStatus("Numeros detectados, pero no se pudieron listar los Inboxes de Chatwoot: " + (ibRes.error || ""), "warn");
+                renderTabla(numRes.numeros, {});
+                return;
+            }
+            renderTabla(numRes.numeros, ibRes.inboxes);
+            const total = (numRes.numeros || []).length;
+            setStatus(`Se detectaron ${total} numero${total === 1 ? "" : "s"}.`, "ok");
+        } catch (err) {
+            setStatus("Error: " + err.message, "err");
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function abrirModalConectar(btn) {
+        currentTarget = {
+            phone_number_id: btn.dataset.pnid,
+            waba_id: btn.dataset.waba,
+            phone_number: btn.dataset.phone,
+            verified_name: btn.dataset.verified,
+        };
+        const nombreDefault = currentTarget.verified_name
+            || `WhatsApp ${currentTarget.phone_number.slice(-4)}`;
+        $("modal-info").innerHTML = `Numero: <b>${currentTarget.phone_number}</b> — WABA: <b>${currentTarget.waba_id}</b>`;
+        $("modal-nombre").value = nombreDefault;
+        $("wa-modal-conectar").style.display = "flex";
+    }
+
+    function cerrarModal() {
+        $("wa-modal-conectar").style.display = "none";
+        currentTarget = null;
+    }
+
+    async function confirmarConectar() {
+        const nombre = $("modal-nombre").value.trim();
+        if (!nombre) return alert("Ingresa un nombre para el Inbox.");
+        const btn = $("btn-confirmar-conectar");
+        btn.disabled = true;
+        setStatus("Creando bandeja en Chatwoot...", "info");
+        try {
+            const res = await apiPost(
+                "marketinghub.www.integraciones.whatsapp.index.conectar_inbox",
+                {
+                    phone_number_id: currentTarget.phone_number_id,
+                    waba_id: currentTarget.waba_id,
+                    phone_number: currentTarget.phone_number,
+                    nombre_inbox: nombre,
+                    verified_name: currentTarget.verified_name || "",
+                }
+            );
+            if (!res.ok) {
+                setStatus("Error: " + (res.error || "no ok"), "err");
+                return;
+            }
+            const webhookMsg = res.webhook_subscribed
+                ? " y webhook registrado en Meta"
+                : " (webhook NO se registro — verifica manualmente en Meta)";
+            setStatus(`Bandeja "${res.nombre}" creada${webhookMsg}.`, "ok");
+            cerrarModal();
+            await detectar();
+        } catch (err) {
+            setStatus("Error: " + err.message, "err");
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function desconectar(btn) {
+        const inboxId = btn.dataset.inbox;
+        const nombre = btn.dataset.nombre || `Inbox ${inboxId}`;
+        if (!confirm(`Vas a eliminar el Inbox "${nombre}" de Chatwoot. Esto NO elimina el numero de Meta, solo la bandeja. Continuar?`)) return;
+        btn.disabled = true;
+        setStatus("Eliminando bandeja...", "info");
+        try {
+            const res = await apiPost(
+                "marketinghub.www.integraciones.whatsapp.index.desconectar_inbox",
+                { inbox_id: inboxId }
+            );
+            if (!res.ok) {
+                setStatus("Error: " + (res.error || "no ok"), "err");
+                return;
+            }
+            setStatus(`Bandeja "${nombre}" eliminada.`, "ok");
+            await detectar();
+        } catch (err) {
+            setStatus("Error: " + err.message, "err");
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        $("btn-detectar").addEventListener("click", detectar);
+        $("btn-confirmar-conectar").addEventListener("click", confirmarConectar);
+        document.querySelectorAll("[data-close]").forEach(el => el.addEventListener("click", cerrarModal));
+
+        document.getElementById("wa-tbody").addEventListener("click", (e) => {
+            const btn = e.target.closest("button[data-action]");
+            if (!btn) return;
+            if (btn.dataset.action === "conectar") abrirModalConectar(btn);
+            else if (btn.dataset.action === "desconectar") desconectar(btn);
+        });
+
+        // Auto-detectar al cargar la pagina.
+        detectar();
+
+        if (window.lucide) lucide.createIcons();
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

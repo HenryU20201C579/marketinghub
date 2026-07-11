@@ -1,0 +1,118 @@
+{
+ "actions": [],
+ "creation": "2026-05-23 21:30:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_marketing",
+  "habilitado",
+  "access_token",
+  "ad_account_id",
+  "column_break_1",
+  "business_account_id",
+  "graph_api_version",
+  "section_capi",
+  "capi_enabled",
+  "pixel_id",
+  "capi_token",
+  "column_break_2",
+  "capi_test_event_code"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_marketing",
+   "fieldtype": "Section Break",
+   "label": "Meta Marketing API (Ads / Insights)"
+  },
+  {
+   "default": "0",
+   "fieldname": "habilitado",
+   "fieldtype": "Check",
+   "label": "Integracion Meta habilitada"
+  },
+  {
+   "description": "User Access Token o System User Token con permisos ads_read/ads_management.",
+   "fieldname": "access_token",
+   "fieldtype": "Password",
+   "label": "Access Token"
+  },
+  {
+   "description": "ID numerico de la cuenta publicitaria (sin 'act_'). Ej: 123456789012345",
+   "fieldname": "ad_account_id",
+   "fieldtype": "Data",
+   "label": "Ad Account ID"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "business_account_id",
+   "fieldtype": "Data",
+   "label": "Business Account ID (opcional)"
+  },
+  {
+   "default": "v22.0",
+   "fieldname": "graph_api_version",
+   "fieldtype": "Data",
+   "label": "Graph API version"
+  },
+  {
+   "fieldname": "section_capi",
+   "fieldtype": "Section Break",
+   "label": "Conversions API (Pixel)"
+  },
+  {
+   "default": "0",
+   "fieldname": "capi_enabled",
+   "fieldtype": "Check",
+   "label": "Enviar eventos Purchase al Pixel (CAPI)"
+  },
+  {
+   "fieldname": "pixel_id",
+   "fieldtype": "Data",
+   "label": "Pixel ID"
+  },
+  {
+   "description": "Conversions API Access Token (distinto del Marketing API token).",
+   "fieldname": "capi_token",
+   "fieldtype": "Password",
+   "label": "CAPI Access Token"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Codigo de prueba para validar eventos en Meta Events Manager (opcional).",
+   "fieldname": "capi_test_event_code",
+   "fieldtype": "Data",
+   "label": "Test Event Code"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-05-23 21:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "MarketingHub",
+ "name": "Configuracion Meta",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

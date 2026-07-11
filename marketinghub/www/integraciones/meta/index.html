@@ -1,0 +1,268 @@
+{% extends "templates/web.html" %}
+
+{% block navbar %}{% endblock %}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block title %}Configurar Meta{% endblock %}
+
+{% block style %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/_shared/design_system.css">
+<link rel="stylesheet" href="/_shared/components.css">
+<link rel="stylesheet" href="/_shared/animations.css">
+<link rel="stylesheet" href="/integraciones/meta/index.css">
+<script src="https://unpkg.com/lucide@latest"></script>
+{% endblock %}
+
+{% block page_content %}
+{% if no_access %}
+<div class="meta-na-screen">
+    <div class="meta-na-card">
+        <div class="meta-na-brand"><span class="meta-na-dot"></span><span>VentaHub - No permitido</span></div>
+        <div class="meta-na-body">
+            No tienes permiso para acceder a <b>Configurar Meta</b>.
+            Se requiere el rol:
+            <ul class="meta-na-roles">{% for r in required_roles %}<li><code>{{ r }}</code></li>{% endfor %}</ul>
+            <p class="meta-na-hint">Contacta a un administrador.</p>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="meta-wrap">
+    <header class="meta-head">
+        <a href="/integraciones" class="meta-back"><i data-lucide="arrow-left"></i> Volver</a>
+        <h1><i data-lucide="megaphone"></i> Configurar Meta (Facebook / Instagram)</h1>
+        <p class="meta-sub">Conecta tu cuenta de Meta Business para usar Campa&ntilde;as Meta, Meta Ads y Ventas por Campa&ntilde;a.</p>
+    </header>
+
+    <form id="meta-form" class="meta-card">
+        <section class="meta-section">
+            <h2><i data-lucide="target"></i> Marketing API (Ads &amp; Insights)</h2>
+            <label class="meta-toggle">
+                <input type="checkbox" id="habilitado">
+                <span>Integraci&oacute;n Meta habilitada</span>
+            </label>
+
+            <div class="meta-grid">
+                <div class="meta-field">
+                    <label for="access_token">Access Token</label>
+                    <div class="meta-input-with-btn">
+                        <input type="password" id="access_token" placeholder="EAAxxxxxx...">
+                        <button type="button" id="btn-load-accounts" class="meta-btn meta-btn-ghost meta-btn-sm" title="Buscar cuentas publicitarias asociadas al token">
+                            <i data-lucide="search"></i> Buscar cuentas
+                        </button>
+                    </div>
+                    <small>Permisos requeridos: <code>ads_read</code>, <code>ads_management</code>, <code>business_management</code>.</small>
+                </div>
+                <div class="meta-field">
+                    <label for="ad_account_id">Cuenta publicitaria</label>
+                    <select id="ad_account_id" class="meta-select">
+                        <option value="">Primero busca las cuentas con el token...</option>
+                    </select>
+                    <small id="ad-account-hint">Selecciona una de las cuentas disponibles.</small>
+                </div>
+            </div>
+        </section>
+
+        <details class="meta-details" id="meta-avanzado">
+            <summary><i data-lucide="settings-2"></i> Opciones avanzadas</summary>
+            <div class="meta-grid" style="margin-top: 12px;">
+                <div class="meta-field">
+                    <label for="business_account_id">Business Account ID (opcional)</label>
+                    <input type="text" id="business_account_id">
+                    <small>Solo si vas a usar APIs de Business Manager.</small>
+                </div>
+                <div class="meta-field">
+                    <label for="graph_api_version">Graph API version</label>
+                    <input type="text" id="graph_api_version" value="v22.0">
+                    <small>Deja el default salvo que Meta te pida otra.</small>
+                </div>
+            </div>
+        </details>
+
+        <details class="meta-details" id="meta-capi">
+            <summary><i data-lucide="activity"></i> Conversions API (CAPI) — server-side events</summary>
+            <div style="margin-top: 12px;">
+                <label class="meta-toggle">
+                    <input type="checkbox" id="capi_enabled">
+                    <span>Enviar eventos Purchase al Pixel al emitir factura</span>
+                </label>
+
+                <div class="meta-grid" style="margin-top: 10px;">
+                    <div class="meta-field">
+                        <label for="pixel_id">Pixel ID</label>
+                        <input type="text" id="pixel_id">
+                    </div>
+                    <div class="meta-field">
+                        <label for="capi_token">CAPI Access Token</label>
+                        <input type="password" id="capi_token" placeholder="EAAxxxxxx...">
+                    </div>
+                    <div class="meta-field">
+                        <label for="capi_test_event_code">Test Event Code (opcional)</label>
+                        <input type="text" id="capi_test_event_code" placeholder="TEST12345">
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <div class="meta-actions">
+            <button type="button" id="btn-test" class="meta-btn meta-btn-ghost"><i data-lucide="plug"></i> Probar conexi&oacute;n</button>
+            <button type="submit" id="btn-save" class="meta-btn meta-btn-primary"><i data-lucide="save"></i> Guardar</button>
+        </div>
+        <div id="meta-msg" class="meta-msg"></div>
+    </form>
+</div>
+
+<script>
+(function(){
+    const cfg = {{ config | tojson }};
+    const $ = (id) => document.getElementById(id);
+
+    function load(){
+        $("habilitado").checked = !!cfg.habilitado;
+        $("access_token").value = cfg.access_token || "";
+        // Ad account: si hay uno guardado, mostrarlo como unica opcion
+        // hasta que el user pulse "Buscar cuentas" o cambie el token.
+        const sel = $("ad_account_id");
+        if (cfg.ad_account_id) {
+            sel.innerHTML = '<option value="' + cfg.ad_account_id + '" selected>' + cfg.ad_account_id + ' (guardado)</option>';
+            $("ad-account-hint").textContent = "Pulsa 'Buscar cuentas' si quieres cambiarla.";
+        }
+        $("business_account_id").value = cfg.business_account_id || "";
+        $("graph_api_version").value = cfg.graph_api_version || "v22.0";
+        $("capi_enabled").checked = !!cfg.capi_enabled;
+        $("pixel_id").value = cfg.pixel_id || "";
+        $("capi_token").value = cfg.capi_token || "";
+        $("capi_test_event_code").value = cfg.capi_test_event_code || "";
+        // Abrir la seccion CAPI si ya tiene algo configurado.
+        if (cfg.capi_enabled || cfg.pixel_id || cfg.capi_token) {
+            $("meta-capi").open = true;
+        }
+    }
+
+    async function loadAccounts(){
+        const btn = $("btn-load-accounts");
+        const sel = $("ad_account_id");
+        const hint = $("ad-account-hint");
+        const token = $("access_token").value.trim();
+        if (!token) {
+            msg("Pega primero el Access Token.", "err");
+            return;
+        }
+        btn.disabled = true;
+        hint.textContent = "Consultando Meta...";
+        try {
+            const r = await fetch("/api/method/marketinghub.www.integraciones.meta.index.list_ad_accounts", {
+                method: "POST",
+                headers: {
+                    "Content-Type":"application/x-www-form-urlencoded",
+                    "X-Frappe-CSRF-Token": (window.frappe?.csrf_token || ""),
+                },
+                body: "access_token=" + encodeURIComponent(token),
+            });
+            const data = await r.json();
+            const res = data.message || {};
+            if (!res.ok){
+                msg("No se pudieron cargar cuentas: " + (res.msg || "error"), "err");
+                hint.textContent = "Error al consultar. Revisa el token.";
+                return;
+            }
+            const accounts = res.accounts || [];
+            if (accounts.length === 0){
+                sel.innerHTML = '<option value="">Sin cuentas asociadas a este token</option>';
+                hint.textContent = "Este token no tiene acceso a ninguna cuenta publicitaria.";
+                msg("Token valido pero sin cuentas disponibles.", "err");
+                return;
+            }
+            const previous = cfg.ad_account_id || "";
+            sel.innerHTML = accounts.map(a => {
+                const label = a.name + " - act_" + a.account_id + " (" + (a.currency || "") + ", " + a.status + ")";
+                const selected = a.account_id === previous ? " selected" : "";
+                return '<option value="' + a.account_id + '"' + selected + '>' + label.replace(/"/g,'&quot;') + '</option>';
+            }).join("");
+            hint.textContent = "Se encontraron " + accounts.length + (accounts.length === 1 ? " cuenta." : " cuentas.");
+            msg("Cuentas cargadas correctamente.", "ok");
+        } catch (err){
+            msg("Error: " + err.message, "err");
+            hint.textContent = "Error de red.";
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function msg(text, kind){
+        const m = $("meta-msg");
+        m.textContent = text;
+        m.className = "meta-msg meta-msg-" + (kind || "info");
+    }
+
+    function payload(){
+        return {
+            habilitado: $("habilitado").checked ? 1 : 0,
+            access_token: $("access_token").value,
+            ad_account_id: $("ad_account_id").value.trim(),
+            business_account_id: $("business_account_id").value.trim(),
+            graph_api_version: $("graph_api_version").value.trim() || "v22.0",
+            capi_enabled: $("capi_enabled").checked ? 1 : 0,
+            pixel_id: $("pixel_id").value.trim(),
+            capi_token: $("capi_token").value,
+            capi_test_event_code: $("capi_test_event_code").value.trim(),
+        };
+    }
+
+    async function save(e){
+        e.preventDefault();
+        const btn = $("btn-save");
+        btn.disabled = true;
+        msg("Guardando...", "info");
+        try {
+            const r = await fetch("/api/method/marketinghub.www.integraciones.meta.index.save_config", {
+                method: "POST",
+                headers: {"Content-Type":"application/x-www-form-urlencoded","X-Frappe-CSRF-Token": (window.frappe?.csrf_token || "")},
+                body: "updates=" + encodeURIComponent(JSON.stringify(payload()))
+            });
+            const data = await r.json();
+            if (data.message?.status === "success"){
+                msg("Configuracion guardada.", "ok");
+            } else {
+                msg("Error al guardar.", "err");
+            }
+        } catch (err){
+            msg("Error: " + err.message, "err");
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function test(){
+        const btn = $("btn-test");
+        btn.disabled = true;
+        msg("Probando conexion con Meta...", "info");
+        try {
+            const r = await fetch("/api/method/marketinghub.www.integraciones.meta.index.test_connection", {
+                method: "POST",
+                headers: {"X-Frappe-CSRF-Token": (window.frappe?.csrf_token || "")},
+            });
+            const data = await r.json();
+            const res = data.message || {};
+            msg(res.msg || "Sin respuesta", res.ok ? "ok" : "err");
+        } catch (err){
+            msg("Error: " + err.message, "err");
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        load();
+        $("meta-form").addEventListener("submit", save);
+        $("btn-test").addEventListener("click", test);
+        $("btn-load-accounts").addEventListener("click", loadAccounts);
+        if (window.lucide) lucide.createIcons();
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

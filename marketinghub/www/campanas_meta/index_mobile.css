@@ -1,0 +1,351 @@
+/* Mobile overrides for Campanas Meta */
+
+@media (max-width: 768px) {
+    body {
+        background:
+            radial-gradient(circle at top left, rgba(31,94,255,.09), transparent 28%),
+            linear-gradient(180deg, #f8fbff 0%, #f4f7fc 100%);
+    }
+
+    .cm-app {
+        padding: 14px 12px 28px;
+    }
+
+    .cm-hero {
+        padding: 16px;
+        border-radius: 20px;
+        margin-bottom: 14px;
+    }
+
+    .cm-header {
+        align-items: flex-start;
+        margin-bottom: 14px;
+    }
+
+    .cm-header-left {
+        width: 100%;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .cm-logo {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        flex-shrink: 0;
+    }
+
+    .cm-kicker {
+        font-size: 10px;
+        padding: 3px 8px;
+        margin-bottom: 5px;
+    }
+
+    .cm-header h1 {
+        font-size: 22px;
+    }
+
+    .cm-header p {
+        font-size: 13px;
+        margin-top: 6px;
+    }
+
+    .cm-btn-lg {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .cm-stats {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .cm-stat-card {
+        padding: 14px 15px;
+        border-radius: 16px;
+    }
+
+    .cm-stat-card strong {
+        font-size: 24px;
+    }
+
+    .cm-quickbar {
+        display: none;
+    }
+
+    .cm-card {
+        border-radius: 18px;
+    }
+
+    .cm-card-header {
+        padding: 14px;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .cm-card-title p {
+        line-height: 1.35;
+    }
+
+    .cm-card-tools {
+        width: 100%;
+        gap: 8px;
+    }
+
+    .cm-search {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .cm-badge {
+        align-self: flex-end;
+    }
+
+    /* Filtros dentro del card */
+    .cm-card-filters {
+        flex-direction: column !important;
+        gap: 8px !important;
+        padding-top: 10px !important;
+        margin-top: 10px !important;
+    }
+
+    .cm-card-filters .cm-chip {
+        width: 100%;
+        justify-content: center;
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+
+    .cm-card-filters .cm-chip-soft {
+        order: 10;
+    }
+
+    /* Separador vertical -> ocultar en mobile */
+    .cm-card-filters > span[style*="width:1px"] {
+        display: none !important;
+    }
+
+    /* Spacer -> ocultar en mobile */
+    .cm-card-filters > div[style*="flex:1"] {
+        display: none !important;
+    }
+
+    .cm-card-filters select.cm-input {
+        width: 100% !important;
+        min-width: 0 !important;
+        height: 38px !important;
+        font-size: 13px !important;
+        padding: 6px 12px !important;
+        border-radius: 10px !important;
+    }
+
+    .cm-table-wrap {
+        overflow: visible;
+    }
+
+    .cm-table,
+    .cm-table thead,
+    .cm-table tbody,
+    .cm-table tr,
+    .cm-table td,
+    .cm-table th {
+        display: block;
+        width: 100%;
+    }
+
+    .cm-table thead {
+        display: none;
+    }
+
+    .cm-table tr {
+        margin: 12px 0;
+        width: auto;
+        border: 1px solid #e5ecf5;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 10px 24px rgba(16,24,40,.06);
+    }
+
+    .cm-table td {
+        border-bottom: 1px solid #edf2f7;
+        padding: 12px 14px;
+        text-align: left;
+    }
+
+    .cm-table td:last-child {
+        border-bottom: none;
+    }
+
+    .cm-table .cm-name-cell {
+        padding-bottom: 10px;
+    }
+
+    .cm-name-wrap {
+        gap: 8px;
+        align-items: flex-start;
+    }
+
+    .cm-row-dot {
+        margin-top: 6px;
+    }
+
+    .cm-subtext {
+        font-size: 11px;
+    }
+
+    .cm-center {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        text-align: left;
+    }
+
+    .cm-center::before {
+        content: attr(data-label);
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+
+    .cm-table td:nth-child(2),
+    .cm-table td:nth-child(3) {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .cm-table td:nth-child(2)::before {
+        content: "Conjuntos";
+    }
+
+    .cm-table td:nth-child(3)::before {
+        content: "Anuncios";
+    }
+
+    .cm-table td:nth-child(4)::before {
+        content: "Acciones";
+        display: block;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        margin-bottom: 10px;
+    }
+
+    .cm-actions {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .cm-actions .cm-btn {
+        flex: 1;
+        min-width: 92px;
+        justify-content: center;
+    }
+
+    .cm-actions .cm-btn-danger-sm {
+        flex: 0 0 42px;
+        min-width: 42px;
+    }
+
+    .cm-empty {
+        padding: 54px 18px;
+    }
+
+    .cm-modal-overlay {
+        padding: 0;
+        align-items: flex-end;
+    }
+
+    .cm-modal,
+    .cm-modal-tree,
+    .cm-modal-lg {
+        max-width: 100%;
+        width: 100%;
+        max-height: 100vh;
+        border-radius: 20px 20px 0 0;
+    }
+
+    .cm-modal-tree {
+        height: 94vh;
+    }
+
+    .cm-modal-header,
+    .cm-modal-footer {
+        padding: 14px 16px;
+    }
+
+    .cm-modal-body {
+        padding: 16px;
+    }
+
+    .cm-tree-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+        min-height: 0;
+    }
+
+    .cm-tree-left {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        max-height: none;
+    }
+
+    .cm-tree-campaign-panel {
+        padding: 12px;
+    }
+
+    .cm-tree-conjuntos-list {
+        max-height: 180px;
+    }
+
+    .cm-tree-conj-item {
+        padding: 10px 12px;
+    }
+
+    .cm-tree-right-body {
+        padding: 14px;
+    }
+
+    .cm-conjunto-row,
+    .cm-anuncio-row,
+    .cm-json-row,
+    .cm-json-header-row {
+        grid-template-columns: 1fr;
+    }
+
+    .cm-json-row {
+        gap: 8px;
+    }
+
+    .cm-json-header-row {
+        display: none;
+    }
+
+    .cm-json-add-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .cm-json-add-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .cm-json-preview {
+        white-space: normal;
+        max-height: none;
+    }
+
+    .cm-toast {
+        left: 12px;
+        right: 12px;
+        bottom: 14px;
+        max-width: none;
+    }
+}

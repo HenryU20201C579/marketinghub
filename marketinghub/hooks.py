@@ -7,11 +7,56 @@ app_license = "mit"
 
 required_apps = ["ventahub"]
 
-# Tiles del launcher se agregaran cuando se muevan las paginas.
-launcher_tiles = []
 
-# doc_events se agregaran al mover meta_capi (Sales Invoice → Purchase event).
+# Tiles registrados en el launcher (movidos desde ventahub)
+launcher_tiles = [
+	{
+		"label": "Campanas Meta",
+		"url": "/campanas_meta",
+		"icon": "megaphone",
+		"role": "Marketinghub-Marketing-Ver",
+	},
+	{
+		"label": "Meta Ads",
+		"url": "/meta_ads",
+		"icon": "target",
+		"role": "Marketinghub-Marketing-Ver",
+	},
+	{
+		"label": "Anuncios",
+		"url": "/anuncios",
+		"icon": "megaphone",
+		"role": "Marketinghub-Marketing-Ver",
+	},
+	{
+		"label": "Ventas por Campana",
+		"url": "/ventas_campanas",
+		"icon": "trending-up",
+		"role": "Marketinghub-Marketing-Ver",
+	},
+	{
+		"label": "Conversiones CTWA",
+		"url": "/conversiones",
+		"icon": "trending-up",
+		"role": "Marketinghub-Marketing-Ver",
+	},
+]
+
+
+# Document Events se agregaran cuando se active Meta CAPI (M2).
 doc_events = {}
 
-# Fixtures se llenaran con los roles Marketinghub-*.
-fixtures = []
+
+# Fixtures: los DocTypes movidos + los nuevos roles Marketinghub-*
+fixtures = [
+	{"dt": "Role", "filters": [["role_name", "like", "Marketinghub-%"]]},
+	{"dt": "DocType", "filters": [["name", "in", [
+		"Anuncio",
+		"Anuncio Lead Clickeado",
+		"Anuncios Asociados",
+		"Campana Meta",
+		"Configuracion Meta",
+		"Conjunto Anuncios",
+		"Conjunto Anuncios Asociados",
+	]]]},
+]

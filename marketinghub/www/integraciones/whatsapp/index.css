@@ -1,0 +1,160 @@
+/* /integraciones/whatsapp — Conector WhatsApp Cloud ↔ Chatwoot */
+
+.wa-wrap {
+    max-width: 100%;
+    margin: 0;
+    padding: 32px;
+    font-family: 'Inter', sans-serif;
+    color: #1f2937;
+}
+
+.wa-back {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; color: #6366f1; text-decoration: none;
+    margin-bottom: 16px;
+}
+.wa-back:hover { text-decoration: underline; }
+
+.wa-head h1 {
+    font-size: 28px; font-weight: 700; margin: 0 0 8px;
+    display: flex; align-items: center; gap: 12px;
+}
+.wa-head h1 i { color: #16a34a; }
+.wa-sub { color: #6b7280; margin: 0 0 24px; font-size: 14px; }
+
+.wa-toolbar {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 20px;
+}
+
+.wa-status {
+    font-size: 13px; color: #6b7280;
+}
+.wa-status-ok { color: #047857; }
+.wa-status-err { color: #dc2626; }
+.wa-status-info { color: #6366f1; }
+.wa-status-warn { color: #d97706; }
+
+.wa-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 18px; border-radius: 8px; font-size: 14px; font-weight: 500;
+    cursor: pointer; border: 1px solid transparent; transition: all 0.15s;
+    background: transparent;
+}
+.wa-btn i { width: 16px; height: 16px; }
+.wa-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.wa-btn-primary { background: #16a34a; color: #fff; border-color: #16a34a; }
+.wa-btn-primary:hover:not(:disabled) { background: #15803d; }
+.wa-btn-ghost { background: #fff; color: #374151; border-color: #d1d5db; }
+.wa-btn-ghost:hover:not(:disabled) { background: #f9fafb; }
+.wa-btn-danger { background: #fff; color: #dc2626; border-color: #fecaca; }
+.wa-btn-danger:hover:not(:disabled) { background: #fef2f2; }
+.wa-btn-sm { padding: 6px 12px; font-size: 13px; }
+
+.wa-empty {
+    background: #ffffff; border: 1px dashed #d1d5db; border-radius: 12px;
+    padding: 48px 32px; text-align: center; color: #6b7280;
+}
+.wa-empty i { width: 40px; height: 40px; color: #9ca3af; margin-bottom: 12px; }
+.wa-empty p { margin: 0; font-size: 14px; line-height: 1.6; }
+
+/* Tabla */
+.wa-table {
+    width: 100%; border-collapse: collapse;
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    overflow: hidden;
+}
+.wa-table thead th {
+    text-align: left; padding: 12px 16px;
+    font-size: 11px; font-weight: 700; color: #6b7280;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    background: #f9fafb; border-bottom: 1px solid #e5e7eb;
+}
+.wa-table th.right, .wa-table td.right { text-align: right; }
+.wa-table tbody td {
+    padding: 14px 16px; border-bottom: 1px solid #f3f4f6;
+    color: #1f2937; font-size: 14px; vertical-align: middle;
+}
+.wa-table tbody tr:last-child td { border-bottom: none; }
+.wa-table tbody tr:hover { background: #f9fafb; }
+
+.wa-mono {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-weight: 600;
+}
+.wa-sub-txt {
+    font-size: 12px; color: #6b7280; margin-top: 4px;
+}
+
+.wa-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 10px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.03em;
+}
+.wa-badge-ok { background: rgba(22, 163, 74, 0.12); color: #16a34a; }
+.wa-badge-off { background: rgba(107, 114, 128, 0.12); color: #6b7280; }
+.wa-badge-warn { background: rgba(217, 119, 6, 0.12); color: #d97706; }
+
+/* Modal */
+.wa-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+}
+.wa-modal {
+    background: #fff; border-radius: 12px; width: 100%; max-width: 500px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.wa-modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px 24px; border-bottom: 1px solid #e5e7eb;
+}
+.wa-modal-header h3 {
+    margin: 0; font-size: 18px; font-weight: 600;
+    display: flex; align-items: center; gap: 10px;
+}
+.wa-modal-header h3 i { width: 20px; height: 20px; color: #16a34a; }
+.wa-modal-close {
+    background: transparent; border: none; cursor: pointer; padding: 4px;
+    color: #6b7280; border-radius: 6px;
+}
+.wa-modal-close:hover { background: #f3f4f6; color: #111827; }
+.wa-modal-close i { width: 20px; height: 20px; }
+.wa-modal-body { padding: 20px 24px; }
+.wa-modal-info { margin: 0 0 16px; padding: 12px 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; font-size: 13px; color: #14532d; }
+.wa-modal-footer {
+    display: flex; justify-content: flex-end; gap: 8px;
+    padding: 16px 24px; border-top: 1px solid #e5e7eb;
+}
+.wa-field { display: flex; flex-direction: column; gap: 6px; }
+.wa-field label { font-size: 12px; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.04em; }
+.wa-field input { padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-family: inherit; }
+.wa-field input:focus { outline: none; border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1); }
+.wa-field small { font-size: 11px; color: #6b7280; }
+
+/* No access */
+.wa-na-screen { display: flex; align-items: center; justify-content: center; min-height: 50vh; padding: 32px; font-family: 'Inter', sans-serif; }
+.wa-na-card { max-width: 500px; padding: 32px; border: 1px solid #fcd34d; background: #fffbeb; border-radius: 12px; }
+.wa-na-brand { font-size: 12px; color: #92400e; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.wa-na-dot { width: 8px; height: 8px; background: #f59e0b; border-radius: 50%; }
+.wa-na-body { font-size: 14px; line-height: 1.6; color: #78350f; }
+.wa-na-roles { margin: 8px 0; padding-left: 20px; }
+.wa-na-roles code { background: #fef3c7; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+
+/* Dark mode */
+html[data-theme="dark"] .wa-wrap { color: #e2e8f0 !important; }
+html[data-theme="dark"] .wa-sub { color: #94a3b8 !important; }
+html[data-theme="dark"] .wa-btn-ghost { background: #232631 !important; color: #e2e8f0 !important; border-color: rgba(255,255,255,0.10) !important; }
+html[data-theme="dark"] .wa-btn-ghost:hover:not(:disabled) { background: #2a2e3b !important; }
+html[data-theme="dark"] .wa-btn-danger { background: #232631 !important; color: #fca5a5 !important; border-color: rgba(239, 68, 68, 0.30) !important; }
+html[data-theme="dark"] .wa-empty { background: #171a20 !important; border-color: rgba(255,255,255,0.10) !important; color: #94a3b8 !important; }
+html[data-theme="dark"] .wa-table { background: #171a20 !important; border-color: rgba(255,255,255,0.08) !important; }
+html[data-theme="dark"] .wa-table thead th { background: rgba(255,255,255,0.02) !important; color: #94a3b8 !important; border-bottom-color: rgba(255,255,255,0.08) !important; }
+html[data-theme="dark"] .wa-table tbody td { color: #e2e8f0 !important; border-bottom-color: rgba(255,255,255,0.06) !important; }
+html[data-theme="dark"] .wa-table tbody tr:hover { background: rgba(255,255,255,0.03) !important; }
+html[data-theme="dark"] .wa-sub-txt { color: #94a3b8 !important; }
+html[data-theme="dark"] .wa-modal { background: #171a20 !important; }
+html[data-theme="dark"] .wa-modal-header { border-bottom-color: rgba(255,255,255,0.08) !important; }
+html[data-theme="dark"] .wa-modal-header h3 { color: #f1f5f9 !important; }
+html[data-theme="dark"] .wa-modal-info { background: rgba(22, 163, 74, 0.12) !important; border-color: rgba(22, 163, 74, 0.30) !important; color: #86efac !important; }
+html[data-theme="dark"] .wa-modal-footer { border-top-color: rgba(255,255,255,0.08) !important; }
+html[data-theme="dark"] .wa-field label { color: #cbd5e1 !important; }
+html[data-theme="dark"] .wa-field input { background: #0f1115 !important; color: #e2e8f0 !important; border-color: rgba(255,255,255,0.10) !important; }

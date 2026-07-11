@@ -1,0 +1,356 @@
+/* Dashboard /conversiones — CTWA revenue tracking. */
+
+:root {
+    --cv-bg: #f8f9fa;
+    --cv-card: #ffffff;
+    --cv-border: #e5e7eb;
+    --cv-border-strong: #d1d5db;
+    --cv-text: #111827;
+    --cv-text-muted: #6b7280;
+    --cv-text-subtle: #9ca3af;
+    --cv-primary: #6366f1;
+    --cv-primary-soft: rgba(99, 102, 241, 0.10);
+    --cv-success: #22c55e;
+    --cv-success-soft: rgba(34, 197, 94, 0.12);
+    --cv-danger: #ef4444;
+}
+
+body {
+    color: var(--cv-text);
+}
+
+.page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+
+.page-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--cv-text);
+}
+
+.page-subtitle {
+    font-size: 13px;
+    color: var(--cv-text-muted);
+    margin: 4px 0 0;
+}
+
+/* ========== Range picker ========== */
+.range-picker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.range-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cv-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-right: 4px;
+}
+
+.range-btn {
+    padding: 6px 12px;
+    background: var(--cv-card);
+    border: 1px solid var(--cv-border);
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--cv-text);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.range-btn:hover {
+    border-color: var(--cv-border-strong);
+    background: #f3f4f6;
+}
+
+.range-btn.active {
+    background: var(--cv-primary);
+    border-color: var(--cv-primary);
+    color: #fff;
+}
+
+.range-custom {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-left: 8px;
+    border-left: 1px solid var(--cv-border);
+}
+
+.range-input {
+    padding: 6px 8px;
+    border: 1px solid var(--cv-border);
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--cv-text);
+    background: var(--cv-card);
+}
+
+.range-input:focus {
+    outline: none;
+    border-color: var(--cv-primary);
+    box-shadow: 0 0 0 3px var(--cv-primary-soft);
+}
+
+.range-apply-btn {
+    padding: 6px 12px;
+    background: var(--cv-primary);
+    border: 1px solid var(--cv-primary);
+    border-radius: 6px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+/* ========== KPIs ========== */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.kpi-card {
+    background: var(--cv-card);
+    border: 1px solid var(--cv-border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.kpi-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--cv-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+}
+
+.kpi-value {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--cv-text);
+    line-height: 1.1;
+    margin-bottom: 6px;
+}
+
+.kpi-sub {
+    font-size: 12px;
+    color: var(--cv-text-muted);
+}
+
+/* ========== Chart card ========== */
+.chart-card {
+    background: var(--cv-card);
+    border: 1px solid var(--cv-border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.chart-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.chart-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--cv-text);
+    margin: 0;
+}
+
+.chart-legend {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--cv-text-muted);
+}
+
+.chart-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.legend-dot.revenue { background: var(--cv-primary); }
+.legend-dot.facturas { background: var(--cv-success); }
+
+.chart-canvas-wrapper {
+    position: relative;
+    height: 340px;
+}
+
+.chart-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--cv-text-muted);
+    font-size: 14px;
+}
+
+/* ========== Ranking table ========== */
+.ranking-card {
+    background: var(--cv-card);
+    border: 1px solid var(--cv-border);
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.ranking-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.ranking-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--cv-text);
+    margin: 0;
+}
+
+.ranking-count {
+    font-size: 12px;
+    color: var(--cv-text-muted);
+    background: #f3f4f6;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.ranking-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.ranking-table thead th {
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--cv-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid var(--cv-border);
+}
+
+.ranking-table th.right, .ranking-table td.right {
+    text-align: right;
+}
+
+.ranking-table tbody td {
+    padding: 12px;
+    border-bottom: 1px solid var(--cv-border);
+    color: var(--cv-text);
+}
+
+.ranking-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.ranking-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+.ad-name {
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.revenue-cell {
+    color: var(--cv-primary);
+    font-weight: 600;
+}
+
+.ranking-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--cv-text-muted);
+}
+
+/* ========== DARK MODE ========== */
+html[data-theme="dark"] {
+    --cv-bg: #0f1115;
+    --cv-card: #171a20;
+    --cv-border: rgba(255, 255, 255, 0.08);
+    --cv-border-strong: rgba(255, 255, 255, 0.16);
+    --cv-text: #e2e8f0;
+    --cv-text-muted: #94a3b8;
+    --cv-text-subtle: #64748b;
+    --cv-primary: #818cf8;
+    --cv-primary-soft: rgba(129, 140, 248, 0.18);
+    --cv-success: #4ade80;
+    --cv-success-soft: rgba(74, 222, 128, 0.16);
+}
+
+html[data-theme="dark"] body {
+    background-color: #0f1115 !important;
+}
+
+html[data-theme="dark"] .range-btn {
+    background: #232631 !important;
+    border-color: rgba(255, 255, 255, 0.10) !important;
+    color: #e2e8f0 !important;
+}
+
+html[data-theme="dark"] .range-btn:hover {
+    background: #2a2e3b !important;
+    border-color: rgba(255, 255, 255, 0.20) !important;
+}
+
+html[data-theme="dark"] .range-btn.active {
+    background: #6366f1 !important;
+    border-color: #6366f1 !important;
+    color: #fff !important;
+}
+
+html[data-theme="dark"] .range-input {
+    background: #0f1115 !important;
+    color: #e2e8f0 !important;
+    border-color: rgba(255, 255, 255, 0.10) !important;
+    color-scheme: dark;
+}
+
+html[data-theme="dark"] .ranking-count {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: #94a3b8 !important;
+}
+
+html[data-theme="dark"] .ranking-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03) !important;
+}
+
+html[data-theme="dark"] .revenue-cell {
+    color: #a5b4fc !important;
+}

@@ -1,0 +1,109 @@
+{% extends "templates/web.html" %}
+{% block navbar %}{% endblock %}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block page_content %}
+<link rel="stylesheet" href="/ventas_campanas/index.css">
+
+<div class="bd-container">
+    <!-- Header -->
+    <div class="bd-header">
+        <div class="bd-header-left">
+            <h1 class="bd-title">Ventas & Campanas</h1>
+            <p class="bd-subtitle">Ventas vinculadas con campanas publicitarias, gasto y rentabilidad</p>
+        </div>
+        <div class="bd-header-actions">
+            <button class="bd-btn bd-btn-secondary" id="btnExport" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Exportar XLSX
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bd-filters">
+        <div class="bd-filter-group">
+            <label class="bd-filter-label">Desde</label>
+            <input type="date" class="bd-input" id="filterFrom">
+        </div>
+        <div class="bd-filter-group">
+            <label class="bd-filter-label">Hasta</label>
+            <input type="date" class="bd-input" id="filterTo">
+        </div>
+        <div class="bd-filter-group bd-filter-account">
+            <label class="bd-filter-label">Cuenta Publicitaria</label>
+            <select class="bd-input" id="filterAccount">
+                <option value="">Sin gasto Meta (solo BD)</option>
+            </select>
+        </div>
+        <div class="bd-filter-group bd-filter-action">
+            <button class="bd-btn bd-btn-primary" id="btnLoad">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                Cargar
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="bd-summary" id="summaryCards" style="display:none;">
+        <div class="bd-summary-card">
+            <div class="bd-summary-label">Total Ventas</div>
+            <div class="bd-summary-value" id="sumVentas">0</div>
+        </div>
+        <div class="bd-summary-card">
+            <div class="bd-summary-label">Ticket Promedio</div>
+            <div class="bd-summary-value" id="sumTicket">S/ 0</div>
+        </div>
+        <div class="bd-summary-card">
+            <div class="bd-summary-label">Con Campana</div>
+            <div class="bd-summary-value" id="sumCampana">0</div>
+        </div>
+        <div class="bd-summary-card">
+            <div class="bd-summary-label">ROAS Promedio</div>
+            <div class="bd-summary-value" id="sumRoas">-</div>
+        </div>
+        <div class="bd-summary-card">
+            <div class="bd-summary-label">Ganancia Total</div>
+            <div class="bd-summary-value" id="sumGanancia">-</div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="bd-table-wrapper">
+        <div class="bd-loading" id="loadingState" style="display:none;">
+            <div class="bd-spinner"></div>
+            <p>Cargando datos...</p>
+        </div>
+        <div class="bd-empty" id="emptyState">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <p>Selecciona un rango de fechas y haz clic en <strong>Cargar</strong></p>
+        </div>
+        <table class="bd-table" id="dataTable" style="display:none;">
+            <thead>
+                <tr>
+                    <th><span class="th-content">VENDEDORA<span class="th-tip" data-tip="Quien creo el Sales Order (vendedora asignada al pedido)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></th>
+                    <th><span class="th-content">FECHA VENTA<span class="th-tip" data-tip="Fecha de la factura (posting_date de Sales Invoice validada)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></th>
+                    <th><span class="th-content">FECHA CONTACTO<span class="th-tip" data-tip="Fecha en que el cliente escribio por primera vez (creation de Conversacion Chatwoot). Esta fecha se usa para buscar el gasto del anuncio en Meta, ya que es el dia que el anuncio genero el lead. Puede ser diferente a la fecha de venta"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></th>
+                    <th><span class="th-content">WHATSAPP CLIENTE<span class="th-tip" data-tip="Numero del cliente (campo custom_numero en el doctype Customer)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></th>
+                    <th><span class="th-content">WHATSAPP EMPRESA<span class="th-tip" data-tip="Numero/inbox de WhatsApp empresa usado para atender (inbox de Chatwoot o numeros del Sales Order)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></th>
+                    <th><span class="th-content">NOMBRE CAMPANA<span class="th-tip" data-tip="Campana Meta vinculada via cadena: etiqueta lead -> Anuncio -> Conjunto -> Campana Meta"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></th>
+                    <th><span class="th-content">CONJUNTO ANUNCIOS<span class="th-tip" data-tip="Conjunto de anuncios dentro de la campana (via etiqueta lead -> Anuncio -> Conjunto Anuncios)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></th>
+                    <th><span class="th-content">ANUNCIO<span class="th-tip" data-tip="Anuncio especifico que genero el lead (via etiqueta lead -> Anuncio). Su meta_id se usa para obtener el gasto"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></th>
+                    <th class="num"><span class="th-content">GASTO DIA<span class="th-tip" data-tip="Gasto publicitario prorrateado. Se obtiene el gasto total del anuncio en la fecha de contacto (no de venta) desde Meta API. Si hay duplicados del mismo anuncio, se suman todos. Luego se divide entre la cantidad total de ventas historicas generadas por ese anuncio ese dia. Formula: gasto total anuncio(s) ese dia / total ventas historicas de esa etiqueta+fecha"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></th>
+                    <th><span class="th-content">CODIGO CAMPANA<span class="th-tip" data-tip="Etiquetas lead asignadas al Sales Order (vinculan la venta con el anuncio de Meta)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></th>
+                    <th class="num"><span class="th-content">ROAS<span class="th-tip" data-tip="Retorno sobre gasto publicitario. Formula: ticket de venta / gasto prorrateado. Usa el gasto ya dividido entre las ventas de ese anuncio. Verde (>= 3x): excelente retorno. Amarillo (>= 1x): recupera inversion. Rojo (< 1x): perdida publicitaria"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></th>
+                    <th class="num"><span class="th-content">TICKET VENTA<span class="th-tip" data-tip="Monto total de la factura (grand_total de Sales Invoice)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></th>
+                    <th class="num"><span class="th-content">COSTO PROD.<span class="th-tip" data-tip="Costo de compra del producto. Se calcula: precio en lista 'Compra estandar' + costos adicionales configurados en el item (comisiones, empaque, etc). Si hay Items Extra que NO son envio (ej: grabado, producto adicional), tambien se suman aqui"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></th>
+                    <th class="num"><span class="th-content">ENVIO<span class="th-tip" data-tip="Costo de envio. Solo se cuentan los Items Extra cuyo nombre contiene la palabra 'envio'. Los demas Items Extra (grabados, productos adicionales) van a Costo Producto"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></th>
+                    <th class="num"><span class="th-content">GANANCIA<span class="th-tip" data-tip="Ganancia real por venta. Formula: ticket de venta - costo producto - envio - gasto publicitario prorrateado. El gasto publicitario es el del anuncio especifico en la fecha de contacto, dividido entre todas las ventas que genero. Pasa el mouse sobre cada numero para ver el calculo exacto"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></th>
+                    <th><span class="th-content">CLIENTE<span class="th-tip" data-tip="Nombre del cliente (customer_name de Sales Invoice)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span></span></th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script src="/ventas_campanas/index.js"></script>
+{% endblock %}

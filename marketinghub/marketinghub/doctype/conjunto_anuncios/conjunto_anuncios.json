@@ -1,0 +1,83 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:naming_series",
+ "creation": "2026-03-25 12:17:07.904254",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "nombre",
+  "meta_id",
+  "estado",
+  "anuncios_asociados",
+  "valor",
+  "naming_series"
+ ],
+ "fields": [
+  {
+   "fieldname": "nombre",
+   "fieldtype": "Data",
+   "label": "Nombre"
+  },
+  {
+   "fieldname": "meta_id",
+   "fieldtype": "Data",
+   "label": "Meta ID",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "label": "Estado",
+   "options": "\nACTIVE\nPAUSED\nCAMPAIGN_PAUSED\nDELETED\nARCHIVED\nIN_PROCESS\nWITH_ISSUES\nDISAPPROVED",
+   "read_only": 1
+  },
+  {
+   "fieldname": "anuncios_asociados",
+   "fieldtype": "Table",
+   "label": "Anuncios Asociados",
+   "options": "Anuncios Asociados"
+  },
+  {
+   "fieldname": "valor",
+   "fieldtype": "Currency",
+   "label": "Valor"
+  },
+  {
+   "default": "CAN-.YYYY.-.MM.-",
+   "fieldname": "naming_series",
+   "fieldtype": "Data",
+   "label": "naming_series",
+   "options": "CAN-.YYYY.-.MM.-"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-04-08 17:30:21.492913",
+ "modified_by": "henryjosuediazhuarcaya@gmail.com",
+ "module": "MarketingHub",
+ "name": "Conjunto Anuncios",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

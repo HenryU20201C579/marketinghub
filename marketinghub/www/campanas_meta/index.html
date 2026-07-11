@@ -1,0 +1,368 @@
+{% extends "templates/web.html" %}
+
+{% block navbar %}{% endblock %}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block style %}
+{{ super() }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="/campanas_meta/index.css">
+<link rel="stylesheet" href="/campanas_meta/index_mobile.css" media="screen and (max-width: 768px)">
+{% endblock %}
+
+{% block page_content %}
+{% if no_access %}
+<style>
+    .cmp-na-screen {
+        position: fixed; inset: 0;
+        display: flex; align-items: center; justify-content: center;
+        background: #f5f6f8;
+        font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        z-index: 1000;
+    }
+    .cmp-na-card {
+        background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+        padding: 28px 32px; max-width: 480px; width: calc(100% - 40px);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .cmp-na-brand {
+        display: flex; align-items: center; gap: 8px;
+        font-size: 13px; font-weight: 600; color: #111827;
+        padding-bottom: 12px; border-bottom: 1px solid #f1f1f3;
+    }
+    .cmp-na-dot { width: 8px; height: 8px; border-radius: 50%; background: #b91c1c; }
+    .cmp-na-body { font-size: 14px; color: #374151; line-height: 1.55; margin-top: 16px; }
+    .cmp-na-body code {
+        background: #f3f4f6; border: 1px solid #e5e7eb;
+        padding: 1px 6px; border-radius: 4px;
+        font-family: 'IBM Plex Mono', ui-monospace, monospace;
+        font-size: 13px; color: #111827;
+    }
+    .cmp-na-roles { margin: 10px 0 0 18px; padding: 0; }
+    .cmp-na-roles li { margin: 4px 0; }
+    .cmp-na-hint { margin-top: 14px; font-size: 13px; color: #6b7280; }
+</style>
+<div class="cmp-na-screen">
+    <div class="cmp-na-card">
+        <div class="cmp-na-brand">
+            <span class="cmp-na-dot"></span>
+            <span>Lizaraso ERP · No permitido</span>
+        </div>
+        <div class="cmp-na-body">
+            No tienes permiso para acceder a <b>Campañas Meta</b>.
+            Se requiere alguno de los siguientes roles:
+            <ul class="cmp-na-roles">
+                {% for r in required_roles %}
+                <li><code>{{ r }}</code></li>
+                {% endfor %}
+            </ul>
+            <p class="cmp-na-hint">
+                Contacta a un administrador para que te asigne el rol correspondiente.
+            </p>
+        </div>
+    </div>
+</div>
+{% else %}
+<script>window.CMP_CAN_EDIT = {{ 'true' if can_edit else 'false' }};</script>
+<div class="cm-app" id="app">
+
+    <!-- HERO -->
+    <section class="cm-hero">
+        <div class="cm-header">
+            <div class="cm-header-left">
+                <div class="cm-logo">
+                    <i data-lucide="megaphone"></i>
+                </div>
+                <div>
+                    <div class="cm-kicker">Meta Ads</div>
+                    <h1>Gestión de Campañas</h1>
+                    <p>Organiza campañas, conjuntos y anuncios en una sola vista clara.</p>
+                </div>
+            </div>
+            <div class="cm-header-actions">
+                {% if can_edit %}
+                <button class="cm-btn cm-btn-ghost cm-btn-lg" onclick="abrirModalSincronizar()">
+                    <i data-lucide="refresh-cw"></i>
+                    Sincronizar desde Meta
+                </button>
+                <button class="cm-btn cm-btn-ghost cm-btn-lg" onclick="ejecutarDiagnostico()" style="font-size:12px;">
+                    <i data-lucide="stethoscope"></i>
+                    Diagnóstico renombrado
+                </button>
+                <button class="cm-btn cm-btn-primary cm-btn-lg" onclick="abrirModalNuevo()">
+                    <i data-lucide="plus"></i>
+                    Nueva Campaña
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="cm-stats" aria-label="Resumen de campañas">
+            <div class="cm-stat-card">
+                <span class="cm-stat-label">Campañas</span>
+                <strong id="stat-campanas">0</strong>
+                <small>Registradas</small>
+            </div>
+            <div class="cm-stat-card">
+                <span class="cm-stat-label">Conjuntos</span>
+                <strong id="stat-conjuntos">0</strong>
+                <small>Total configurados</small>
+            </div>
+            <div class="cm-stat-card">
+                <span class="cm-stat-label">Anuncios</span>
+                <strong id="stat-anuncios">0</strong>
+                <small>Distribuidos</small>
+            </div>
+        </div>
+
+    </section>
+
+    <!-- TABLA CAMPAÑAS -->
+    <div class="cm-card">
+        <div class="cm-card-header" style="flex-direction:column; gap:0;">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; width:100%;">
+                <div class="cm-card-title">
+                    <span><i data-lucide="layout-list"></i> Campañas registradas</span>
+                    <p>Busca, revisa y administra cada campaña desde una sola tabla.</p>
+                </div>
+                <div class="cm-card-tools">
+                    <label class="cm-search" for="search-campanas">
+                        <i data-lucide="search"></i>
+                        <input type="search" id="search-campanas" placeholder="Buscar campaña..." oninput="filtrarCampanas(this.value)">
+                    </label>
+                    <span class="cm-badge" id="badge-total">0</span>
+                </div>
+            </div>
+            <div class="cm-card-filters" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; width:100%; padding-top:12px; margin-top:12px; border-top:1px solid var(--border);">
+                <button class="cm-chip active" data-filter="all" onclick="setQuickFilter('all', this)">Todas</button>
+                <button class="cm-chip" data-filter="with-ads" onclick="setQuickFilter('with-ads', this)">Con anuncios</button>
+                <button class="cm-chip" data-filter="empty" onclick="setQuickFilter('empty', this)">Sin anuncios</button>
+                <span style="width:1px; height:20px; background:var(--border); margin:0 4px;"></span>
+                <select id="estado-filter-campanas" class="cm-input" style="height:32px; font-size:0.78rem; padding:4px 10px; width:auto; min-width:140px; border-radius:6px;" onchange="setEstadoFiltro(this.value)">
+                    <option value="">Todos los estados</option>
+                    <option value="ACTIVE">Activa</option>
+                    <option value="PAUSED">Pausada</option>
+                    <option value="CAMPAIGN_PAUSED">Pausada (campaña)</option>
+                    <option value="ADSET_PAUSED">Pausada (conjunto)</option>
+                    <option value="DELETED">Eliminada</option>
+                    <option value="ARCHIVED">Archivada</option>
+                    <option value="IN_PROCESS">En proceso</option>
+                    <option value="WITH_ISSUES">Con problemas</option>
+                    <option value="DISAPPROVED">Desaprobada</option>
+                </select>
+                <select id="cuenta-filter-campanas" class="cm-input" style="height:32px; font-size:0.78rem; padding:4px 10px; width:auto; min-width:160px; border-radius:6px;" onchange="setCuentaFiltro(this.value)">
+                    <option value="">Todas las cuentas</option>
+                </select>
+                <select id="etiqueta-filter-campanas" class="cm-input" style="height:32px; font-size:0.78rem; padding:4px 10px; width:auto; min-width:150px; border-radius:6px;" onchange="setEtiquetaFiltro(this.value)">
+                    <option value="">Todas las etiquetas</option>
+                </select>
+                <div style="flex:1;"></div>
+                <button class="cm-chip cm-chip-soft" onclick="limpiarTodosFiltros()">
+                    <i data-lucide="x" style="width:13px;height:13px;"></i> Limpiar filtros
+                </button>
+            </div>
+        </div>
+        <div class="cm-table-wrap">
+            <table class="cm-table">
+                <thead>
+                    <tr>
+                        <th>Nombre de Campaña</th>
+                        <th>Cuenta Publicitaria</th>
+                        <th>Etiquetas</th>
+                        <th class="cm-center">Estado</th>
+                        <th class="cm-center">N° Conjuntos</th>
+                        <th class="cm-center">N° Anuncios</th>
+                        <th class="cm-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-campanas">
+                <tr>
+                    <td colspan="7" class="cm-empty-row">
+                            <i data-lucide="loader-2" class="cm-spin"></i> Cargando...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div class="cm-empty" id="empty-state" style="display:none;">
+        <div class="cm-empty-ico"><i data-lucide="megaphone"></i></div>
+        <h3 id="empty-title">Sin campañas registradas</h3>
+        <p id="empty-copy">Crea tu primera campaña Meta para comenzar.</p>
+        {% if can_edit %}
+        <button class="cm-btn cm-btn-primary" onclick="abrirModalNuevo()">
+            <i data-lucide="plus"></i> Nueva Campaña
+        </button>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL: REGISTRAR / EDITAR CAMPAÑA  (árbol horizontal)
+═══════════════════════════════════════════════════════════ -->
+<div class="cm-modal-overlay" id="modal-campana" onclick="cerrarOverlay(event,'modal-campana')">
+    <div class="cm-modal cm-modal-tree" onclick="event.stopPropagation()">
+
+        <!-- Header -->
+        <div class="cm-modal-header">
+            <h3 id="modal-titulo"><i data-lucide="megaphone"></i> Nueva Campaña</h3>
+            <button class="cm-btn-icon" onclick="cerrarModal('modal-campana')">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+
+        <!-- Tree body -->
+        <div class="cm-tree-layout">
+
+            <!-- ── COLUMNA IZQUIERDA: Campaña + Conjuntos ── -->
+            <div class="cm-tree-left">
+
+                <!-- Nombre campaña -->
+                <div class="cm-tree-campaign-panel">
+                    <label class="cm-label">NOMBRE DE CAMPAÑA</label>
+                    <input type="text" class="cm-input" id="input-nombre-campana"
+                           placeholder="Ej: Campaña Verano 2025" autocomplete="off">
+                    <input type="hidden" id="input-campana-original">
+                    <label class="cm-label" style="margin-top:10px;">OBJETIVO DE CAMPAÑA</label>
+                    <select class="cm-input" id="input-objetivo-campana">
+                        <option value="">-- Sin objetivo --</option>
+                        <option value="OUTCOME_LEADS">Leads</option>
+                        <option value="OUTCOME_SALES">Ventas</option>
+                        <option value="OUTCOME_TRAFFIC">Tráfico</option>
+                        <option value="OUTCOME_ENGAGEMENT">Interacción</option>
+                        <option value="OUTCOME_AWARENESS">Reconocimiento de marca</option>
+                    </select>
+                </div>
+
+                <!-- Lista de conjuntos -->
+                <div class="cm-tree-conjuntos-panel">
+                    <div class="cm-tree-conjuntos-header">
+                        <span><i data-lucide="layers" style="width:13px;height:13px;margin-right:4px"></i>Conjuntos</span>
+                    </div>
+                    <div class="cm-tree-conjuntos-list" id="conjuntos-list">
+                        <!-- Items de conjuntos -->
+                    </div>
+                    <div id="conjuntos-vacio" class="cm-hint-block" style="display:none;margin:10px;">
+                        <i data-lucide="info"></i> Sin conjuntos aún.
+                    </div>
+                    <div class="cm-tree-conj-add">
+                        <button class="cm-btn cm-btn-blue-sm" style="width:100%;justify-content:center" onclick="agregarConjunto()">
+                            <i data-lucide="plus"></i> Agregar Conjunto
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ── COLUMNA DERECHA: Detalle del conjunto activo ── -->
+            <div class="cm-tree-right" id="tree-right-panel">
+                <div class="cm-tree-right-empty" id="tree-right-empty">
+                    <i data-lucide="mouse-pointer-click"></i>
+                    <p>Selecciona o crea un conjunto<br>para editar sus datos y anuncios.</p>
+                </div>
+                <!-- El formulario del conjunto activo se inyecta aquí por JS -->
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="cm-modal-footer">
+            <button class="cm-btn cm-btn-ghost" onclick="cerrarModal('modal-campana')">Cerrar</button>
+            {% if can_edit %}
+            <button class="cm-btn cm-btn-primary" onclick="guardarCampana()">
+                <i data-lucide="save"></i> Guardar Campaña
+            </button>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL: FICHA (solo lectura)
+═══════════════════════════════════════════════════════════ -->
+<div class="cm-modal-overlay" id="modal-ficha" onclick="cerrarOverlay(event,'modal-ficha')">
+    <div class="cm-modal cm-modal-lg" onclick="event.stopPropagation()">
+        <div class="cm-modal-header">
+            <h3><i data-lucide="eye"></i> Detalle de Campaña</h3>
+            <button class="cm-btn-icon" onclick="cerrarModal('modal-ficha')">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <div class="cm-modal-body" id="ficha-contenido">
+            <!-- JS renderiza aquí -->
+        </div>
+        <div class="cm-modal-footer">
+            <button class="cm-btn cm-btn-ghost" onclick="cerrarModal('modal-ficha')">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL: SINCRONIZAR DESDE META
+═══════════════════════════════════════════════════════════ -->
+<div class="cm-modal-overlay" id="modal-sincronizar" onclick="cerrarOverlay(event,'modal-sincronizar')">
+    <div class="cm-modal" style="max-width:480px;" onclick="event.stopPropagation()">
+        <div class="cm-modal-header">
+            <h3><i data-lucide="refresh-cw"></i> Sincronizar desde Meta</h3>
+            <button class="cm-btn-icon" onclick="cerrarModal('modal-sincronizar')">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <div class="cm-modal-body" style="padding:24px;">
+            <p style="margin-bottom:16px; color:var(--text-muted);">
+                Selecciona una cuenta publicitaria. Se importarán (o actualizarán) todas las campañas, conjuntos de anuncios y anuncios de esa cuenta. Las etiquetas asignadas manualmente no se modifican.
+            </p>
+            <label class="cm-label">Cuenta publicitaria</label>
+            <select class="cm-input" id="sync-account-select" style="margin-top:4px;">
+                <option value="">Cargando cuentas...</option>
+            </select>
+            <div id="sync-result" style="display:none; margin-top:16px; padding:12px 16px; border-radius:8px; font-size:0.875rem;"></div>
+        </div>
+        <div class="cm-modal-footer">
+            <button class="cm-btn cm-btn-ghost" onclick="cerrarModal('modal-sincronizar')">Cancelar</button>
+            <button class="cm-btn cm-btn-primary" id="sync-btn" onclick="ejecutarSincronizacion()">
+                <i data-lucide="refresh-cw"></i> Sincronizar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: LOG DE GUARDADO -->
+<div class="cm-modal-overlay" id="modal-log" onclick="cerrarOverlay(event,'modal-log')">
+    <div class="cm-modal" style="max-width:520px;" onclick="event.stopPropagation()">
+        <div class="cm-modal-header">
+            <h3 id="modal-log-titulo"><i data-lucide="clipboard-list"></i> Resumen de guardado</h3>
+            <button class="cm-btn-icon" onclick="cerrarModal('modal-log')">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <div class="cm-modal-body" style="padding:16px 20px; max-height:400px; overflow-y:auto;">
+            <div id="modal-log-contenido"></div>
+        </div>
+        <div class="cm-modal-footer">
+            <button class="cm-btn cm-btn-primary" onclick="cerrarModal('modal-log')">Entendido</button>
+        </div>
+    </div>
+</div>
+
+<!-- TOAST -->
+<div class="cm-toast" id="toast"></div>
+{% endif %}
+{% endblock %}
+{% block script %}
+{% if not no_access %}
+<script>
+    window.can_edit = {{ "true" if can_edit else "false" }};
+</script>
+<script src="/campanas_meta/index.js"></script>
+<script src="/campanas_meta/index_mobile.js"></script>
+{% endif %}
+{% endblock %}

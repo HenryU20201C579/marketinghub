@@ -1,0 +1,136 @@
+{% extends "templates/web.html" %}
+
+{% block style %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #f8f9fa;
+    }
+    .page-container {
+        padding: 30px;
+        max-width: 100%;
+        margin: 0;
+    }
+</style>
+{% if has_access %}
+<link rel="stylesheet" href="/conversiones/index.css">
+{% endif %}
+{% endblock %}
+
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    {% if not has_access %}
+    <style>
+        .cv-na-screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #f5f6f8; font-family: 'Inter', system-ui, sans-serif; z-index: 1000; }
+        .cv-na-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 28px 32px; max-width: 480px; width: calc(100% - 40px); box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .cv-na-brand { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #111827; padding-bottom: 12px; border-bottom: 1px solid #f1f1f3; }
+        .cv-na-dot { width: 8px; height: 8px; border-radius: 50%; background: #b91c1c; }
+        .cv-na-body { font-size: 14px; color: #374151; line-height: 1.55; margin-top: 16px; }
+        .cv-na-body code { background: #f3f4f6; border: 1px solid #e5e7eb; padding: 1px 6px; border-radius: 4px; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 13px; color: #111827; }
+        .cv-na-roles { margin: 10px 0 0 18px; padding: 0; }
+        .cv-na-roles li { margin: 4px 0; }
+    </style>
+    <div class="cv-na-screen">
+        <div class="cv-na-card">
+            <div class="cv-na-brand"><span class="cv-na-dot"></span><span>Tiranidos ERP · No permitido</span></div>
+            <div class="cv-na-body">
+                No tienes permiso para acceder a <b>Conversiones CTWA</b>.
+                Se requiere alguno de los siguientes roles:
+                <ul class="cv-na-roles">{% for r in required_roles %}<li><code>{{ r }}</code></li>{% endfor %}</ul>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Conversiones CTWA</h1>
+            <p class="page-subtitle">Ventas atribuidas a Click-to-WhatsApp Ads</p>
+        </div>
+        <div class="range-picker">
+            <label class="range-label">Rango:</label>
+            <button class="range-btn" data-days="7">7 días</button>
+            <button class="range-btn active" data-days="30">30 días</button>
+            <button class="range-btn" data-days="90">90 días</button>
+            <button class="range-btn" data-days="180">180 días</button>
+            <div class="range-custom">
+                <input type="date" id="range-from" class="range-input">
+                <span>→</span>
+                <input type="date" id="range-to" class="range-input">
+                <button id="range-apply" class="range-apply-btn">Aplicar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-label">Ventas CTWA</div>
+            <div class="kpi-value" id="kpi-revenue">—</div>
+            <div class="kpi-sub" id="kpi-revenue-sub">—</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Facturas CTWA</div>
+            <div class="kpi-value" id="kpi-facturas">—</div>
+            <div class="kpi-sub" id="kpi-facturas-sub">—</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Ticket promedio</div>
+            <div class="kpi-value" id="kpi-ticket">—</div>
+            <div class="kpi-sub">Por factura CTWA</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Anuncios activos</div>
+            <div class="kpi-value" id="kpi-anuncios">—</div>
+            <div class="kpi-sub">Con facturas en el rango</div>
+        </div>
+    </div>
+
+    <div class="chart-card">
+        <div class="chart-card-header">
+            <h2 class="chart-title">Ventas por <span id="chart-granularidad">día</span></h2>
+            <div class="chart-legend">
+                <span class="chart-legend-item"><span class="legend-dot revenue"></span>Revenue</span>
+                <span class="chart-legend-item"><span class="legend-dot facturas"></span># Facturas</span>
+            </div>
+        </div>
+        <div class="chart-canvas-wrapper">
+            <canvas id="chart-serie"></canvas>
+        </div>
+        <div id="chart-empty" class="chart-empty" style="display:none;">
+            No hay ventas CTWA en este rango.
+        </div>
+    </div>
+
+    <div class="ranking-card">
+        <div class="ranking-header">
+            <h2 class="ranking-title">Ranking de anuncios</h2>
+            <span class="ranking-count" id="ranking-count">—</span>
+        </div>
+        <table class="ranking-table">
+            <thead>
+                <tr>
+                    <th>Anuncio</th>
+                    <th class="right">Facturas</th>
+                    <th class="right">Revenue</th>
+                    <th class="right">Ticket promedio</th>
+                    <th>Primera venta</th>
+                    <th>Última venta</th>
+                </tr>
+            </thead>
+            <tbody id="ranking-tbody">
+                <tr><td colspan="6" class="ranking-empty">Cargando…</td></tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% if has_access %}
+<script src="/conversiones/index.js"></script>
+{% endif %}
+{% endblock %}

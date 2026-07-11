@@ -1,0 +1,93 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:naming_series",
+ "creation": "2026-03-25 12:23:32.569797",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "nombre",
+  "objetivo",
+  "meta_id",
+  "estado",
+  "conjunto_anuncios_asociados",
+  "cuenta_publicitaria"
+ ],
+ "fields": [
+  {
+   "default": "CM-.YYYY.-.MM.-",
+   "fieldname": "naming_series",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "naming_series",
+   "options": "CM-.YYYY.-.MM.-"
+  },
+  {
+   "fieldname": "nombre",
+   "fieldtype": "Data",
+   "label": "Nombre"
+  },
+  {
+   "description": "Requerido para publicar en Meta Ads",
+   "fieldname": "objetivo",
+   "fieldtype": "Select",
+   "label": "Objetivo de Campa\u00f1a",
+   "options": "\nOUTCOME_LEADS\nOUTCOME_SALES\nOUTCOME_TRAFFIC\nOUTCOME_ENGAGEMENT\nOUTCOME_AWARENESS"
+  },
+  {
+   "fieldname": "meta_id",
+   "fieldtype": "Data",
+   "label": "Meta ID",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "label": "Estado",
+   "options": "\nACTIVE\nPAUSED\nDELETED\nARCHIVED\nIN_PROCESS\nWITH_ISSUES\nDISAPPROVED",
+   "read_only": 1
+  },
+  {
+   "fieldname": "conjunto_anuncios_asociados",
+   "fieldtype": "Table",
+   "label": "Conjunto Anuncios Asociados",
+   "options": "Conjunto Anuncios Asociados"
+  },
+  {
+   "fieldname": "cuenta_publicitaria",
+   "fieldtype": "Link",
+   "label": "Cuenta Publicitaria",
+   "options": "Cuenta Publicitaria"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-04-08 17:01:38.787222",
+ "modified_by": "henryjosuediazhuarcaya@gmail.com",
+ "module": "MarketingHub",
+ "name": "Campana Meta",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
