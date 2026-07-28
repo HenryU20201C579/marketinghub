@@ -81,28 +81,47 @@ def get_meta_token():
     try:
         return _conf_get_meta_token() or None
     except Exception as e:
-        frappe.log_error(f"Error fetching Meta Token: {str(e)}", "Meta Ads API")
+        frappe.log_error(title="Meta Ads API", message=f"Error fetching Meta Token: {str(e)}")
         return None
+
+
+def _parse_meta_error(response_text):
+    """Extrae {message, type, code} legible del JSON error de Meta Graph API."""
+    try:
+        err = json.loads(response_text).get("error", {})
+        return {
+            "message": err.get("message") or "Error desconocido",
+            "type": err.get("type") or "",
+            "code": err.get("code") or "",
+        }
+    except Exception:
+        return {"message": (response_text or "")[:300], "type": "", "code": ""}
+
 
 @frappe.whitelist()
 def get_ad_accounts():
     _require_view()
     token = get_meta_token()
     if not token:
-        return []
-    
+        return {"data": [], "error": {"message": "No hay token de Meta configurado. Cargalo desde Configuracion Meta."}}
+
     url = f"https://graph.facebook.com/v22.0/me/adaccounts"
     params = {
         "access_token": token,
         "fields": "id,name,account_id"
     }
-    
+
     response = requests.get(url, params=params)
     if response.status_code != 200:
-        frappe.log_error(f"Meta API Error (Accounts): {response.text}", "Meta Ads API")
-        return []
-    
-    return response.json().get("data", [])
+        meta_err = _parse_meta_error(response.text)
+        # Log correcto: title corto, message con detalle largo.
+        frappe.log_error(
+            title="Meta Ads API - Accounts",
+            message=f"HTTP {response.status_code}\n{response.text}",
+        )
+        return {"data": [], "error": meta_err}
+
+    return {"data": response.json().get("data", []), "error": None}
 
 
 @frappe.whitelist()
@@ -836,7 +855,10 @@ def get_page_posts(page_id=None):
     
     response = requests.get(url, params=params)
     if response.status_code != 200:
-        frappe.log_error(f"Meta API Error (Posts): {response.text}", "Meta Ads API")
+        frappe.log_error(
+            title="Meta Ads API - Posts",
+            message=f"HTTP {response.status_code}\n{response.text}",
+        )
         return []
 
     return response.json().get("data", [])

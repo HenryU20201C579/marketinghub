@@ -693,13 +693,21 @@ async function loadAccounts() {
   if (!state.token || !els.accountSelect) return;
   els.accountsBtn.disabled = true;
   els.accountSelect.innerHTML = '<option>Cargando cuentas...</option>';
-  
+
   try {
     const res = await fetch(`https://graph.facebook.com/v22.0/me/adaccounts?fields=name,account_id&access_token=${state.token}`);
     const data = await res.json();
     if (data.error) throw data.error;
-    
-    state.accounts = data.data;
+
+    state.accounts = data.data || [];
+    if (!state.accounts.length) {
+      showMetaError({
+        message: "El token es valido pero no devuelve cuentas publicitarias. Verifica que la cuenta Meta tenga cuentas asignadas.",
+        type: "NoAccounts",
+      });
+      els.accountSelect.innerHTML = '<option value="">-- Sin cuentas --</option>';
+      return;
+    }
     const accountOptions = state.accounts.map(a => `<option value="${a.account_id}">${a.name} (${a.account_id})</option>`).join('');
     els.accountSelect.innerHTML = accountOptions;
     if(els.accountFilterInline) els.accountFilterInline.innerHTML = accountOptions;
@@ -710,11 +718,48 @@ async function loadAccounts() {
       els.accountSelect.value = def.account_id;
       if (els.accountFilterInline) els.accountFilterInline.value = def.account_id;
     }
+    // Limpiar cualquier banner de error previo.
+    hideMetaError();
   } catch (e) {
+    showMetaError(e);
+    els.accountSelect.innerHTML = '<option value="">-- Error al cargar --</option>';
     setError(e.message || "Error al leer cuentas de Meta");
   } finally {
     els.accountsBtn.disabled = false;
   }
+}
+
+// Banner de error visible cuando Meta rechaza el token o algo falla.
+function showMetaError(err) {
+  const msg = (err && err.message) || String(err) || "Error desconocido";
+  const type = (err && err.type) || "";
+  const code = (err && err.code) || "";
+  const bannerId = 'meta-error-banner';
+  let banner = document.getElementById(bannerId);
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = bannerId;
+    banner.style.cssText = 'margin:12px 16px;padding:12px 16px;background:#fef2f2;border:1px solid #fecaca;border-left:4px solid #ef4444;border-radius:8px;color:#991b1b;font-size:13px;line-height:1.4;';
+    const container = document.querySelector('.metricas-modernas, .kpis-container, main') || document.body;
+    container.parentNode ? container.parentNode.insertBefore(banner, container) : container.appendChild(banner);
+  }
+  banner.innerHTML =
+    '<div style="font-weight:600;margin-bottom:4px;">Meta API no respondio con datos</div>' +
+    '<div style="font-family:monospace;white-space:pre-wrap;word-break:break-word;">' +
+    _esc(msg) + (code ? ` (code ${_esc(code)})` : '') + (type ? ` [${_esc(type)}]` : '') +
+    '</div>' +
+    '<div style="margin-top:6px;font-size:12px;color:#7f1d1d;">' +
+    'Verifica que el token no este expirado. Regeneralo desde Business Manager -> Herramientas del Sistema -> ' +
+    'Tokens de Acceso y pegalo en <b>Configuracion Meta</b>.</div>';
+}
+function hideMetaError() {
+  const b = document.getElementById('meta-error-banner');
+  if (b && b.parentNode) b.parentNode.removeChild(b);
+}
+function _esc(s) {
+  return String(s || '').replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
 }
 
 function switchTab(tab) {
@@ -967,6 +1012,7 @@ async function loadData(silent = false) {
     }
   } catch (e) {
     setError(e.message || "Error al cargar informes");
+    showMetaError(e);
   } finally {
     els.loadBtn.disabled = false;
   }

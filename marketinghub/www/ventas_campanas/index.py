@@ -54,7 +54,7 @@ def get_ventas_data(from_date=None, to_date=None, account_id=None):
     try:
         rows = frappe.db.sql(placeholders_query, (from_date, to_date), as_dict=True)
     except Exception as e:
-        frappe.log_error(str(e), "ventas_campanas get_ventas_data SQL")
+        frappe.log_error(title="ventas_campanas get_ventas_data SQL", message=str(e))
         return []
 
     if not rows:
@@ -573,7 +573,10 @@ def _fetch_daily_spend(account_id, from_date, to_date, ad_meta_ids):
         while url:
             resp = requests.get(url, params=params)
             if resp.status_code != 200:
-                frappe.log_error(f"Meta Spend API Error: {resp.text}", "Meta-Spend-Error")
+                frappe.log_error(
+                    title="Meta-Spend-Error",
+                    message=f"HTTP {resp.status_code}\n{resp.text}",
+                )
                 break
 
             data = resp.json()
@@ -587,7 +590,7 @@ def _fetch_daily_spend(account_id, from_date, to_date, ad_meta_ids):
             params = {}  # next URL ya incluye params
 
     except Exception as e:
-        frappe.log_error(f"Meta Spend Fetch Error: {str(e)}", "Meta-Spend-Error")
+        frappe.log_error(title="Meta-Spend-Error", message=f"Meta Spend Fetch Error: {str(e)}")
 
     return result
 
