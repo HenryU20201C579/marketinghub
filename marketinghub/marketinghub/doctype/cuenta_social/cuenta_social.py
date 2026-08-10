@@ -1,12 +1,65 @@
 # Copyright (c) 2026, Lizaraso-Henry and contributors
 # For license information, please see license.txt
 
-import frappe
+import re
 import statistics
+import frappe
 from frappe.model.document import Document
 
 
+# Regex por plataforma para extraer el handle desde la URL del perfil.
+# Cada patron captura el handle en el grupo 1.
+HANDLE_PATTERNS = {
+	"Instagram": re.compile(
+		r"instagram\.com/(?:@)?([a-zA-Z0-9._]+)/?", re.IGNORECASE
+	),
+	"TikTok": re.compile(
+		r"tiktok\.com/@([a-zA-Z0-9._]+)", re.IGNORECASE
+	),
+	"Facebook": re.compile(
+		r"facebook\.com/(?:pg/|profile\.php\?id=)?([a-zA-Z0-9.\-]+)", re.IGNORECASE
+	),
+	"YouTube": re.compile(
+		r"youtube\.com/(?:@|channel/|c/|user/)?([a-zA-Z0-9._\-]+)", re.IGNORECASE
+	),
+}
+
+
+def extraer_handle(url: str, plataforma: str) -> str | None:
+	"""Extrae el handle de un URL de perfil segun la plataforma.
+
+	Retorna None si el URL no matchea el patron esperado."""
+	if not url or not plataforma:
+		return None
+	patron = HANDLE_PATTERNS.get(plataforma)
+	if not patron:
+		return None
+	m = patron.search(url.strip())
+	return m.group(1) if m else None
+
+
 class CuentaSocial(Document):
+	def before_save(self):
+		self._derivar_handle()
+
+	def before_insert(self):
+		self._derivar_handle()
+
+	def _derivar_handle(self):
+		"""Deriva self.handle desde self.url_perfil + self.plataforma."""
+		if not self.url_perfil:
+			frappe.throw(
+				"Debes indicar la URL del perfil (ej: "
+				"https://www.instagram.com/lizarasocueros/)."
+			)
+		handle = extraer_handle(self.url_perfil, self.plataforma)
+		if not handle:
+			frappe.throw(
+				f"No pude extraer el handle desde la URL '{self.url_perfil}'. "
+				f"Verifica que sea una URL valida de {self.plataforma}."
+			)
+		self.handle = handle
+
 	@frappe.whitelist()
 	def refrescar_metricas(self):
 		"""Recalcula seguidores_actual, engagement_promedio, velocidad_promedio."""
