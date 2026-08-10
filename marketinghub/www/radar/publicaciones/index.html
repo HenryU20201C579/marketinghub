@@ -488,15 +488,11 @@
       document.getElementById(id).addEventListener('change', () => RadarPubs.render());
     });
     document.getElementById('rd-f-search').addEventListener('input', () => RadarPubs.render());
+    // El <input> vive DENTRO del <label>, por lo que el click nativo del label
+    // ya hace toggle del checkbox. Solo escuchamos el change para actualizar UI.
     document.getElementById('rd-f-viral').addEventListener('change', function() {
       document.getElementById('rd-toggle-viral').classList.toggle('rd-on', this.checked);
       RadarPubs.render();
-    });
-    document.getElementById('rd-toggle-viral').addEventListener('click', function(e) {
-      if (e.target.tagName === 'INPUT') return;
-      const chk = document.getElementById('rd-f-viral');
-      chk.checked = !chk.checked;
-      chk.dispatchEvent(new Event('change'));
     });
 
     // Sort clicks
