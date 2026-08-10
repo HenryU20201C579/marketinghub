@@ -14,7 +14,9 @@
   "n_pubs_baseline",
   "dias_retencion_snapshots",
   "sb_alertas",
-  "canal_alerta"
+  "canal_alerta",
+  "sb_scraper",
+  "apify_token"
  ],
  "fields": [
   {
@@ -79,6 +81,17 @@
    "label": "Canal de Alerta Virales",
    "options": "\nIn-app ERP\nEmail\nTelegram\nWhatsApp",
    "default": "In-app ERP"
+  },
+  {
+   "fieldname": "sb_scraper",
+   "fieldtype": "Section Break",
+   "label": "Integraciones del scraper"
+  },
+  {
+   "fieldname": "apify_token",
+   "fieldtype": "Password",
+   "label": "Apify API Token",
+   "description": "Token de https://console.apify.com para correr los actors instagram-scraper y tiktok-scraper. Se guarda encriptado."
   }
  ],
  "index_web_pages_for_search": 1,
