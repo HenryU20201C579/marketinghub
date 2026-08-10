@@ -16,7 +16,18 @@
   "sb_alertas",
   "canal_alerta",
   "sb_scraper",
-  "apify_token"
+  "apify_token",
+  "posts_por_perfil",
+  "sb_scheduler",
+  "preset_frecuencia",
+  "cron_scrape",
+  "sb_ultima",
+  "ultima_corrida",
+  "ultima_corrida_estado",
+  "cb_ult1",
+  "ultima_corrida_duracion",
+  "ultima_corrida_mensaje",
+  "ultima_corrida_stats"
  ],
  "fields": [
   {
@@ -92,6 +103,74 @@
    "fieldtype": "Password",
    "label": "Apify API Token",
    "description": "Token de https://console.apify.com para correr los actors instagram-scraper y tiktok-scraper. Se guarda encriptado."
+  },
+  {
+   "fieldname": "posts_por_perfil",
+   "fieldtype": "Int",
+   "label": "Posts por perfil (por corrida)",
+   "default": "20",
+   "description": "Cuántos posts más recientes leer por cada Cuenta Social activa."
+  },
+  {
+   "fieldname": "sb_scheduler",
+   "fieldtype": "Section Break",
+   "label": "Programación del scrapeo"
+  },
+  {
+   "fieldname": "preset_frecuencia",
+   "fieldtype": "Select",
+   "label": "Frecuencia",
+   "options": "Diario a las 6 AM\nDiario a las 8 PM\nCada 12 horas\nCada 6 horas\nCada hora\nPersonalizado",
+   "default": "Diario a las 6 AM"
+  },
+  {
+   "fieldname": "cron_scrape",
+   "fieldtype": "Data",
+   "label": "Expresión Cron (5 campos)",
+   "default": "0 6 * * *",
+   "description": "min hora día mes día-semana. Solo editable si 'Frecuencia' = 'Personalizado'."
+  },
+  {
+   "fieldname": "sb_ultima",
+   "fieldtype": "Section Break",
+   "label": "Última corrida"
+  },
+  {
+   "fieldname": "ultima_corrida",
+   "fieldtype": "Datetime",
+   "label": "Fecha/hora",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ultima_corrida_estado",
+   "fieldtype": "Select",
+   "label": "Estado",
+   "options": "\nok\nwarn\nerror",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_ult1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ultima_corrida_duracion",
+   "fieldtype": "Float",
+   "label": "Duración (seg)",
+   "read_only": 1,
+   "precision": "1"
+  },
+  {
+   "fieldname": "ultima_corrida_mensaje",
+   "fieldtype": "Small Text",
+   "label": "Mensaje",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ultima_corrida_stats",
+   "fieldtype": "Code",
+   "label": "Stats (JSON)",
+   "read_only": 1,
+   "options": "JSON"
   }
  ],
  "index_web_pages_for_search": 1,

@@ -35,7 +35,7 @@ def obtener_settings():
 	"""Retorna los valores actuales de Radar Settings."""
 	if not _has_role(VIEW_ROLES):
 		frappe.throw("Acceso denegado", frappe.PermissionError)
-	s = frappe.get_cached_doc("Radar Settings")
+	s = frappe.get_doc("Radar Settings")
 	return {
 		"umbral_viralidad": s.umbral_viralidad or 2.0,
 		"piso_minimo_vistas": s.piso_minimo_vistas or 10000,
@@ -43,6 +43,9 @@ def obtener_settings():
 		"n_pubs_baseline": s.n_pubs_baseline or 30,
 		"dias_retencion_snapshots": s.dias_retencion_snapshots or 90,
 		"canal_alerta": s.canal_alerta or "In-app ERP",
+		"preset_frecuencia": s.preset_frecuencia or "Diario a las 6 AM",
+		"cron_scrape": s.cron_scrape or "0 6 * * *",
+		"posts_por_perfil": s.posts_por_perfil or 20,
 	}
 
 
@@ -54,6 +57,9 @@ def guardar_settings(
 	n_pubs_baseline=None,
 	dias_retencion_snapshots=None,
 	canal_alerta=None,
+	preset_frecuencia=None,
+	cron_scrape=None,
+	posts_por_perfil=None,
 ):
 	"""Guarda los valores de Radar Settings."""
 	if not _has_role(ADMIN_ROLES):
@@ -62,18 +68,15 @@ def guardar_settings(
 			frappe.PermissionError,
 		)
 	s = frappe.get_single("Radar Settings")
-	if umbral_viralidad is not None:
-		s.umbral_viralidad = float(umbral_viralidad)
-	if piso_minimo_vistas is not None:
-		s.piso_minimo_vistas = int(piso_minimo_vistas)
-	if umbral_velocidad is not None:
-		s.umbral_velocidad = float(umbral_velocidad)
-	if n_pubs_baseline is not None:
-		s.n_pubs_baseline = int(n_pubs_baseline)
-	if dias_retencion_snapshots is not None:
-		s.dias_retencion_snapshots = int(dias_retencion_snapshots)
-	if canal_alerta is not None:
-		s.canal_alerta = canal_alerta
+	if umbral_viralidad is not None:      s.umbral_viralidad = float(umbral_viralidad)
+	if piso_minimo_vistas is not None:    s.piso_minimo_vistas = int(piso_minimo_vistas)
+	if umbral_velocidad is not None:      s.umbral_velocidad = float(umbral_velocidad)
+	if n_pubs_baseline is not None:       s.n_pubs_baseline = int(n_pubs_baseline)
+	if dias_retencion_snapshots is not None: s.dias_retencion_snapshots = int(dias_retencion_snapshots)
+	if canal_alerta is not None:          s.canal_alerta = canal_alerta
+	if preset_frecuencia is not None:     s.preset_frecuencia = preset_frecuencia
+	if cron_scrape is not None:           s.cron_scrape = cron_scrape.strip()
+	if posts_por_perfil is not None:      s.posts_por_perfil = int(posts_por_perfil)
 	s.save(ignore_permissions=True)
 	frappe.db.commit()
 	return {"ok": True}
