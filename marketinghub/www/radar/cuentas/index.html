@@ -1,0 +1,272 @@
+{% extends "templates/web.html" %}
+
+{% block navbar %}{% endblock %}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block style %}
+{{ super() }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="/radar/radar.css">
+<style>
+  .rd-plat-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+  }
+  .rd-plat-instagram { background: linear-gradient(45deg, #f09433, #dc2743); color: white; }
+  .rd-plat-tiktok    { background: #000000; color: white; }
+  .rd-plat-facebook  { background: #1877f2; color: white; }
+  .rd-plat-youtube   { background: #ff0000; color: white; }
+
+  .rd-cta-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .rd-cta-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow-sm);
+    display: flex; flex-direction: column; gap: 8px;
+    transition: box-shadow .15s, transform .15s;
+  }
+  .rd-cta-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .rd-cta-inactive { opacity: 0.6; }
+  .rd-cta-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .rd-cta-handle { font-size: 17px; font-weight: 700; color: var(--text); }
+  .rd-cta-competidor { font-size: 12px; color: var(--muted); }
+  .rd-cta-url {
+    font-size: 12px; color: var(--brand);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    text-decoration: none;
+  }
+  .rd-cta-metrics {
+    display: flex; gap: 20px; padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .rd-cta-metric { display: flex; flex-direction: column; gap: 2px; }
+  .rd-cta-metric-val { font-size: 15px; font-weight: 700; color: var(--text); }
+  .rd-cta-metric-lbl { font-size: 11px; color: var(--muted); }
+  .rd-cta-actions { display: flex; gap: 6px; padding-top: 10px; border-top: 1px solid var(--border); }
+
+  .rd-url-check {
+    font-size: 12px; margin-top: 4px; padding: 6px 10px; border-radius: 6px;
+    display: none;
+  }
+  .rd-url-check.rd-ok { display: block; background: var(--green-bg); color: var(--green); }
+  .rd-url-check.rd-bad { display: block; background: var(--red-bg); color: var(--red); }
+</style>
+{% endblock %}
+
+{% block page_content %}
+{% if no_access %}
+<div class="rd-na-screen"><div class="rd-na-card">
+  <div class="rd-na-brand"><span class="rd-na-dot"></span><span>Radar · Acceso denegado</span></div>
+  <div class="rd-na-body">No tienes permiso.
+    <ul class="rd-na-roles">{% for r in required_roles %}<li><code>{{ r }}</code></li>{% endfor %}</ul>
+  </div>
+</div></div>
+{% else %}
+<div class="rd-app">
+  <header class="rd-topbar">
+    <div class="rd-topbar-left">
+      <a href="/radar" class="rd-back"><i data-lucide="arrow-left"></i> Volver</a>
+      <div class="rd-logo"><span class="rd-logo-dot"></span><span>Radar · Cuentas Sociales</span></div>
+    </div>
+    <div class="rd-topbar-right">
+      {% if can_edit %}
+      <button class="rd-btn" onclick="RadarCtas.abrirModal()">
+        <i data-lucide="plus"></i> Nueva cuenta
+      </button>
+      {% endif %}
+    </div>
+  </header>
+
+  <main class="rd-main">
+    <div class="rd-hero">
+      <h1>📱 Cuentas Sociales</h1>
+      <p class="rd-hero-sub">Los perfiles de tus competidores en Instagram, TikTok, Facebook y YouTube. Pega la URL y el sistema hace el resto.</p>
+    </div>
+    <div id="rd-ctas-container">
+      <div class="rd-empty"><div class="rd-empty-title">Cargando…</div></div>
+    </div>
+  </main>
+</div>
+
+<script src="/radar/radar.js"></script>
+<script>
+  const CAN_EDIT = {{ 'true' if can_edit else 'false' }};
+
+  function fmtNum(n) {
+    if (!n) return '0';
+    if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n/1000).toFixed(1) + 'k';
+    return n.toLocaleString('es-PE');
+  }
+
+  window.RadarCtas = {
+    lista: [],
+    competidores: [],
+    async cargar() {
+      try {
+        [this.lista, this.competidores] = await Promise.all([
+          Radar.api('marketinghub.www.radar.cuentas.index.listar'),
+          Radar.api('marketinghub.www.radar.cuentas.index.listar_competidores'),
+        ]);
+      } catch (e) {
+        document.getElementById('rd-ctas-container').innerHTML =
+          `<div class="rd-empty"><div class="rd-empty-title">Error</div><div class="rd-empty-sub">${Radar.escapeHtml(e.message)}</div></div>`;
+        return;
+      }
+      this.render();
+    },
+    render() {
+      const cont = document.getElementById('rd-ctas-container');
+      if (!this.lista.length) {
+        cont.innerHTML = `
+          <div class="rd-empty">
+            <div class="rd-empty-icon"><i data-lucide="at-sign"></i></div>
+            <div class="rd-empty-title">Aún no tienes cuentas sociales</div>
+            <div class="rd-empty-sub">Agrega la primera cuenta para empezar a monitorear.</div>
+            ${CAN_EDIT ? '<button class="rd-btn" onclick="RadarCtas.abrirModal()"><i data-lucide="plus"></i> Nueva cuenta</button>' : ''}
+          </div>`;
+        lucide.createIcons();
+        return;
+      }
+      cont.innerHTML = '<div class="rd-cta-grid">' + this.lista.map(c => `
+        <div class="rd-cta-card ${c.activo ? '' : 'rd-cta-inactive'}">
+          <div class="rd-cta-head">
+            <div>
+              <div class="rd-cta-handle">@${Radar.escapeHtml(c.handle || '?')}</div>
+              <div class="rd-cta-competidor">${Radar.escapeHtml(c.competidor || 'Sin competidor')}</div>
+            </div>
+            <span class="rd-plat-badge rd-plat-${(c.plataforma || '').toLowerCase()}">
+              ${Radar.escapeHtml(c.plataforma || '?')}
+            </span>
+          </div>
+          ${c.url_perfil ? `<a href="${Radar.escapeHtml(c.url_perfil)}" target="_blank" rel="noopener" class="rd-cta-url">${Radar.escapeHtml(c.url_perfil)}</a>` : ''}
+          <div class="rd-cta-metrics">
+            <div class="rd-cta-metric">
+              <div class="rd-cta-metric-val">${fmtNum(c.seguidores_actual || 0)}</div>
+              <div class="rd-cta-metric-lbl">Seguidores</div>
+            </div>
+            <div class="rd-cta-metric">
+              <div class="rd-cta-metric-val">${(c.engagement_promedio || 0).toFixed(2)}%</div>
+              <div class="rd-cta-metric-lbl">Engagement prom.</div>
+            </div>
+            <div class="rd-cta-metric">
+              <div class="rd-cta-metric-val">${c.activo ? '✓' : '⏸'}</div>
+              <div class="rd-cta-metric-lbl">${c.activo ? 'Activa' : 'Pausada'}</div>
+            </div>
+          </div>
+          ${CAN_EDIT ? `
+          <div class="rd-cta-actions">
+            <button class="rd-btn rd-btn-secondary rd-btn-sm" onclick="RadarCtas.editar('${Radar.escapeHtml(c.name)}')">
+              <i data-lucide="pencil"></i> Editar
+            </button>
+            <button class="rd-btn rd-btn-danger rd-btn-sm" onclick="RadarCtas.borrar('${Radar.escapeHtml(c.name)}')">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </div>` : ''}
+        </div>`).join('') + '</div>';
+      lucide.createIcons();
+    },
+    abrirModal(c) {
+      const editing = !!c;
+      const compOpts = ['<option value="">— Elegir competidor —</option>'].concat(
+        this.competidores.map(x => `<option value="${Radar.escapeHtml(x)}" ${c?.competidor === x ? 'selected' : ''}>${Radar.escapeHtml(x)}</option>`)
+      ).join('');
+      const platOpts = ['Instagram', 'TikTok', 'Facebook', 'YouTube'].map(p =>
+        `<option value="${p}" ${c?.plataforma === p ? 'selected' : ''}>${p}</option>`
+      ).join('');
+      Radar.modal({
+        title: editing ? 'Editar cuenta social' : 'Nueva cuenta social',
+        confirmText: editing ? 'Guardar' : 'Crear',
+        bodyHtml: `
+          <div class="rd-field">
+            <label>Competidor <span style="color:var(--red)">*</span></label>
+            <select id="rd-cta-comp" class="rd-select" required>${compOpts}</select>
+          </div>
+          <div class="rd-field">
+            <label>Plataforma <span style="color:var(--red)">*</span></label>
+            <select id="rd-cta-plat" class="rd-select" required>
+              <option value="">— Elegir plataforma —</option>${platOpts}
+            </select>
+          </div>
+          <div class="rd-field">
+            <label>URL del perfil <span style="color:var(--red)">*</span></label>
+            <input type="url" id="rd-cta-url" class="rd-input"
+                   placeholder="https://www.instagram.com/lizarasocueros/"
+                   value="${Radar.escapeHtml(c?.url_perfil || '')}" required>
+            <div class="rd-hint">Pega la URL completa del perfil. El handle se saca automáticamente.</div>
+            <div class="rd-url-check" id="rd-cta-check"></div>
+          </div>
+          <div class="rd-field">
+            <label class="rd-checkbox">
+              <input type="checkbox" id="rd-cta-activo" ${!c || c?.activo ? 'checked' : ''}>
+              <span>Activa (monitorear con el scraper)</span>
+            </label>
+          </div>
+        `,
+        onConfirm: async () => {
+          const data = {
+            name: c?.name || '',
+            competidor: document.getElementById('rd-cta-comp').value,
+            plataforma: document.getElementById('rd-cta-plat').value,
+            url_perfil: document.getElementById('rd-cta-url').value.trim(),
+            activo: document.getElementById('rd-cta-activo').checked ? 1 : 0,
+          };
+          if (!data.competidor) { Radar.toast('Elige un competidor', 'error'); return false; }
+          if (!data.plataforma) { Radar.toast('Elige una plataforma', 'error'); return false; }
+          if (!data.url_perfil) { Radar.toast('Pega la URL del perfil', 'error'); return false; }
+          await Radar.api('marketinghub.www.radar.cuentas.index.guardar', data);
+          Radar.toast(editing ? '✓ Actualizada' : '✓ Creada', 'success');
+          this.cargar();
+        }
+      });
+
+      // validacion en vivo del URL
+      const urlInput = document.getElementById('rd-cta-url');
+      const platSel = document.getElementById('rd-cta-plat');
+      const check = document.getElementById('rd-cta-check');
+      async function revisar() {
+        const url = urlInput.value.trim();
+        const plat = platSel.value;
+        check.className = 'rd-url-check';
+        check.textContent = '';
+        if (!url || !plat) return;
+        try {
+          const r = await Radar.api('marketinghub.www.radar.cuentas.index.validar_url', {url, plataforma: plat});
+          if (r.valida) {
+            check.classList.add('rd-ok');
+            check.textContent = `✓ Handle detectado: @${r.handle}`;
+          } else {
+            check.classList.add('rd-bad');
+            check.textContent = `⚠ No pude extraer el handle. Verifica que la URL sea de ${plat}.`;
+          }
+        } catch (e) {}
+      }
+      urlInput.addEventListener('blur', revisar);
+      platSel.addEventListener('change', revisar);
+      if (urlInput.value) revisar();
+    },
+    editar(name) { const c = this.lista.find(x => x.name === name); if (c) this.abrirModal(c); },
+    borrar(name) {
+      Radar.modal({
+        title: 'Borrar cuenta social', confirmText: 'Sí, borrar', danger: true,
+        bodyHtml: `<p>¿Seguro? <b>${Radar.escapeHtml(name)}</b></p>
+                   <p style="margin-top:8px;color:var(--text-2);font-size:13px;">Si tiene publicaciones, no se podrá borrar. En ese caso, desactiva la cuenta.</p>`,
+        onConfirm: async () => {
+          await Radar.api('marketinghub.www.radar.cuentas.index.borrar', {name});
+          Radar.toast('✓ Borrada', 'success');
+          this.cargar();
+        }
+      });
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', function() {
+    lucide.createIcons();
+    RadarCtas.cargar();
+  });
+</script>
+{% endif %}
+{% endblock %}

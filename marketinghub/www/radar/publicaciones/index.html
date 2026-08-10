@@ -1,0 +1,296 @@
+{% extends "templates/web.html" %}
+
+{% block navbar %}{% endblock %}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block style %}
+{{ super() }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="/radar/radar.css">
+<style>
+  .rd-filters {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px;
+  }
+  .rd-filters .rd-select { flex: 1; min-width: 160px; }
+  .rd-filters .rd-check-inline { display: flex; align-items: center; gap: 6px;
+    padding: 8px 12px; background: var(--bg-soft); border-radius: var(--radius-sm);
+    cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-2);
+  }
+  .rd-filters .rd-check-inline input { width: 16px; height: 16px; }
+
+  .rd-feed { display: flex; flex-direction: column; gap: 14px; }
+  .rd-pub {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 20px;
+    box-shadow: var(--shadow-sm);
+  }
+  .rd-pub-viral { border: 2px solid var(--red); box-shadow: 0 4px 12px rgba(220,38,38,.12); }
+  .rd-pub-head {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .rd-viral-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 999px;
+    background: var(--red); color: white; font-size: 11px; font-weight: 800;
+  }
+  .rd-viral-badge i { width: 14px; height: 14px; }
+  .rd-pub-comp { font-weight: 700; color: var(--text); font-size: 14px; }
+  .rd-pub-meta { color: var(--muted); font-size: 12px; }
+  .rd-pub-hook {
+    font-size: 15px; font-weight: 600; color: var(--text);
+    margin-bottom: 12px; line-height: 1.4;
+  }
+  .rd-pub-metrics {
+    display: flex; gap: 20px; flex-wrap: wrap; padding: 12px;
+    background: var(--bg-soft); border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+  }
+  .rd-pub-metric { display: flex; flex-direction: column; gap: 2px; }
+  .rd-pub-metric-val { font-size: 14px; font-weight: 700; color: var(--text); }
+  .rd-pub-metric-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .rd-pub-metric.rd-eng .rd-pub-metric-val { color: var(--red); }
+
+  .rd-pub-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .rd-estado-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 600;
+  }
+  .rd-estado-nuevo      { background: #dbeafe; color: #1d4ed8; }
+  .rd-estado-analizado  { background: #fef3c7; color: #92400e; }
+  .rd-estado-guardado   { background: #dcfce7; color: #166534; }
+  .rd-estado-descartado { background: #e5e7eb; color: #4b5563; }
+
+  .rd-formato-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 999px;
+    background: var(--purple-bg); color: var(--purple);
+    font-size: 11px; font-weight: 600;
+  }
+
+  .rd-pub-notas {
+    background: var(--bg-soft); border-left: 3px solid var(--brand);
+    padding: 10px 12px; margin-bottom: 12px; border-radius: 4px;
+    font-size: 13px; color: var(--text-2); line-height: 1.5;
+  }
+  .rd-pub-notas strong { color: var(--text); }
+
+  .rd-pub-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .rd-notas-modal-body textarea { min-height: 100px; }
+</style>
+{% endblock %}
+
+{% block page_content %}
+{% if no_access %}
+<div class="rd-na-screen"><div class="rd-na-card">
+  <div class="rd-na-brand"><span class="rd-na-dot"></span><span>Radar · Acceso denegado</span></div>
+  <div class="rd-na-body">No tienes permiso.
+    <ul class="rd-na-roles">{% for r in required_roles %}<li><code>{{ r }}</code></li>{% endfor %}</ul>
+  </div>
+</div></div>
+{% else %}
+<div class="rd-app">
+  <header class="rd-topbar">
+    <div class="rd-topbar-left">
+      <a href="/radar" class="rd-back"><i data-lucide="arrow-left"></i> Volver</a>
+      <div class="rd-logo"><span class="rd-logo-dot"></span><span>Radar · Publicaciones</span></div>
+    </div>
+    <div class="rd-topbar-right">
+      <span id="rd-count" class="rd-user"></span>
+    </div>
+  </header>
+
+  <main class="rd-main">
+    <div class="rd-hero">
+      <h1>📱 Publicaciones</h1>
+      <p class="rd-hero-sub">El feed de todo lo que publican tus competidores. Los 🔥 <b>virales</b> son los que están consiguiendo mucho más engagement que el promedio.</p>
+    </div>
+
+    <div class="rd-filters">
+      <select id="rd-f-comp" class="rd-select"><option value="">Todos los competidores</option></select>
+      <select id="rd-f-plat" class="rd-select">
+        <option value="">Todas las plataformas</option>
+        <option value="Instagram">Instagram</option>
+        <option value="TikTok">TikTok</option>
+        <option value="Facebook">Facebook</option>
+        <option value="YouTube">YouTube</option>
+      </select>
+      <select id="rd-f-estado" class="rd-select">
+        <option value="">Todos los estados</option>
+        {% for e in estados %}<option value="{{ e }}">{{ e }}</option>{% endfor %}
+      </select>
+      <label class="rd-check-inline">
+        <input type="checkbox" id="rd-f-viral">
+        🔥 Solo virales
+      </label>
+    </div>
+
+    <div id="rd-feed-container">
+      <div class="rd-empty"><div class="rd-empty-title">Cargando…</div></div>
+    </div>
+  </main>
+</div>
+
+<script src="/radar/radar.js"></script>
+<script>
+  const CAN_EDIT = {{ 'true' if can_edit else 'false' }};
+  const FORMATOS = {{ formatos|tojson }};
+  const ESTADOS  = {{ estados|tojson }};
+
+  function fmtNum(n) {
+    if (!n) return '0';
+    if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n/1000).toFixed(1) + 'k';
+    return n.toLocaleString('es-PE');
+  }
+  function fmtDate(s) {
+    if (!s) return '—';
+    try {
+      const d = new Date(s + 'T00:00:00');
+      return d.toLocaleDateString('es-PE', {day: '2-digit', month: 'short', year: 'numeric'});
+    } catch (e) { return s; }
+  }
+
+  window.RadarPubs = {
+    lista: [],
+    async cargar() {
+      const filtros = {
+        competidor: document.getElementById('rd-f-comp').value,
+        plataforma: document.getElementById('rd-f-plat').value,
+        estado:     document.getElementById('rd-f-estado').value,
+        solo_virales: document.getElementById('rd-f-viral').checked ? 1 : 0,
+      };
+      try {
+        this.lista = await Radar.api('marketinghub.www.radar.publicaciones.index.listar', filtros);
+      } catch (e) {
+        document.getElementById('rd-feed-container').innerHTML =
+          `<div class="rd-empty"><div class="rd-empty-title">Error</div><div class="rd-empty-sub">${Radar.escapeHtml(e.message)}</div></div>`;
+        return;
+      }
+      document.getElementById('rd-count').textContent = `${this.lista.length} publicacion${this.lista.length === 1 ? '' : 'es'}`;
+      this.render();
+    },
+    render() {
+      const cont = document.getElementById('rd-feed-container');
+      if (!this.lista.length) {
+        cont.innerHTML = `
+          <div class="rd-empty">
+            <div class="rd-empty-icon"><i data-lucide="inbox"></i></div>
+            <div class="rd-empty-title">Sin publicaciones aún</div>
+            <div class="rd-empty-sub">Cuando el scraper corra, los posts de tus competidores aparecerán aquí.</div>
+          </div>`;
+        lucide.createIcons();
+        return;
+      }
+      cont.innerHTML = '<div class="rd-feed">' + this.lista.map(p => this.card(p)).join('') + '</div>';
+      lucide.createIcons();
+    },
+    card(p) {
+      const estadoCls = 'rd-estado-' + (p.estado || 'nuevo').toLowerCase();
+      return `
+        <div class="rd-pub ${p.es_viral ? 'rd-pub-viral' : ''}">
+          <div class="rd-pub-head">
+            ${p.es_viral ? `<span class="rd-viral-badge"><i data-lucide="flame"></i>VIRAL ${p.motivo_viralidad ? '· ' + Radar.escapeHtml(p.motivo_viralidad) : ''}</span>` : ''}
+            <span class="rd-plat-badge rd-plat-${(p.plataforma || '').toLowerCase()}">${Radar.escapeHtml(p.plataforma || '?')}</span>
+            <span class="rd-pub-comp">${Radar.escapeHtml(p.competidor || '?')}</span>
+            <span class="rd-pub-meta">· ${fmtDate(p.fecha_publicacion)}</span>
+            ${p.tipo_contenido ? `<span class="rd-pub-meta">· ${Radar.escapeHtml(p.tipo_contenido)}</span>` : ''}
+          </div>
+
+          ${p.titulo_hook ? `<div class="rd-pub-hook">${Radar.escapeHtml(p.titulo_hook)}</div>` : ''}
+
+          <div class="rd-pub-metrics">
+            <div class="rd-pub-metric"><div class="rd-pub-metric-val">${fmtNum(p.vistas_actual)}</div><div class="rd-pub-metric-lbl">Vistas</div></div>
+            <div class="rd-pub-metric"><div class="rd-pub-metric-val">${fmtNum(p.likes_actual)}</div><div class="rd-pub-metric-lbl">Likes</div></div>
+            <div class="rd-pub-metric"><div class="rd-pub-metric-val">${fmtNum(p.comentarios_actual)}</div><div class="rd-pub-metric-lbl">Coment</div></div>
+            <div class="rd-pub-metric"><div class="rd-pub-metric-val">${fmtNum(p.compartidos_actual)}</div><div class="rd-pub-metric-lbl">Shares</div></div>
+            <div class="rd-pub-metric"><div class="rd-pub-metric-val">${fmtNum(p.guardados_actual)}</div><div class="rd-pub-metric-lbl">Guardados</div></div>
+            <div class="rd-pub-metric rd-eng"><div class="rd-pub-metric-val">${(p.engagement_pct || 0).toFixed(2)}%</div><div class="rd-pub-metric-lbl">Engagement</div></div>
+            <div class="rd-pub-metric rd-eng"><div class="rd-pub-metric-val">${(p.score_viralidad || 0).toFixed(2)}×</div><div class="rd-pub-metric-lbl">Score</div></div>
+          </div>
+
+          <div class="rd-pub-badges">
+            <span class="rd-estado-badge ${estadoCls}">${Radar.escapeHtml(p.estado || 'Nuevo')}</span>
+            ${p.formato ? `<span class="rd-formato-badge">${Radar.escapeHtml(p.formato)}</span>` : ''}
+          </div>
+
+          ${p.notas_analisis || p.elementos_a_copiar ? `
+          <div class="rd-pub-notas">
+            ${p.elementos_a_copiar ? `<div><strong>Elementos a copiar:</strong> ${Radar.escapeHtml(p.elementos_a_copiar)}</div>` : ''}
+            ${p.notas_analisis ? `<div style="margin-top:6px;"><strong>Notas:</strong> ${Radar.escapeHtml(p.notas_analisis).slice(0, 300)}${p.notas_analisis.length > 300 ? '...' : ''}</div>` : ''}
+          </div>` : ''}
+
+          <div class="rd-pub-actions">
+            ${p.url_publicacion ? `<a href="${Radar.escapeHtml(p.url_publicacion)}" target="_blank" rel="noopener" class="rd-btn rd-btn-secondary rd-btn-sm"><i data-lucide="external-link"></i>Ver post</a>` : ''}
+            ${CAN_EDIT ? `<button class="rd-btn rd-btn-sm" onclick="RadarPubs.analizar('${Radar.escapeHtml(p.name)}')"><i data-lucide="edit-3"></i>Analizar</button>` : ''}
+          </div>
+        </div>`;
+    },
+    analizar(name) {
+      const p = this.lista.find(x => x.name === name);
+      if (!p) return;
+      const formOpts = ['<option value="">— Sin formato —</option>'].concat(
+        FORMATOS.map(f => `<option value="${Radar.escapeHtml(f)}" ${p.formato === f ? 'selected' : ''}>${Radar.escapeHtml(f)}</option>`)
+      ).join('');
+      const estOpts = ESTADOS.map(e => `<option value="${Radar.escapeHtml(e)}" ${p.estado === e ? 'selected' : ''}>${Radar.escapeHtml(e)}</option>`).join('');
+      Radar.modal({
+        title: 'Analizar publicación',
+        confirmText: 'Guardar análisis',
+        bodyHtml: `
+          <div class="rd-notas-modal-body">
+            <div class="rd-field">
+              <label>Formato</label>
+              <select id="rd-a-formato" class="rd-select">${formOpts}</select>
+            </div>
+            <div class="rd-field">
+              <label>Estado</label>
+              <select id="rd-a-estado" class="rd-select">${estOpts}</select>
+            </div>
+            <div class="rd-field">
+              <label>Elementos a copiar (checklist rápido)</label>
+              <textarea id="rd-a-elementos" class="rd-textarea" placeholder="Ej: hook 3 seg, corte a 0:05, CTA final">${Radar.escapeHtml(p.elementos_a_copiar || '')}</textarea>
+            </div>
+            <div class="rd-field">
+              <label>Notas de análisis (insights libres)</label>
+              <textarea id="rd-a-notas" class="rd-textarea" placeholder="Hook, storytelling, edición, música, público...">${Radar.escapeHtml(p.notas_analisis || '')}</textarea>
+            </div>
+          </div>
+        `,
+        onConfirm: async () => {
+          const data = {
+            name: p.name,
+            formato: document.getElementById('rd-a-formato').value,
+            estado: document.getElementById('rd-a-estado').value,
+            elementos_a_copiar: document.getElementById('rd-a-elementos').value,
+            notas_analisis: document.getElementById('rd-a-notas').value,
+          };
+          await Radar.api('marketinghub.www.radar.publicaciones.index.actualizar_analisis', data);
+          Radar.toast('✓ Análisis guardado', 'success');
+          this.cargar();
+        }
+      });
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', async function() {
+    lucide.createIcons();
+    // poblar competidores en filtro
+    try {
+      const opts = await Radar.api('marketinghub.www.radar.publicaciones.index.opciones_filtros');
+      const selC = document.getElementById('rd-f-comp');
+      selC.innerHTML = '<option value="">Todos los competidores</option>' +
+        opts.competidores.map(c => `<option value="${Radar.escapeHtml(c)}">${Radar.escapeHtml(c)}</option>`).join('');
+    } catch (e) {}
+    RadarPubs.cargar();
+    ['rd-f-comp','rd-f-plat','rd-f-estado','rd-f-viral'].forEach(id => {
+      document.getElementById(id).addEventListener('change', () => RadarPubs.cargar());
+    });
+  });
+</script>
+{% endif %}
+{% endblock %}

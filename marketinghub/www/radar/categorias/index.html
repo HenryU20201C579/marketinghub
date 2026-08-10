@@ -1,0 +1,174 @@
+{% extends "templates/web.html" %}
+
+{% block navbar %}{% endblock %}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block style %}
+{{ super() }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="/radar/radar.css">
+<style>
+  .rd-cats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .rd-cat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow-sm);
+    display: flex; flex-direction: column; gap: 8px;
+    transition: box-shadow .15s, transform .15s;
+  }
+  .rd-cat-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .rd-cat-icon {
+    width: 44px; height: 44px; border-radius: var(--radius-sm);
+    background: var(--purple-bg); color: var(--purple);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .rd-cat-icon i { width: 22px; height: 22px; }
+  .rd-cat-name { font-size: 16px; font-weight: 700; color: var(--text); }
+  .rd-cat-desc { font-size: 13px; color: var(--text-2); min-height: 18px; }
+  .rd-cat-count { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .rd-cat-actions {
+    display: flex; gap: 6px; margin-top: 8px;
+    padding-top: 12px; border-top: 1px solid var(--border);
+  }
+</style>
+{% endblock %}
+
+{% block page_content %}
+{% if no_access %}
+<div class="rd-na-screen"><div class="rd-na-card">
+  <div class="rd-na-brand"><span class="rd-na-dot"></span><span>Radar · Acceso denegado</span></div>
+  <div class="rd-na-body">No tienes permiso. Roles requeridos:
+    <ul class="rd-na-roles">{% for r in required_roles %}<li><code>{{ r }}</code></li>{% endfor %}</ul>
+  </div>
+</div></div>
+{% else %}
+<div class="rd-app">
+  <header class="rd-topbar">
+    <div class="rd-topbar-left">
+      <a href="/radar" class="rd-back"><i data-lucide="arrow-left"></i> Volver</a>
+      <div class="rd-logo"><span class="rd-logo-dot"></span><span>Radar · Categorías</span></div>
+    </div>
+    <div class="rd-topbar-right">
+      {% if can_edit %}
+      <button class="rd-btn" onclick="RadarCats.abrirModal()">
+        <i data-lucide="plus"></i> Nueva categoría
+      </button>
+      {% endif %}
+    </div>
+  </header>
+
+  <main class="rd-main">
+    <div class="rd-hero">
+      <h1>🏷️ Categorías</h1>
+      <p class="rd-hero-sub">Agrupa a tus competidores por tipo (cuero, calzado, moda, etc.). Sirve para filtrar y hacer reportes.</p>
+    </div>
+
+    <div id="rd-cats-container">
+      <div class="rd-empty">
+        <div class="rd-empty-icon"><i data-lucide="loader"></i></div>
+        <div class="rd-empty-title">Cargando…</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="/radar/radar.js"></script>
+<script>
+  const CAN_EDIT = {{ 'true' if can_edit else 'false' }};
+
+  window.RadarCats = {
+    lista: [],
+    async cargar() {
+      const cont = document.getElementById('rd-cats-container');
+      try {
+        this.lista = await Radar.api('marketinghub.www.radar.categorias.index.listar');
+      } catch (e) {
+        cont.innerHTML = `<div class="rd-empty"><div class="rd-empty-title">Error</div><div class="rd-empty-sub">${Radar.escapeHtml(e.message)}</div></div>`;
+        return;
+      }
+      if (!this.lista.length) {
+        cont.innerHTML = `
+          <div class="rd-empty">
+            <div class="rd-empty-icon"><i data-lucide="tag"></i></div>
+            <div class="rd-empty-title">Aún no tienes categorías</div>
+            <div class="rd-empty-sub">Crea tu primera categoría para empezar a agrupar competidores.</div>
+            ${CAN_EDIT ? '<button class="rd-btn" onclick="RadarCats.abrirModal()"><i data-lucide="plus"></i> Nueva categoría</button>' : ''}
+          </div>`;
+        lucide.createIcons();
+        return;
+      }
+      cont.innerHTML = '<div class="rd-cats-grid">' + this.lista.map(c => `
+        <div class="rd-cat-card">
+          <div class="rd-cat-icon"><i data-lucide="tag"></i></div>
+          <div class="rd-cat-name">${Radar.escapeHtml(c.nombre_categoria)}</div>
+          <div class="rd-cat-desc">${Radar.escapeHtml(c.descripcion || '')}</div>
+          <div class="rd-cat-count">${c.competidores} competidor${c.competidores === 1 ? '' : 'es'}</div>
+          ${CAN_EDIT ? `
+          <div class="rd-cat-actions">
+            <button class="rd-btn rd-btn-secondary rd-btn-sm" onclick="RadarCats.editar('${Radar.escapeHtml(c.name)}')">
+              <i data-lucide="pencil"></i> Editar
+            </button>
+            <button class="rd-btn rd-btn-danger rd-btn-sm" onclick="RadarCats.borrar('${Radar.escapeHtml(c.name)}')">
+              <i data-lucide="trash-2"></i>
+            </button>
+          </div>` : ''}
+        </div>`).join('') + '</div>';
+      lucide.createIcons();
+    },
+    abrirModal(cat) {
+      const editing = !!cat;
+      Radar.modal({
+        title: editing ? 'Editar categoría' : 'Nueva categoría',
+        confirmText: editing ? 'Guardar' : 'Crear',
+        bodyHtml: `
+          <div class="rd-field">
+            <label for="rd-m-nombre">Nombre <span style="color:var(--red)">*</span></label>
+            <input type="text" id="rd-m-nombre" class="rd-input" placeholder="Ej: Marcas de cuero"
+                   value="${Radar.escapeHtml(cat?.nombre_categoria || '')}" required autofocus>
+          </div>
+          <div class="rd-field">
+            <label for="rd-m-desc">Descripción</label>
+            <textarea id="rd-m-desc" class="rd-textarea" placeholder="Opcional. Ej: Competidores directos con cuero peruano.">${Radar.escapeHtml(cat?.descripcion || '')}</textarea>
+          </div>
+        `,
+        onConfirm: async () => {
+          const nombre = document.getElementById('rd-m-nombre').value.trim();
+          const desc = document.getElementById('rd-m-desc').value.trim();
+          if (!nombre) { Radar.toast('Escribe un nombre', 'error'); return false; }
+          await Radar.api('marketinghub.www.radar.categorias.index.guardar', {
+            name: cat?.name || '', nombre_categoria: nombre, descripcion: desc,
+          });
+          Radar.toast(editing ? '✓ Actualizado' : '✓ Creado', 'success');
+          this.cargar();
+        }
+      });
+    },
+    editar(name) {
+      const cat = this.lista.find(c => c.name === name);
+      if (cat) this.abrirModal(cat);
+    },
+    borrar(name) {
+      Radar.modal({
+        title: 'Borrar categoría',
+        confirmText: 'Sí, borrar',
+        danger: true,
+        bodyHtml: `<p>¿Seguro que quieres borrar la categoría <b>${Radar.escapeHtml(name)}</b>?</p>
+                   <p style="margin-top:8px;color:var(--text-2);font-size:13px;">Esta acción no se puede deshacer. Si hay competidores usando esta categoría, no se podrá borrar.</p>`,
+        onConfirm: async () => {
+          await Radar.api('marketinghub.www.radar.categorias.index.borrar', {name});
+          Radar.toast('✓ Borrada', 'success');
+          this.cargar();
+        }
+      });
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', function() {
+    lucide.createIcons();
+    RadarCats.cargar();
+  });
+</script>
+{% endif %}
+{% endblock %}

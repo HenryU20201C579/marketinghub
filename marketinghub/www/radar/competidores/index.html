@@ -1,0 +1,267 @@
+{% extends "templates/web.html" %}
+
+{% block navbar %}{% endblock %}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block style %}
+{{ super() }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="/radar/radar.css">
+<style>
+  .rd-comp-filter {
+    display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px;
+  }
+  .rd-comp-filter .rd-input { flex: 1; min-width: 200px; }
+  .rd-comp-filter .rd-select { min-width: 160px; flex: 0 0 auto; }
+  .rd-comp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .rd-comp-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px;
+    box-shadow: var(--shadow-sm);
+    display: flex; flex-direction: column; gap: 8px;
+    transition: box-shadow .15s, transform .15s;
+  }
+  .rd-comp-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .rd-comp-head {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+  }
+  .rd-comp-name { font-size: 17px; font-weight: 700; color: var(--text); }
+  .rd-comp-cat { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .rd-comp-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--text-2); }
+  .rd-comp-meta span { display: inline-flex; align-items: center; gap: 4px; }
+  .rd-comp-meta i { width: 14px; height: 14px; }
+  .rd-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
+  }
+  .rd-badge-directo   { background: var(--red-bg);    color: var(--red); }
+  .rd-badge-indirecto { background: var(--orange-bg); color: var(--orange); }
+  .rd-badge-referente { background: var(--purple-bg); color: var(--purple); }
+  .rd-badge-inactivo  { background: #e5e7eb;          color: #6b7280; }
+  .rd-comp-actions {
+    display: flex; gap: 6px; margin-top: 8px;
+    padding-top: 12px; border-top: 1px solid var(--border);
+  }
+</style>
+{% endblock %}
+
+{% block page_content %}
+{% if no_access %}
+<div class="rd-na-screen"><div class="rd-na-card">
+  <div class="rd-na-brand"><span class="rd-na-dot"></span><span>Radar · Acceso denegado</span></div>
+  <div class="rd-na-body">No tienes permiso.
+    <ul class="rd-na-roles">{% for r in required_roles %}<li><code>{{ r }}</code></li>{% endfor %}</ul>
+  </div>
+</div></div>
+{% else %}
+<div class="rd-app">
+  <header class="rd-topbar">
+    <div class="rd-topbar-left">
+      <a href="/radar" class="rd-back"><i data-lucide="arrow-left"></i> Volver</a>
+      <div class="rd-logo"><span class="rd-logo-dot"></span><span>Radar · Competidores</span></div>
+    </div>
+    <div class="rd-topbar-right">
+      {% if can_edit %}
+      <button class="rd-btn" onclick="RadarComps.abrirModal()">
+        <i data-lucide="plus"></i> Nuevo competidor
+      </button>
+      {% endif %}
+    </div>
+  </header>
+
+  <main class="rd-main">
+    <div class="rd-hero">
+      <h1>👥 Competidores</h1>
+      <p class="rd-hero-sub">Las marcas que quieres monitorear. Marca cada uno como directo, indirecto o referente.</p>
+    </div>
+
+    <div class="rd-comp-filter">
+      <input type="text" id="rd-f-search" class="rd-input" placeholder="🔍 Buscar por nombre...">
+      <select id="rd-f-prioridad" class="rd-select">
+        <option value="">Todas las prioridades</option>
+        <option value="Directo">Directos</option>
+        <option value="Indirecto">Indirectos</option>
+        <option value="Referente">Referentes</option>
+      </select>
+      <select id="rd-f-cat" class="rd-select">
+        <option value="">Todas las categorías</option>
+      </select>
+    </div>
+
+    <div id="rd-comps-container">
+      <div class="rd-empty"><div class="rd-empty-title">Cargando…</div></div>
+    </div>
+  </main>
+</div>
+
+<script src="/radar/radar.js"></script>
+<script>
+  const CAN_EDIT = {{ 'true' if can_edit else 'false' }};
+
+  window.RadarComps = {
+    lista: [],
+    categorias: [],
+    async cargar() {
+      try {
+        [this.lista, this.categorias] = await Promise.all([
+          Radar.api('marketinghub.www.radar.competidores.index.listar'),
+          Radar.api('marketinghub.www.radar.competidores.index.listar_categorias'),
+        ]);
+      } catch (e) {
+        document.getElementById('rd-comps-container').innerHTML =
+          `<div class="rd-empty"><div class="rd-empty-title">Error</div><div class="rd-empty-sub">${Radar.escapeHtml(e.message)}</div></div>`;
+        return;
+      }
+      // poblar select de categorias
+      const selCat = document.getElementById('rd-f-cat');
+      selCat.innerHTML = '<option value="">Todas las categorías</option>' +
+        this.categorias.map(c => `<option value="${Radar.escapeHtml(c)}">${Radar.escapeHtml(c)}</option>`).join('');
+      this.render();
+    },
+    render() {
+      const q = document.getElementById('rd-f-search').value.toLowerCase().trim();
+      const prio = document.getElementById('rd-f-prioridad').value;
+      const cat = document.getElementById('rd-f-cat').value;
+      const filtrados = this.lista.filter(c =>
+        (!q || (c.nombre_comercial || '').toLowerCase().includes(q)) &&
+        (!prio || c.prioridad === prio) &&
+        (!cat || c.categoria === cat)
+      );
+      const cont = document.getElementById('rd-comps-container');
+      if (!filtrados.length) {
+        cont.innerHTML = `
+          <div class="rd-empty">
+            <div class="rd-empty-icon"><i data-lucide="users"></i></div>
+            <div class="rd-empty-title">${this.lista.length ? 'Ningún competidor coincide con los filtros' : 'Aún no tienes competidores'}</div>
+            ${!this.lista.length && CAN_EDIT ? '<button class="rd-btn" onclick="RadarComps.abrirModal()"><i data-lucide="plus"></i> Nuevo competidor</button>' : ''}
+          </div>`;
+        lucide.createIcons();
+        return;
+      }
+      cont.innerHTML = '<div class="rd-comp-grid">' + filtrados.map(c => {
+        const badgeCls = c.activo
+          ? `rd-badge-${(c.prioridad || 'indirecto').toLowerCase()}`
+          : 'rd-badge-inactivo';
+        const badgeText = c.activo ? (c.prioridad || 'Sin prioridad') : 'Inactivo';
+        return `
+          <div class="rd-comp-card">
+            <div class="rd-comp-head">
+              <div>
+                <div class="rd-comp-name">${Radar.escapeHtml(c.nombre_comercial)}</div>
+                <div class="rd-comp-cat">${Radar.escapeHtml(c.categoria || 'Sin categoría')}</div>
+              </div>
+              <span class="rd-badge ${badgeCls}">${Radar.escapeHtml(badgeText)}</span>
+            </div>
+            <div class="rd-comp-meta">
+              ${c.pais ? `<span><i data-lucide="map-pin"></i>${Radar.escapeHtml(c.pais)}</span>` : ''}
+              <span><i data-lucide="at-sign"></i>${c.cuentas} cuenta${c.cuentas === 1 ? '' : 's'}</span>
+              ${c.website ? `<span><a href="${Radar.escapeHtml(c.website)}" target="_blank" rel="noopener" style="color:var(--brand);text-decoration:none;"><i data-lucide="external-link"></i>Web</a></span>` : ''}
+            </div>
+            ${CAN_EDIT ? `
+            <div class="rd-comp-actions">
+              <button class="rd-btn rd-btn-secondary rd-btn-sm" onclick="RadarComps.editar('${Radar.escapeHtml(c.name)}')">
+                <i data-lucide="pencil"></i> Editar
+              </button>
+              <button class="rd-btn rd-btn-danger rd-btn-sm" onclick="RadarComps.borrar('${Radar.escapeHtml(c.name)}')">
+                <i data-lucide="trash-2"></i>
+              </button>
+            </div>` : ''}
+          </div>`;
+      }).join('') + '</div>';
+      lucide.createIcons();
+    },
+    abrirModal(c) {
+      const editing = !!c;
+      const catOpts = ['<option value="">— Sin categoría —</option>'].concat(
+        this.categorias.map(x => `<option value="${Radar.escapeHtml(x)}" ${c?.categoria === x ? 'selected' : ''}>${Radar.escapeHtml(x)}</option>`)
+      ).join('');
+      Radar.modal({
+        title: editing ? 'Editar competidor' : 'Nuevo competidor',
+        confirmText: editing ? 'Guardar' : 'Crear',
+        bodyHtml: `
+          <div class="rd-field">
+            <label for="rd-c-nombre">Nombre comercial <span style="color:var(--red)">*</span></label>
+            <input type="text" id="rd-c-nombre" class="rd-input" placeholder="Ej: Renzo Costa"
+                   value="${Radar.escapeHtml(c?.nombre_comercial || '')}" required autofocus>
+          </div>
+          <div class="rd-field">
+            <label for="rd-c-cat">Categoría</label>
+            <select id="rd-c-cat" class="rd-select">${catOpts}</select>
+          </div>
+          <div class="rd-field">
+            <label for="rd-c-prio">Prioridad</label>
+            <select id="rd-c-prio" class="rd-select">
+              <option value="Directo"    ${c?.prioridad === 'Directo'    ? 'selected' : ''}>Directo (mismo producto y público)</option>
+              <option value="Indirecto"  ${!c || c?.prioridad === 'Indirecto'  ? 'selected' : ''}>Indirecto (producto sustituto)</option>
+              <option value="Referente"  ${c?.prioridad === 'Referente'  ? 'selected' : ''}>Referente (inspiración)</option>
+            </select>
+          </div>
+          <div class="rd-field">
+            <label for="rd-c-pais">País</label>
+            <input type="text" id="rd-c-pais" class="rd-input" placeholder="Ej: Peru, Colombia"
+                   value="${Radar.escapeHtml(c?.pais || '')}">
+          </div>
+          <div class="rd-field">
+            <label for="rd-c-web">Website</label>
+            <input type="url" id="rd-c-web" class="rd-input" placeholder="https://..."
+                   value="${Radar.escapeHtml(c?.website || '')}">
+          </div>
+          <div class="rd-field">
+            <label class="rd-checkbox">
+              <input type="checkbox" id="rd-c-activo" ${!c || c?.activo ? 'checked' : ''}>
+              <span>Activo (monitorear)</span>
+            </label>
+          </div>
+          <div class="rd-field">
+            <label for="rd-c-notas">Notas estratégicas</label>
+            <textarea id="rd-c-notas" class="rd-textarea" placeholder="Qué hacen bien, qué copiar, qué evitar...">${Radar.escapeHtml(c?.notas_estrategicas || '')}</textarea>
+          </div>
+        `,
+        onConfirm: async () => {
+          const data = {
+            name: c?.name || '',
+            nombre_comercial: document.getElementById('rd-c-nombre').value.trim(),
+            categoria: document.getElementById('rd-c-cat').value,
+            prioridad: document.getElementById('rd-c-prio').value,
+            pais: document.getElementById('rd-c-pais').value.trim(),
+            website: document.getElementById('rd-c-web').value.trim(),
+            activo: document.getElementById('rd-c-activo').checked ? 1 : 0,
+            notas_estrategicas: document.getElementById('rd-c-notas').value.trim(),
+          };
+          if (!data.nombre_comercial) { Radar.toast('Nombre requerido', 'error'); return false; }
+          await Radar.api('marketinghub.www.radar.competidores.index.guardar', data);
+          Radar.toast(editing ? '✓ Actualizado' : '✓ Creado', 'success');
+          this.cargar();
+        }
+      });
+    },
+    editar(name) { const c = this.lista.find(x => x.name === name); if (c) this.abrirModal(c); },
+    borrar(name) {
+      Radar.modal({
+        title: 'Borrar competidor', confirmText: 'Sí, borrar', danger: true,
+        bodyHtml: `<p>¿Seguro que quieres borrar <b>${Radar.escapeHtml(name)}</b>?</p>
+                   <p style="margin-top:8px;color:var(--text-2);font-size:13px;">Si tiene cuentas sociales, borra primero esas cuentas.</p>`,
+        onConfirm: async () => {
+          await Radar.api('marketinghub.www.radar.competidores.index.borrar', {name});
+          Radar.toast('✓ Borrado', 'success');
+          this.cargar();
+        }
+      });
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', function() {
+    lucide.createIcons();
+    RadarComps.cargar();
+    document.getElementById('rd-f-search').addEventListener('input', () => RadarComps.render());
+    document.getElementById('rd-f-prioridad').addEventListener('change', () => RadarComps.render());
+    document.getElementById('rd-f-cat').addEventListener('change', () => RadarComps.render());
+  });
+</script>
+{% endif %}
+{% endblock %}
