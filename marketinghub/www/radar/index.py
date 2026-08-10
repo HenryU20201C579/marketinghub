@@ -32,43 +32,147 @@ def get_context(context):
 
 
 @frappe.whitelist()
-def obtener_stats_graficos():
-	"""Datos para los 3 gráficos del dashboard."""
+def obtener_top_virales(limite=10, dias=30):
+	"""Top N virales del último período (default 30 días)."""
 	if not _has_role(VIEW_ROLES):
 		frappe.throw("Acceso denegado", frappe.PermissionError)
 	from datetime import date, timedelta
+	desde = date.today() - timedelta(days=int(dias))
+	rows = frappe.db.get_all(
+		"Publicacion Competencia",
+		filters={"fecha_publicacion": [">=", desde]},
+		fields=[
+			"name", "competidor", "plataforma", "url_publicacion",
+			"fecha_publicacion", "titulo_hook", "vistas_actual",
+			"likes_actual", "engagement_pct", "tier", "tier_orden", "es_viral",
+		],
+		order_by="vistas_actual desc, engagement_pct desc",
+		limit=int(limite),
+	)
+	# color del competidor (para chip)
+	import hashlib
+	PALETA = [
+		"#d50000","#e67c73","#f4511e","#f6bf26","#33b679","#0b8043",
+		"#039be5","#3f51b5","#7986cb","#8e24aa","#616161","#a79b8e",
+	]
+	comp_colors = {c.name: (c.color or PALETA[hashlib.md5(c.name.encode()).digest()[0] % 12])
+	               for c in frappe.db.get_all("Competidor", fields=["name", "color"])}
+	for r in rows:
+		r["color"] = comp_colors.get(r.competidor or "", "#94a3b8")
+		if r.get("fecha_publicacion") and hasattr(r["fecha_publicacion"], "isoformat"):
+			r["fecha_publicacion"] = r["fecha_publicacion"].isoformat()
+	return rows
 
+
+@frappe.whitelist()
+def obtener_timeline_virales(semanas=12, tier_orden_max=5):
+	"""Cantidad de virales por semana por competidor (últimas N semanas)."""
+	if not _has_role(VIEW_ROLES):
+		frappe.throw("Acceso denegado", frappe.PermissionError)
+	from datetime import date, timedelta
 	hoy = date.today()
-	hace_6m = date(hoy.year, hoy.month, 1) - timedelta(days=180)
+	# Alinear al lunes de la semana actual
+	lunes_actual = hoy - timedelta(days=hoy.weekday())
+	semanas = int(semanas)
+	desde = lunes_actual - timedelta(weeks=semanas - 1)
 
-	# 1. Posts por mes últimos 6 meses (barras)
-	posts_mes = frappe.db.sql("""
-		SELECT DATE_FORMAT(fecha_publicacion, '%%Y-%%m') AS mes, COUNT(*) AS c
+	rows = frappe.db.sql("""
+		SELECT competidor,
+		       YEARWEEK(fecha_publicacion, 3) AS yw,
+		       COUNT(*) AS c
 		FROM `tabPublicacion Competencia`
 		WHERE fecha_publicacion >= %s
-		GROUP BY mes ORDER BY mes
-	""", (hace_6m,), as_dict=True)
+		  AND tier_orden IS NOT NULL AND tier_orden <= %s
+		  AND competidor IS NOT NULL
+		GROUP BY competidor, yw
+		ORDER BY competidor, yw
+	""", (desde, int(tier_orden_max)), as_dict=True)
 
-	# 2. Engagement promedio por competidor (líneas horizontales / barras)
-	eng_comp = frappe.db.sql("""
-		SELECT competidor, ROUND(AVG(engagement_pct), 2) AS eng, COUNT(*) AS n
-		FROM `tabPublicacion Competencia`
-		WHERE engagement_pct IS NOT NULL AND competidor IS NOT NULL
-		GROUP BY competidor ORDER BY eng DESC
-	""", as_dict=True)
+	# Etiquetas de semana en formato "DD/MM"
+	labels = []
+	yw_index = {}
+	for i in range(semanas):
+		monday = desde + timedelta(weeks=i)
+		iso_year, iso_week, _ = monday.isocalendar()
+		yw = iso_year * 100 + iso_week
+		yw_index[yw] = i
+		labels.append(monday.strftime("%d/%m"))
 
-	# 3. Distribución por tier (circular)
-	tiers = frappe.db.sql("""
-		SELECT COALESCE(tier, 'Sin tier') AS tier, tier_orden, COUNT(*) AS c
+	# Series por competidor
+	series = {}
+	for r in rows:
+		if r.competidor not in series:
+			series[r.competidor] = [0] * semanas
+		i = yw_index.get(int(r.yw))
+		if i is not None:
+			series[r.competidor][i] = int(r.c)
+
+	# Colores por competidor
+	import hashlib
+	PALETA = [
+		"#d50000","#e67c73","#f4511e","#f6bf26","#33b679","#0b8043",
+		"#039be5","#3f51b5","#7986cb","#8e24aa","#616161","#a79b8e",
+	]
+	comp_colors = {c.name: (c.color or PALETA[hashlib.md5(c.name.encode()).digest()[0] % 12])
+	               for c in frappe.db.get_all("Competidor", fields=["name", "color"])}
+
+	datasets = [
+		{
+			"label": comp,
+			"data": data,
+			"borderColor": comp_colors.get(comp, "#94a3b8"),
+			"backgroundColor": comp_colors.get(comp, "#94a3b8") + "33",
+			"tension": 0.3,
+			"fill": False,
+		}
+		for comp, data in sorted(series.items())
+	]
+	return {"labels": labels, "datasets": datasets, "tier_orden_max": int(tier_orden_max)}
+
+
+@frappe.whitelist()
+def obtener_heatmap_semana(semanas=12):
+	"""Matriz día_semana (7) × semana (N): cuántos posts en cada cruce."""
+	if not _has_role(VIEW_ROLES):
+		frappe.throw("Acceso denegado", frappe.PermissionError)
+	from datetime import date, timedelta
+	hoy = date.today()
+	lunes_actual = hoy - timedelta(days=hoy.weekday())
+	semanas = int(semanas)
+	desde = lunes_actual - timedelta(weeks=semanas - 1)
+
+	rows = frappe.db.sql("""
+		SELECT fecha_publicacion, COUNT(*) AS c
 		FROM `tabPublicacion Competencia`
-		GROUP BY tier, tier_orden
-		ORDER BY tier_orden ASC
-	""", as_dict=True)
+		WHERE fecha_publicacion >= %s
+		GROUP BY fecha_publicacion
+	""", (desde,), as_dict=True)
+
+	# matriz 7 filas (Lun-Dom) × N columnas (semanas)
+	matriz = [[0] * semanas for _ in range(7)]
+	labels_semana = []
+	for i in range(semanas):
+		monday = desde + timedelta(weeks=i)
+		labels_semana.append(monday.strftime("%d/%m"))
+
+	for r in rows:
+		fp = r.fecha_publicacion
+		if not fp:
+			continue
+		# semana index
+		delta_weeks = (fp - desde).days // 7
+		if 0 <= delta_weeks < semanas:
+			dow = fp.weekday()  # 0=Lun ... 6=Dom
+			matriz[dow][delta_weeks] += int(r.c)
+
+	# max para color intensity
+	max_val = max((max(fila) for fila in matriz), default=0)
 
 	return {
-		"posts_por_mes": posts_mes,
-		"engagement_competidor": eng_comp,
-		"distribucion_tiers": tiers,
+		"matriz": matriz,
+		"labels_semana": labels_semana,
+		"labels_dia": ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
+		"max": max_val,
 	}
 
 

@@ -13,8 +13,8 @@
 <link rel="stylesheet" href="/radar/radar.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-  .rd-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 30px 0; }
-  @media (max-width: 900px) { .rd-charts { grid-template-columns: 1fr; } }
+  .rd-charts { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin: 30px 0; }
+  @media (max-width: 1050px) { .rd-charts { grid-template-columns: 1fr; } }
   .rd-chart-card {
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 16px;
@@ -23,9 +23,73 @@
   .rd-chart-card h3 {
     font-size: 14px; font-weight: 700; color: var(--text);
     margin-bottom: 12px;
+    display: flex; align-items: center; gap: 6px;
   }
   .rd-chart-card.full { grid-column: 1 / -1; }
-  .rd-chart-wrap { position: relative; height: 240px; }
+  .rd-chart-wrap { position: relative; height: 260px; }
+
+  /* Top virales */
+  .rd-top-list { display: flex; flex-direction: column; gap: 8px; max-height: 480px; overflow-y: auto; }
+  .rd-top-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    text-decoration: none; color: inherit;
+    transition: box-shadow .1s, border-color .1s;
+    background: white;
+  }
+  .rd-top-item:hover { border-color: var(--brand); box-shadow: var(--shadow); text-decoration: none; }
+  .rd-top-rank {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--bg-soft); color: var(--text-2);
+    font-weight: 800; font-size: 12px; flex-shrink: 0;
+  }
+  .rd-top-item.rank-1 .rd-top-rank { background: #ffd700; color: #78350f; }
+  .rd-top-item.rank-2 .rd-top-rank { background: #d4d4d8; color: #3f3f46; }
+  .rd-top-item.rank-3 .rd-top-rank { background: #f4a261; color: #7c2d12; }
+  .rd-top-color { width: 4px; height: 40px; border-radius: 2px; flex-shrink: 0; }
+  .rd-top-body { flex: 1; min-width: 0; }
+  .rd-top-hook {
+    font-size: 12.5px; font-weight: 600; color: var(--text);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .rd-top-meta { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+  .rd-top-metrics {
+    text-align: right; font-size: 11px; color: var(--text-2);
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+  }
+  .rd-top-metrics b { color: var(--text); display: block; font-size: 13px; }
+
+  /* Heatmap */
+  .rd-heatmap {
+    display: grid; gap: 2px; overflow-x: auto;
+    padding: 4px 0;
+  }
+  .rd-heatmap-row {
+    display: grid; grid-template-columns: 40px repeat(var(--_n, 12), minmax(24px, 1fr));
+    gap: 2px; align-items: center;
+  }
+  .rd-heatmap-dow {
+    font-size: 10.5px; color: var(--text-2); font-weight: 600;
+    text-align: right; padding-right: 6px;
+  }
+  .rd-heatmap-cell {
+    aspect-ratio: 1; border-radius: 3px; background: #f1f5f9;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9.5px; color: var(--text-2);
+    cursor: default;
+  }
+  .rd-heatmap-cell.h1 { background: #dbeafe; }
+  .rd-heatmap-cell.h2 { background: #93c5fd; color: white; }
+  .rd-heatmap-cell.h3 { background: #3b82f6; color: white; }
+  .rd-heatmap-cell.h4 { background: #1e40af; color: white; font-weight: 700; }
+  .rd-heatmap-header {
+    display: grid; grid-template-columns: 40px repeat(var(--_n, 12), minmax(24px, 1fr));
+    gap: 2px; margin-bottom: 6px; font-size: 9.5px; color: var(--muted);
+  }
+  .rd-heatmap-header .lbl-sem { text-align: center; }
+  .rd-heatmap-empty { text-align: center; padding: 30px; color: var(--muted); font-size: 12px; }
 </style>
 {% endblock %}
 
@@ -81,16 +145,20 @@
 
     <section class="rd-charts" id="rd-charts">
       <div class="rd-chart-card full">
-        <h3>📊 Publicaciones por mes (últimos 6 meses)</h3>
-        <div class="rd-chart-wrap"><canvas id="chart-posts"></canvas></div>
+        <h3>📈 Timeline de virales por competidor <span style="font-weight:400;color:var(--text-2);font-size:11px;">(últimas 12 semanas)</span></h3>
+        <div class="rd-chart-wrap"><canvas id="chart-timeline"></canvas></div>
       </div>
       <div class="rd-chart-card">
-        <h3>❤️ Engagement promedio por competidor</h3>
-        <div class="rd-chart-wrap"><canvas id="chart-eng"></canvas></div>
+        <h3>🔥 Top 10 virales del mes</h3>
+        <div class="rd-top-list" id="rd-top-list">
+          <div style="text-align:center;color:var(--muted);padding:20px;font-size:12px;">Cargando…</div>
+        </div>
       </div>
       <div class="rd-chart-card">
-        <h3>🏆 Distribución por tier</h3>
-        <div class="rd-chart-wrap"><canvas id="chart-tiers"></canvas></div>
+        <h3>📆 Cuándo publican tus competidores <span style="font-weight:400;color:var(--text-2);font-size:11px;">(día × semana)</span></h3>
+        <div id="rd-heatmap-wrap">
+          <div style="text-align:center;color:var(--muted);padding:20px;font-size:12px;">Cargando…</div>
+        </div>
       </div>
     </section>
 

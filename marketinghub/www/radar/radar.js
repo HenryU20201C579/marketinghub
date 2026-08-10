@@ -118,6 +118,12 @@
 
 	// ---------- Dashboard ----------
 	const MESES_C = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+	function _fmtNum(n) {
+		n = n || 0;
+		if (n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
+		if (n >= 1000)    return (n/1000).toFixed(1).replace(/\.0$/,'') + 'k';
+		return n.toLocaleString('es-PE');
+	}
 	window.RadarDash = {
 		async init() {
 			try {
@@ -134,56 +140,108 @@
 		},
 
 		async renderCharts() {
+			await Promise.all([
+				this._renderTimeline(),
+				this._renderTopVirales(),
+				this._renderHeatmap(),
+			]);
+		},
+
+		async _renderTimeline() {
 			if (typeof Chart === 'undefined') return;
-			let stats;
 			try {
-				stats = await apiCall('marketinghub.www.radar.index.obtener_stats_graficos');
-			} catch(e) { console.error(e); return; }
+				const data = await apiCall('marketinghub.www.radar.index.obtener_timeline_virales',
+				                           {semanas: 12, tier_orden_max: 5});
+				this._chart('chart-timeline', {
+					type: 'line',
+					data: { labels: data.labels, datasets: data.datasets },
+					options: {
+						responsive:true, maintainAspectRatio:false,
+						plugins:{
+							legend:{position:'bottom', labels:{boxWidth:12, font:{size:11}}},
+							tooltip:{callbacks:{title:(items) => 'Semana del ' + items[0].label}},
+						},
+						scales:{
+							y:{beginAtZero:true, ticks:{stepSize:1, precision:0}, title:{display:true,text:'Virales por semana'}},
+							x:{ticks:{font:{size:10}}},
+						},
+					},
+				});
+			} catch(e) { console.error('timeline:', e); }
+		},
 
-			// 1. Posts por mes
-			const meses = (stats.posts_por_mes || []).map(r => {
-				const [y, m] = r.mes.split('-');
-				return `${MESES_C[parseInt(m)-1]} ${y.slice(-2)}`;
-			});
-			const cants = (stats.posts_por_mes || []).map(r => r.c);
-			this._chart('chart-posts', {
-				type: 'bar',
-				data: { labels: meses, datasets: [{
-					label: 'Publicaciones', data: cants,
-					backgroundColor: '#3b82f6', borderRadius: 4,
-				}]},
-				options: { responsive:true, maintainAspectRatio:false,
-					plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} },
-			});
+		async _renderTopVirales() {
+			const cont = document.getElementById('rd-top-list');
+			if (!cont) return;
+			try {
+				const posts = await apiCall('marketinghub.www.radar.index.obtener_top_virales',
+				                             {limite: 10, dias: 30});
+				if (!posts.length) {
+					cont.innerHTML = '<div style="text-align:center;color:var(--muted);padding:30px;font-size:12px;">Sin publicaciones en el último mes.</div>';
+					return;
+				}
+				cont.innerHTML = posts.map((p, i) => {
+					const rank = i + 1;
+					const fecha = p.fecha_publicacion ? p.fecha_publicacion.split('-').reverse().slice(0,2).join('/') : '';
+					return `
+						<a class="rd-top-item rank-${rank}" href="${escapeHtml(p.url_publicacion || '#')}" target="_blank" rel="noopener">
+							<span class="rd-top-rank">${rank}</span>
+							<div class="rd-top-color" style="background:${escapeHtml(p.color)}"></div>
+							<div class="rd-top-body">
+								<div class="rd-top-hook">${escapeHtml(p.titulo_hook || '(sin título)')}</div>
+								<div class="rd-top-meta">${escapeHtml(p.competidor || '')} · ${escapeHtml(p.plataforma || '')} · ${fecha}</div>
+							</div>
+							<div class="rd-top-metrics">
+								<b>${_fmtNum(p.vistas_actual)}</b>
+								${(p.engagement_pct || 0).toFixed(1)}% eng
+							</div>
+						</a>`;
+				}).join('');
+			} catch(e) { console.error('top:', e); }
+		},
 
-			// 2. Engagement por competidor (barras horizontales)
-			const comps = (stats.engagement_competidor || []).map(r => r.competidor);
-			const engs  = (stats.engagement_competidor || []).map(r => r.eng);
-			this._chart('chart-eng', {
-				type: 'bar',
-				data: { labels: comps, datasets: [{
-					label: 'Engagement %', data: engs,
-					backgroundColor: '#10b981', borderRadius: 4,
-				}]},
-				options: { responsive:true, maintainAspectRatio:false, indexAxis:'y',
-					plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true}} },
-			});
+		async _renderHeatmap() {
+			const cont = document.getElementById('rd-heatmap-wrap');
+			if (!cont) return;
+			try {
+				const data = await apiCall('marketinghub.www.radar.index.obtener_heatmap_semana', {semanas: 12});
+				const total = data.matriz.reduce((a, fila) => a + fila.reduce((b, x) => b + x, 0), 0);
+				if (!total) {
+					cont.innerHTML = '<div class="rd-heatmap-empty">Sin datos suficientes.</div>';
+					return;
+				}
+				const heatCls = (v) => {
+					if (!v || !data.max) return '';
+					const p = v / data.max;
+					if (p >= 0.75) return 'h4';
+					if (p >= 0.5)  return 'h3';
+					if (p >= 0.25) return 'h2';
+					return 'h1';
+				};
+				const n = data.labels_semana.length;
+				let html = `<div class="rd-heatmap" style="--_n:${n};">`;
+				// header
+				html += `<div class="rd-heatmap-header" style="--_n:${n};">
+					<div></div>
+					${data.labels_semana.map(l => `<div class="lbl-sem">${l}</div>`).join('')}
+				</div>`;
+				// filas por día
+				data.labels_dia.forEach((dow, i) => {
+					html += `<div class="rd-heatmap-row" style="--_n:${n};">
+						<div class="rd-heatmap-dow">${dow}</div>
+						${data.matriz[i].map(v => `<div class="rd-heatmap-cell ${heatCls(v)}" title="${v} posts">${v || ''}</div>`).join('')}
+					</div>`;
+				});
+				html += '</div>';
+				cont.innerHTML = html;
+			} catch(e) { console.error('heatmap:', e); }
+		},
 
-			// 3. Distribución tiers (pie / doughnut)
-			const tiers = stats.distribucion_tiers || [];
-			const tierColors = ['#c0c0c0','#2563eb','#06b6d4','#dc2626','#3b82f6','#d4af37','#94a3b8','#6b7280','#a16207','#facc15'];
-			this._chart('chart-tiers', {
-				type: 'doughnut',
-				data: {
-					labels: tiers.map(t => t.tier),
-					datasets: [{
-						data: tiers.map(t => t.c),
-						backgroundColor: tiers.map(t => tierColors[(t.tier_orden || 10) - 1] || '#94a3b8'),
-					}]
-				},
-				options: { responsive:true, maintainAspectRatio:false,
-					plugins:{legend:{position:'right', labels:{boxWidth:12, font:{size:11}}}} },
-			});
+		_chart(canvasId, config) {
+			const canvas = document.getElementById(canvasId);
+			if (!canvas) return;
+			if (canvas._chartInstance) canvas._chartInstance.destroy();
+			canvas._chartInstance = new Chart(canvas, config);
 		},
 
 		_chart(canvasId, config) {
