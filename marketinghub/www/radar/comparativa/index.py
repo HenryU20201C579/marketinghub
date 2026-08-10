@@ -12,11 +12,37 @@ VIEW_ROLES = (
 	"System Manager",
 )
 
-# Paleta de 12 colores distinguibles para asignar por competidor
+# Paleta oficial de Google Calendar (12 colores)
+# https://developers.google.com/calendar/api/v3/reference/colors
 PALETA = [
-	"#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6",
-	"#ec4899", "#06b6d4", "#f97316", "#84cc16", "#a855f7",
-	"#14b8a6", "#f43f5e",
+	"#d50000",  # Tomate
+	"#e67c73",  # Flamingo
+	"#f4511e",  # Mandarina
+	"#f6bf26",  # Plátano
+	"#33b679",  # Salvia
+	"#0b8043",  # Bosque (basil)
+	"#039be5",  # Pavo real (peacock)
+	"#3f51b5",  # Arándano (blueberry)
+	"#7986cb",  # Lavanda
+	"#8e24aa",  # Uva (grape)
+	"#616161",  # Grafito
+	"#a79b8e",  # Abedul (birch)
+]
+
+# Exportado para el frontend
+PALETA_LABELS = [
+	{"color": "#d50000", "nombre": "Tomate"},
+	{"color": "#e67c73", "nombre": "Flamingo"},
+	{"color": "#f4511e", "nombre": "Mandarina"},
+	{"color": "#f6bf26", "nombre": "Plátano"},
+	{"color": "#33b679", "nombre": "Salvia"},
+	{"color": "#0b8043", "nombre": "Bosque"},
+	{"color": "#039be5", "nombre": "Pavo real"},
+	{"color": "#3f51b5", "nombre": "Arándano"},
+	{"color": "#7986cb", "nombre": "Lavanda"},
+	{"color": "#8e24aa", "nombre": "Uva"},
+	{"color": "#616161", "nombre": "Grafito"},
+	{"color": "#a79b8e", "nombre": "Abedul"},
 ]
 
 
@@ -46,15 +72,51 @@ def _color_for(nombre):
 
 @frappe.whitelist()
 def obtener_competidores():
-	"""Lista de competidores con color asignado (para leyenda + filtros)."""
+	"""Lista de competidores con color asignado (para leyenda + filtros).
+	Usa el campo `color` si está seteado; sino asigna uno estable por hash."""
 	if not _has_role(VIEW_ROLES):
 		frappe.throw("Acceso denegado", frappe.PermissionError)
 	comps = frappe.db.get_all(
 		"Competidor",
-		fields=["name"],
+		fields=["name", "color"],
 		order_by="nombre_comercial asc",
 	)
-	return [{"nombre": c["name"], "color": _color_for(c["name"])} for c in comps]
+	return [
+		{
+			"nombre": c["name"],
+			"color": c["color"] or _color_for(c["name"]),
+			"personalizado": bool(c["color"]),
+		}
+		for c in comps
+	]
+
+
+@frappe.whitelist()
+def obtener_paleta():
+	"""Devuelve la paleta oficial disponible para el color picker."""
+	if not _has_role(VIEW_ROLES):
+		frappe.throw("Acceso denegado", frappe.PermissionError)
+	return PALETA_LABELS
+
+
+@frappe.whitelist()
+def guardar_color_competidor(competidor=None, color=None):
+	"""Guarda el color personalizado de un competidor."""
+	roles = set(frappe.get_roles(frappe.session.user))
+	if not (roles & {"Marketinghub-Radar-Administrar",
+	                 "Marketinghub-Radar-Analista",
+	                 "System Manager"}):
+		frappe.throw("Solo un admin o analista puede cambiar colores.",
+		             frappe.PermissionError)
+	if not competidor:
+		frappe.throw("competidor es obligatorio")
+	# color puede ser hex (#rrggbb) o vacío para resetear al hash
+	if color and not (color.startswith("#") and len(color) in (4, 7)):
+		frappe.throw(f"Color inválido: {color!r} (debe ser #rrggbb o vacío)")
+	frappe.db.set_value("Competidor", competidor, "color", color or None)
+	frappe.db.commit()
+	nuevo = color or _color_for(competidor)
+	return {"ok": True, "color": nuevo, "personalizado": bool(color)}
 
 
 @frappe.whitelist()

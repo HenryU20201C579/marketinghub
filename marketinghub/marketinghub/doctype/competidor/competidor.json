@@ -12,6 +12,7 @@
   "pais",
   "website",
   "activo",
+  "color",
   "sb_notas",
   "notas_estrategicas"
  ],
@@ -65,6 +66,12 @@
    "default": "1",
    "in_list_view": 1,
    "description": "Desmarcar para dejar de monitorear."
+  },
+  {
+   "fieldname": "color",
+   "fieldtype": "Color",
+   "label": "Color en el calendario",
+   "description": "Color asignado al competidor en /radar/comparativa. Si está vacío, se auto-asigna."
   },
   {
    "fieldname": "sb_notas",
