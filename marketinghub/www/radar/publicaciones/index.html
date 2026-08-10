@@ -7,79 +7,191 @@
 {% block style %}
 {{ super() }}
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
 <link rel="stylesheet" href="/radar/radar.css">
 <style>
-  .rd-filters {
-    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 12px;
-  }
-  .rd-filters .rd-select { flex: 1; min-width: 160px; }
-  .rd-filters .rd-check-inline { display: flex; align-items: center; gap: 6px;
-    padding: 8px 12px; background: var(--bg-soft); border-radius: var(--radius-sm);
-    cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-2);
-  }
-  .rd-filters .rd-check-inline input { width: 16px; height: 16px; }
+  /* ============================================
+     LAYOUT AMPLIO (full-width para la tabla)
+     ============================================ */
+  .rd-app.rd-wide .rd-main { max-width: 1600px; padding: 20px 24px 40px; }
+  .rd-app.rd-wide .rd-hero { margin-bottom: 18px; text-align: left; }
+  .rd-app.rd-wide .rd-hero h1 { font-size: 24px; }
+  .rd-app.rd-wide .rd-hero-sub { font-size: 13px; margin: 0; }
 
-  .rd-feed { display: flex; flex-direction: column; gap: 14px; }
-  .rd-pub {
+  /* ============================================
+     BARRA DE FILTROS pegajosa
+     ============================================ */
+  .rd-filterbar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 18px 20px;
+    border-radius: var(--radius); padding: 10px 12px; margin-bottom: 12px;
+    box-shadow: var(--shadow-sm);
+    position: sticky; top: 0; z-index: 20;
+  }
+  .rd-filterbar .rd-input,
+  .rd-filterbar .rd-select { padding: 7px 10px; font-size: 13px; min-height: 34px; }
+  .rd-filterbar .rd-input { min-width: 220px; }
+  .rd-filterbar .rd-select { min-width: 150px; }
+  .rd-filterbar .rd-spacer { flex: 1; }
+  .rd-filterbar .rd-counter {
+    font-size: 13px; color: var(--text-2); font-weight: 500;
+    padding: 6px 10px; background: var(--bg-soft); border-radius: 6px;
+  }
+
+  /* Toggle "Solo virales" grande y rojo */
+  .rd-viral-toggle {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 12px; border-radius: 8px;
+    background: var(--red-bg); color: var(--red);
+    font-weight: 700; font-size: 13px;
+    border: 2px solid transparent; cursor: pointer;
+    transition: background .15s;
+    user-select: none;
+  }
+  .rd-viral-toggle:hover { background: #fecaca; }
+  .rd-viral-toggle input { display: none; }
+  .rd-viral-toggle.rd-on {
+    background: var(--red); color: white; border-color: var(--red);
+  }
+  .rd-viral-toggle .rd-viral-count {
+    background: rgba(255,255,255,.9); color: var(--red);
+    padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 800;
+  }
+  .rd-viral-toggle.rd-on .rd-viral-count {
+    background: rgba(0,0,0,.15); color: white;
+  }
+
+  /* Chip para limpiar filtros */
+  .rd-btn-clear {
+    background: transparent; border: 1px solid var(--border-strong);
+    color: var(--text-2); font-size: 12px; padding: 6px 10px;
+    border-radius: 6px; cursor: pointer;
+  }
+  .rd-btn-clear:hover { background: var(--bg-soft); }
+
+  /* ============================================
+     TABLA ESTILO EXCEL
+     ============================================ */
+  .rd-tblwrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow-x: auto; overflow-y: visible;
     box-shadow: var(--shadow-sm);
   }
-  .rd-pub-viral { border: 2px solid var(--red); box-shadow: 0 4px 12px rgba(220,38,38,.12); }
-  .rd-pub-head {
-    display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
-    flex-wrap: wrap;
+  table.rd-tbl {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    font-size: 13px; font-family: 'Inter', sans-serif;
   }
-  .rd-viral-badge {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 4px 10px; border-radius: 999px;
-    background: var(--red); color: white; font-size: 11px; font-weight: 800;
+  .rd-tbl thead th {
+    position: sticky; top: 52px; z-index: 5;
+    background: var(--bg-soft); color: var(--text);
+    font-weight: 700; font-size: 11.5px; text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 9px 8px; text-align: left;
+    border-bottom: 2px solid var(--border-strong);
+    white-space: nowrap; user-select: none;
   }
-  .rd-viral-badge i { width: 14px; height: 14px; }
-  .rd-pub-comp { font-weight: 700; color: var(--text); font-size: 14px; }
-  .rd-pub-meta { color: var(--muted); font-size: 12px; }
-  .rd-pub-hook {
-    font-size: 15px; font-weight: 600; color: var(--text);
-    margin-bottom: 12px; line-height: 1.4;
+  .rd-tbl thead th.rd-sortable { cursor: pointer; }
+  .rd-tbl thead th.rd-sortable:hover { background: #e2e8f0; color: var(--brand); }
+  .rd-tbl thead th .rd-sort-ico {
+    display: inline-block; width: 12px; margin-left: 2px;
+    color: var(--muted); font-size: 10px;
   }
-  .rd-pub-metrics {
-    display: flex; gap: 20px; flex-wrap: wrap; padding: 12px;
-    background: var(--bg-soft); border-radius: var(--radius-sm);
-    margin-bottom: 12px;
-  }
-  .rd-pub-metric { display: flex; flex-direction: column; gap: 2px; }
-  .rd-pub-metric-val { font-size: 14px; font-weight: 700; color: var(--text); }
-  .rd-pub-metric-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-  .rd-pub-metric.rd-eng .rd-pub-metric-val { color: var(--red); }
+  .rd-tbl thead th.rd-asc  .rd-sort-ico::after { content: '▲'; color: var(--brand); }
+  .rd-tbl thead th.rd-desc .rd-sort-ico::after { content: '▼'; color: var(--brand); }
 
-  .rd-pub-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-  .rd-estado-badge {
-    display: inline-block; padding: 3px 10px; border-radius: 999px;
-    font-size: 11px; font-weight: 600;
+  .rd-tbl tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background .1s;
   }
-  .rd-estado-nuevo      { background: #dbeafe; color: #1d4ed8; }
-  .rd-estado-analizado  { background: #fef3c7; color: #92400e; }
-  .rd-estado-guardado   { background: #dcfce7; color: #166534; }
-  .rd-estado-descartado { background: #e5e7eb; color: #4b5563; }
+  .rd-tbl tbody tr:nth-child(even) { background: #fafbfd; }
+  .rd-tbl tbody tr:hover { background: #e0edff; }
+  .rd-tbl tbody tr.rd-row-viral {
+    background: #fff5f5;
+    border-left: 4px solid var(--red);
+  }
+  .rd-tbl tbody tr.rd-row-viral:nth-child(even) { background: #ffeeee; }
+  .rd-tbl tbody tr.rd-row-viral:hover { background: #ffe0e0; }
 
-  .rd-formato-badge {
-    display: inline-block; padding: 3px 10px; border-radius: 999px;
-    background: var(--purple-bg); color: var(--purple);
-    font-size: 11px; font-weight: 600;
+  .rd-tbl td {
+    padding: 8px 8px; vertical-align: middle;
+    white-space: nowrap;
+  }
+  .rd-tbl td.rd-num {
+    text-align: right; font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-variant-numeric: tabular-nums; font-size: 12.5px;
+  }
+  .rd-tbl td.rd-cell-hook {
+    max-width: 320px; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; font-weight: 500;
+  }
+  .rd-tbl td.rd-cell-comp { font-weight: 600; color: var(--text); }
+
+  /* Chips de plataforma en columna estrecha */
+  .rd-plat-chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 6px;
+    font-size: 12px; font-weight: 700; color: white;
+  }
+  .rd-plat-instagram { background: linear-gradient(45deg,#f09433,#dc2743); }
+  .rd-plat-tiktok    { background: #000000; }
+  .rd-plat-facebook  { background: #1877f2; }
+  .rd-plat-youtube   { background: #ff0000; }
+
+  /* Colores de intensidad para engagement */
+  .rd-eng-alto  { background: #d1fae5; color: #065f46; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
+  .rd-eng-medio { background: #fef3c7; color: #92400e; font-weight: 600; padding: 3px 8px; border-radius: 4px; }
+  .rd-eng-bajo  { color: #94a3b8; padding: 3px 8px; }
+
+  /* Colores para score de viralidad */
+  .rd-score-viral   { background: var(--red); color: white; font-weight: 800; padding: 3px 9px; border-radius: 4px; }
+  .rd-score-alto    { background: #ffedd5; color: var(--orange); font-weight: 700; padding: 3px 8px; border-radius: 4px; }
+  .rd-score-normal  { color: var(--text-2); padding: 3px 8px; }
+
+  /* Badge de estado tipo pill */
+  .rd-pill {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+  .rd-pill-nuevo      { background: #dbeafe; color: #1d4ed8; }
+  .rd-pill-analizado  { background: #fef3c7; color: #92400e; }
+  .rd-pill-guardado   { background: #dcfce7; color: #166534; }
+  .rd-pill-descartado { background: #e5e7eb; color: #4b5563; }
+
+  /* Fire icon en primera columna cuando es viral */
+  .rd-fire {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--red); color: white;
+    font-size: 11px; box-shadow: 0 0 0 3px #fecaca;
   }
 
-  .rd-pub-notas {
-    background: var(--bg-soft); border-left: 3px solid var(--brand);
-    padding: 10px 12px; margin-bottom: 12px; border-radius: 4px;
-    font-size: 13px; color: var(--text-2); line-height: 1.5;
+  /* Iconos de acción compactos */
+  .rd-tbl td.rd-actions { padding-right: 12px; }
+  .rd-actions a, .rd-actions button {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; margin-left: 4px;
+    background: transparent; border: 1px solid var(--border);
+    border-radius: 6px; cursor: pointer; color: var(--text-2);
+    transition: all .12s;
   }
-  .rd-pub-notas strong { color: var(--text); }
+  .rd-actions a:hover, .rd-actions button:hover {
+    background: var(--brand-bg); color: var(--brand); border-color: var(--brand);
+    text-decoration: none;
+  }
+  .rd-actions i { width: 14px; height: 14px; }
 
-  .rd-pub-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .rd-empty-tbl { padding: 60px 20px; text-align: center; color: var(--text-2); }
+
+  /* Responsive: bajo cierto ancho, columnas menos importantes se ocultan */
+  @media (max-width: 1200px) {
+    .rd-col-shares, .rd-col-guardados { display: none; }
+  }
+  @media (max-width: 900px) {
+    .rd-col-fecha, .rd-col-coment { display: none; }
+    .rd-tbl td.rd-cell-hook { max-width: 200px; }
+  }
 
   .rd-notas-modal-body textarea { min-height: 100px; }
 </style>
@@ -94,7 +206,7 @@
   </div>
 </div></div>
 {% else %}
-<div class="rd-app">
+<div class="rd-app rd-wide">
   <header class="rd-topbar">
     <div class="rd-topbar-left">
       <a href="/radar" class="rd-back"><i data-lucide="arrow-left"></i> Volver</a>
@@ -107,11 +219,18 @@
 
   <main class="rd-main">
     <div class="rd-hero">
-      <h1>📱 Publicaciones</h1>
-      <p class="rd-hero-sub">El feed de todo lo que publican tus competidores. Los 🔥 <b>virales</b> son los que están consiguiendo mucho más engagement que el promedio.</p>
+      <h1>📊 Publicaciones</h1>
+      <p class="rd-hero-sub">Todo lo que publican tus competidores. Ordenado por fecha. Los <b style="color:var(--red)">🔥 rojos</b> son virales.</p>
     </div>
 
-    <div class="rd-filters">
+    <!-- BARRA DE FILTROS -->
+    <div class="rd-filterbar">
+      <label class="rd-viral-toggle" id="rd-toggle-viral">
+        <input type="checkbox" id="rd-f-viral">
+        <i data-lucide="flame" style="width:16px;height:16px;"></i>
+        Solo virales <span class="rd-viral-count" id="rd-viral-count">0</span>
+      </label>
+      <input type="text" id="rd-f-search" class="rd-input" placeholder="🔍 Buscar en título / caption...">
       <select id="rd-f-comp" class="rd-select"><option value="">Todos los competidores</option></select>
       <select id="rd-f-plat" class="rd-select">
         <option value="">Todas las plataformas</option>
@@ -124,14 +243,36 @@
         <option value="">Todos los estados</option>
         {% for e in estados %}<option value="{{ e }}">{{ e }}</option>{% endfor %}
       </select>
-      <label class="rd-check-inline">
-        <input type="checkbox" id="rd-f-viral">
-        🔥 Solo virales
-      </label>
+      <button class="rd-btn-clear" onclick="RadarPubs.limpiarFiltros()">Limpiar</button>
+      <div class="rd-spacer"></div>
+      <span class="rd-counter" id="rd-counter">0 / 0</span>
     </div>
 
-    <div id="rd-feed-container">
-      <div class="rd-empty"><div class="rd-empty-title">Cargando…</div></div>
+    <!-- TABLA -->
+    <div class="rd-tblwrap">
+      <table class="rd-tbl" id="rd-tbl">
+        <thead>
+          <tr>
+            <th style="width: 32px;">🔥</th>
+            <th style="width: 44px;">Plat</th>
+            <th class="rd-sortable" data-sort="competidor">Competidor <span class="rd-sort-ico"></span></th>
+            <th class="rd-sortable rd-col-fecha" data-sort="fecha_publicacion">Fecha <span class="rd-sort-ico"></span></th>
+            <th>Título / Hook</th>
+            <th class="rd-sortable" data-sort="vistas_actual" style="text-align:right;">Vistas <span class="rd-sort-ico"></span></th>
+            <th class="rd-sortable" data-sort="likes_actual" style="text-align:right;">Likes <span class="rd-sort-ico"></span></th>
+            <th class="rd-sortable rd-col-coment" data-sort="comentarios_actual" style="text-align:right;">Coment <span class="rd-sort-ico"></span></th>
+            <th class="rd-col-shares" style="text-align:right;">Shares</th>
+            <th class="rd-col-guardados" style="text-align:right;">Guar.</th>
+            <th class="rd-sortable" data-sort="engagement_pct" style="text-align:right;">Eng % <span class="rd-sort-ico"></span></th>
+            <th class="rd-sortable rd-desc" data-sort="score_viralidad" style="text-align:right;">Score <span class="rd-sort-ico"></span></th>
+            <th>Estado</th>
+            <th style="width: 90px;"></th>
+          </tr>
+        </thead>
+        <tbody id="rd-tbody">
+          <tr><td colspan="14" class="rd-empty-tbl">Cargando…</td></tr>
+        </tbody>
+      </table>
     </div>
   </main>
 </div>
@@ -143,94 +284,147 @@
   const ESTADOS  = {{ estados|tojson }};
 
   function fmtNum(n) {
-    if (!n) return '0';
-    if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
-    if (n >= 1000) return (n/1000).toFixed(1) + 'k';
+    n = n || 0;
+    if (n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
+    if (n >= 1000)    return (n/1000).toFixed(1).replace(/\.0$/,'') + 'k';
     return n.toLocaleString('es-PE');
   }
   function fmtDate(s) {
     if (!s) return '—';
     try {
       const d = new Date(s + 'T00:00:00');
-      return d.toLocaleDateString('es-PE', {day: '2-digit', month: 'short', year: 'numeric'});
+      return d.toLocaleDateString('es-PE', {day: '2-digit', month: 'short', year: '2-digit'});
     } catch (e) { return s; }
+  }
+  function engClass(pct) {
+    if (pct >= 5) return 'rd-eng-alto';
+    if (pct >= 2) return 'rd-eng-medio';
+    return 'rd-eng-bajo';
+  }
+  function scoreClass(score, viral) {
+    if (viral) return 'rd-score-viral';
+    if (score >= 1.5) return 'rd-score-alto';
+    return 'rd-score-normal';
   }
 
   window.RadarPubs = {
     lista: [],
+    sortBy: 'score_viralidad',
+    sortDir: 'desc',
+
     async cargar() {
-      const filtros = {
-        competidor: document.getElementById('rd-f-comp').value,
-        plataforma: document.getElementById('rd-f-plat').value,
-        estado:     document.getElementById('rd-f-estado').value,
-        solo_virales: document.getElementById('rd-f-viral').checked ? 1 : 0,
-      };
       try {
-        this.lista = await Radar.api('marketinghub.www.radar.publicaciones.index.listar', filtros);
+        // pedimos SIN filtros al servidor, filtramos en cliente para responsividad
+        this.lista = await Radar.api('marketinghub.www.radar.publicaciones.index.listar', {limite: 500});
       } catch (e) {
-        document.getElementById('rd-feed-container').innerHTML =
-          `<div class="rd-empty"><div class="rd-empty-title">Error</div><div class="rd-empty-sub">${Radar.escapeHtml(e.message)}</div></div>`;
+        document.getElementById('rd-tbody').innerHTML =
+          `<tr><td colspan="14" class="rd-empty-tbl"><b>Error:</b> ${Radar.escapeHtml(e.message)}</td></tr>`;
         return;
       }
-      document.getElementById('rd-count').textContent = `${this.lista.length} publicacion${this.lista.length === 1 ? '' : 'es'}`;
+      const viralCount = this.lista.filter(p => p.es_viral).length;
+      document.getElementById('rd-viral-count').textContent = viralCount;
+      document.getElementById('rd-count').textContent = `${this.lista.length} publicaciones total`;
       this.render();
     },
+
     render() {
-      const cont = document.getElementById('rd-feed-container');
-      if (!this.lista.length) {
-        cont.innerHTML = `
-          <div class="rd-empty">
-            <div class="rd-empty-icon"><i data-lucide="inbox"></i></div>
-            <div class="rd-empty-title">Sin publicaciones aún</div>
-            <div class="rd-empty-sub">Cuando el scraper corra, los posts de tus competidores aparecerán aquí.</div>
-          </div>`;
-        lucide.createIcons();
+      const q     = document.getElementById('rd-f-search').value.toLowerCase().trim();
+      const comp  = document.getElementById('rd-f-comp').value;
+      const plat  = document.getElementById('rd-f-plat').value;
+      const est   = document.getElementById('rd-f-estado').value;
+      const viral = document.getElementById('rd-f-viral').checked;
+
+      let items = this.lista.filter(p =>
+        (!q     || (p.titulo_hook || '').toLowerCase().includes(q) || (p.descripcion || '').toLowerCase().includes(q)) &&
+        (!comp  || p.competidor === comp) &&
+        (!plat  || p.plataforma === plat) &&
+        (!est   || p.estado === est) &&
+        (!viral || p.es_viral)
+      );
+
+      // Ordenar
+      items.sort((a, b) => {
+        const va = a[this.sortBy], vb = b[this.sortBy];
+        if (va == null && vb == null) return 0;
+        if (va == null) return 1;
+        if (vb == null) return -1;
+        const dir = this.sortDir === 'asc' ? 1 : -1;
+        if (typeof va === 'string') return va.localeCompare(vb) * dir;
+        return (va - vb) * dir;
+      });
+
+      const counter = document.getElementById('rd-counter');
+      counter.textContent = `${items.length} / ${this.lista.length}`;
+
+      const tb = document.getElementById('rd-tbody');
+      if (!items.length) {
+        tb.innerHTML = `<tr><td colspan="14" class="rd-empty-tbl">
+          <div style="font-size:15px;font-weight:600;margin-bottom:6px;">Sin resultados</div>
+          <div>Ningún post coincide con los filtros aplicados.</div>
+        </td></tr>`;
         return;
       }
-      cont.innerHTML = '<div class="rd-feed">' + this.lista.map(p => this.card(p)).join('') + '</div>';
+
+      tb.innerHTML = items.map(p => this.row(p)).join('');
       lucide.createIcons();
+
+      // Actualizar iconos de sort en headers
+      document.querySelectorAll('.rd-tbl thead th').forEach(th => {
+        th.classList.remove('rd-asc','rd-desc');
+        if (th.dataset.sort === this.sortBy) th.classList.add('rd-' + this.sortDir);
+      });
     },
-    card(p) {
-      const estadoCls = 'rd-estado-' + (p.estado || 'nuevo').toLowerCase();
+
+    row(p) {
+      const plat = (p.plataforma || '?').toLowerCase();
+      const plat_ini = (p.plataforma || '?').charAt(0).toUpperCase();
+      const eng = p.engagement_pct || 0;
+      const sc  = p.score_viralidad || 0;
+      const estCls = 'rd-pill-' + (p.estado || 'nuevo').toLowerCase();
+      const hookText = p.titulo_hook || p.descripcion || '—';
+
       return `
-        <div class="rd-pub ${p.es_viral ? 'rd-pub-viral' : ''}">
-          <div class="rd-pub-head">
-            ${p.es_viral ? `<span class="rd-viral-badge"><i data-lucide="flame"></i>VIRAL ${p.motivo_viralidad ? '· ' + Radar.escapeHtml(p.motivo_viralidad) : ''}</span>` : ''}
-            <span class="rd-plat-badge rd-plat-${(p.plataforma || '').toLowerCase()}">${Radar.escapeHtml(p.plataforma || '?')}</span>
-            <span class="rd-pub-comp">${Radar.escapeHtml(p.competidor || '?')}</span>
-            <span class="rd-pub-meta">· ${fmtDate(p.fecha_publicacion)}</span>
-            ${p.tipo_contenido ? `<span class="rd-pub-meta">· ${Radar.escapeHtml(p.tipo_contenido)}</span>` : ''}
-          </div>
-
-          ${p.titulo_hook ? `<div class="rd-pub-hook">${Radar.escapeHtml(p.titulo_hook)}</div>` : ''}
-
-          <div class="rd-pub-metrics">
-            <div class="rd-pub-metric"><div class="rd-pub-metric-val">${fmtNum(p.vistas_actual)}</div><div class="rd-pub-metric-lbl">Vistas</div></div>
-            <div class="rd-pub-metric"><div class="rd-pub-metric-val">${fmtNum(p.likes_actual)}</div><div class="rd-pub-metric-lbl">Likes</div></div>
-            <div class="rd-pub-metric"><div class="rd-pub-metric-val">${fmtNum(p.comentarios_actual)}</div><div class="rd-pub-metric-lbl">Coment</div></div>
-            <div class="rd-pub-metric"><div class="rd-pub-metric-val">${fmtNum(p.compartidos_actual)}</div><div class="rd-pub-metric-lbl">Shares</div></div>
-            <div class="rd-pub-metric"><div class="rd-pub-metric-val">${fmtNum(p.guardados_actual)}</div><div class="rd-pub-metric-lbl">Guardados</div></div>
-            <div class="rd-pub-metric rd-eng"><div class="rd-pub-metric-val">${(p.engagement_pct || 0).toFixed(2)}%</div><div class="rd-pub-metric-lbl">Engagement</div></div>
-            <div class="rd-pub-metric rd-eng"><div class="rd-pub-metric-val">${(p.score_viralidad || 0).toFixed(2)}×</div><div class="rd-pub-metric-lbl">Score</div></div>
-          </div>
-
-          <div class="rd-pub-badges">
-            <span class="rd-estado-badge ${estadoCls}">${Radar.escapeHtml(p.estado || 'Nuevo')}</span>
-            ${p.formato ? `<span class="rd-formato-badge">${Radar.escapeHtml(p.formato)}</span>` : ''}
-          </div>
-
-          ${p.notas_analisis || p.elementos_a_copiar ? `
-          <div class="rd-pub-notas">
-            ${p.elementos_a_copiar ? `<div><strong>Elementos a copiar:</strong> ${Radar.escapeHtml(p.elementos_a_copiar)}</div>` : ''}
-            ${p.notas_analisis ? `<div style="margin-top:6px;"><strong>Notas:</strong> ${Radar.escapeHtml(p.notas_analisis).slice(0, 300)}${p.notas_analisis.length > 300 ? '...' : ''}</div>` : ''}
-          </div>` : ''}
-
-          <div class="rd-pub-actions">
-            ${p.url_publicacion ? `<a href="${Radar.escapeHtml(p.url_publicacion)}" target="_blank" rel="noopener" class="rd-btn rd-btn-secondary rd-btn-sm"><i data-lucide="external-link"></i>Ver post</a>` : ''}
-            ${CAN_EDIT ? `<button class="rd-btn rd-btn-sm" onclick="RadarPubs.analizar('${Radar.escapeHtml(p.name)}')"><i data-lucide="edit-3"></i>Analizar</button>` : ''}
-          </div>
-        </div>`;
+        <tr class="${p.es_viral ? 'rd-row-viral' : ''}" title="${Radar.escapeHtml(p.descripcion || '')}">
+          <td style="text-align:center;">${p.es_viral ? '<span class="rd-fire">🔥</span>' : ''}</td>
+          <td><span class="rd-plat-chip rd-plat-${plat}">${plat_ini}</span></td>
+          <td class="rd-cell-comp">${Radar.escapeHtml(p.competidor || '')}</td>
+          <td class="rd-col-fecha" style="color:var(--text-2);">${fmtDate(p.fecha_publicacion)}</td>
+          <td class="rd-cell-hook">${Radar.escapeHtml(hookText)}</td>
+          <td class="rd-num" style="font-weight:700;">${fmtNum(p.vistas_actual)}</td>
+          <td class="rd-num">${fmtNum(p.likes_actual)}</td>
+          <td class="rd-num rd-col-coment">${fmtNum(p.comentarios_actual)}</td>
+          <td class="rd-num rd-col-shares">${fmtNum(p.compartidos_actual)}</td>
+          <td class="rd-num rd-col-guardados">${fmtNum(p.guardados_actual)}</td>
+          <td class="rd-num"><span class="${engClass(eng)}">${eng.toFixed(2)}%</span></td>
+          <td class="rd-num"><span class="${scoreClass(sc, p.es_viral)}">${sc.toFixed(2)}×</span></td>
+          <td><span class="rd-pill ${estCls}">${Radar.escapeHtml(p.estado || 'Nuevo')}</span></td>
+          <td class="rd-actions" style="text-align:right;">
+            ${p.url_publicacion ? `<a href="${Radar.escapeHtml(p.url_publicacion)}" target="_blank" rel="noopener" title="Abrir post"><i data-lucide="external-link"></i></a>` : ''}
+            ${CAN_EDIT ? `<button onclick="RadarPubs.analizar('${Radar.escapeHtml(p.name)}')" title="Analizar / editar estado"><i data-lucide="edit-3"></i></button>` : ''}
+          </td>
+        </tr>`;
     },
+
+    ordenar(campo) {
+      if (this.sortBy === campo) {
+        this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        this.sortBy = campo;
+        this.sortDir = (campo === 'competidor') ? 'asc' : 'desc';
+      }
+      this.render();
+    },
+
+    limpiarFiltros() {
+      ['rd-f-search','rd-f-comp','rd-f-plat','rd-f-estado'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      const chk = document.getElementById('rd-f-viral');
+      chk.checked = false;
+      document.getElementById('rd-toggle-viral').classList.remove('rd-on');
+      this.render();
+    },
+
     analizar(name) {
       const p = this.lista.find(x => x.name === name);
       if (!p) return;
@@ -279,16 +473,35 @@
 
   document.addEventListener('DOMContentLoaded', async function() {
     lucide.createIcons();
-    // poblar competidores en filtro
+    // poblar dropdown competidores
     try {
       const opts = await Radar.api('marketinghub.www.radar.publicaciones.index.opciones_filtros');
-      const selC = document.getElementById('rd-f-comp');
-      selC.innerHTML = '<option value="">Todos los competidores</option>' +
+      const sel = document.getElementById('rd-f-comp');
+      sel.innerHTML = '<option value="">Todos los competidores</option>' +
         opts.competidores.map(c => `<option value="${Radar.escapeHtml(c)}">${Radar.escapeHtml(c)}</option>`).join('');
-    } catch (e) {}
+    } catch (e) { console.error(e); }
+
     RadarPubs.cargar();
-    ['rd-f-comp','rd-f-plat','rd-f-estado','rd-f-viral'].forEach(id => {
-      document.getElementById(id).addEventListener('change', () => RadarPubs.cargar());
+
+    // Listeners
+    ['rd-f-comp','rd-f-plat','rd-f-estado'].forEach(id => {
+      document.getElementById(id).addEventListener('change', () => RadarPubs.render());
+    });
+    document.getElementById('rd-f-search').addEventListener('input', () => RadarPubs.render());
+    document.getElementById('rd-f-viral').addEventListener('change', function() {
+      document.getElementById('rd-toggle-viral').classList.toggle('rd-on', this.checked);
+      RadarPubs.render();
+    });
+    document.getElementById('rd-toggle-viral').addEventListener('click', function(e) {
+      if (e.target.tagName === 'INPUT') return;
+      const chk = document.getElementById('rd-f-viral');
+      chk.checked = !chk.checked;
+      chk.dispatchEvent(new Event('change'));
+    });
+
+    // Sort clicks
+    document.querySelectorAll('.rd-tbl thead th.rd-sortable').forEach(th => {
+      th.addEventListener('click', () => RadarPubs.ordenar(th.dataset.sort));
     });
   });
 </script>
