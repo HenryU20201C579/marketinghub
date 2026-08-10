@@ -268,7 +268,13 @@ def correr_scrape(limit_per_profile=20):
 			items = apify_actor.scrape_instagram(token, urls, limit_per_profile)
 			url_to_cuenta = {c["url_perfil"].rstrip("/"): c for c in cuentas_ig}
 			handle_to_cuenta = {c["handle"].lower(): c for c in cuentas_ig if c.get("handle")}
+			pinned_skip = 0
 			for item in items:
+				# Los posts anclados (pinned) son viejos con metricas acumuladas
+				# y distorsionan el baseline. Se descartan.
+				if item.get("isPinned"):
+					pinned_skip += 1
+					continue
 				payload = _map_instagram(item)
 				owner = payload.pop("_owner_username")
 				input_url = payload.pop("_input_url")
@@ -278,7 +284,7 @@ def correr_scrape(limit_per_profile=20):
 					continue
 				payload["cuenta_social"] = cuenta["name"]
 				_ejecutar_upsert(payload, stats)
-			log_lines.append(f"IG · {len(items)} items procesados")
+			log_lines.append(f"IG · {len(items)} items ({pinned_skip} anclados descartados)")
 		except Exception as e:
 			stats["error"] += 1
 			log_lines.append(f"IG · ERROR: {e}")
@@ -292,17 +298,29 @@ def correr_scrape(limit_per_profile=20):
 			items = apify_actor.scrape_tiktok(token, handles, limit_per_profile)
 			handle_to_cuenta = {c["handle"].lower(): c for c in cuentas_tt if c.get("handle")}
 			seguidores_por_handle = {}
+			pinned_skip = 0
 			for item in items:
+				# authorMeta.fans siempre viene aunque el post sea pinned:
+				# lo usamos ANTES de decidir descartar.
+				author = item.get("authorMeta") or {}
+				owner_h = (author.get("name") or "").lower().lstrip("@")
+				cuenta = handle_to_cuenta.get(owner_h)
+				seg = author.get("fans")
+				if cuenta and seg and owner_h not in seguidores_por_handle:
+					seguidores_por_handle[owner_h] = (cuenta["name"], seg)
+
+				# Descartar pinned (posts viejos con metricas acumuladas)
+				if item.get("isPinned"):
+					pinned_skip += 1
+					continue
+
 				payload = _map_tiktok(item)
-				owner = payload.pop("_owner_username")
-				seg = payload.pop("_seguidores", None)
-				cuenta = handle_to_cuenta.get(owner)
+				payload.pop("_owner_username", None)
+				payload.pop("_seguidores", None)
 				if not cuenta or not payload["url_publicacion"]:
 					stats["skip"] += 1
 					continue
 				payload["cuenta_social"] = cuenta["name"]
-				if seg and owner not in seguidores_por_handle:
-					seguidores_por_handle[owner] = (cuenta["name"], seg)
 				_ejecutar_upsert(payload, stats)
 			# Registrar seguidores TikTok (unico por handle)
 			for handle, (cuenta_name, seg) in seguidores_por_handle.items():
@@ -311,7 +329,7 @@ def correr_scrape(limit_per_profile=20):
 					stats["seguidores"] += 1
 				except Exception as e:
 					frappe.log_error(f"seguidores {handle}: {e}", "Radar Scraper · TT seg")
-			log_lines.append(f"TikTok · {len(items)} items procesados")
+			log_lines.append(f"TikTok · {len(items)} items ({pinned_skip} anclados descartados)")
 		except Exception as e:
 			stats["error"] += 1
 			log_lines.append(f"TikTok · ERROR: {e}")
