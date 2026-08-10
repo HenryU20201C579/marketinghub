@@ -7,87 +7,194 @@
 {% block style %}
 {{ super() }}
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
 <link rel="stylesheet" href="/radar/radar.css">
 <style>
   main.container.my-4 { max-width: none !important; padding: 0 !important; }
   .page_content { padding: 0 !important; }
-  .rd-app.rd-wide .rd-main { max-width: none; padding: 12px 16px 28px; width: 100%; }
-  .rd-topbar { padding: 10px 20px; }
+  .rd-app.rd-wide .rd-main { max-width: none; padding: 0; width: 100%; }
+  .rd-topbar { padding: 8px 20px; }
   .rd-topbar-title { font-size: 16px; font-weight: 700; color: var(--text);
     display: flex; align-items: center; gap: 8px;
     padding-left: 12px; border-left: 1px solid var(--border); margin-left: 4px;
   }
   .rd-topbar-title-emoji { font-size: 18px; }
 
-  .rd-filterbar {
+  /* Barra de controles calendario */
+  .cal-toolbar {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 8px 10px; margin-bottom: 10px;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 10px 20px; position: sticky; top: 0; z-index: 20;
+  }
+  .cal-btn {
+    background: transparent; border: 1px solid var(--border-strong);
+    padding: 6px 12px; font-size: 13px; font-weight: 600;
+    border-radius: 6px; cursor: pointer; color: var(--text);
+    font-family: inherit;
+    display: inline-flex; align-items: center; gap: 4px;
+    transition: background .1s;
+  }
+  .cal-btn:hover { background: var(--bg-soft); }
+  .cal-nav-btn {
+    width: 34px; height: 34px; padding: 0; justify-content: center;
+    border-radius: 50%;
+  }
+  .cal-title {
+    font-size: 18px; font-weight: 700; color: var(--text);
+    margin-left: 8px; min-width: 200px;
+  }
+  .cal-view-switch { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 8px; overflow: hidden; }
+  .cal-view-switch .cal-btn { border: none; border-radius: 0; }
+  .cal-view-switch .cal-btn.active { background: var(--brand); color: white; }
+  .cal-view-switch .cal-btn:not(:last-child) { border-right: 1px solid var(--border-strong); }
+  .cal-spacer { flex: 1; }
+
+  .cal-filters {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 8px 20px; background: var(--bg-soft);
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .cal-filters select { padding: 5px 8px; font-size: 12px; border: 1px solid var(--border-strong); border-radius: 5px; background: white; }
+
+  .cal-main { padding: 0; }
+
+  /* ============ VISTA MES ============ */
+  .cal-month {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    background: var(--border);
+    gap: 1px;
+  }
+  .cal-month .dow {
+    background: var(--bg-soft); padding: 8px 6px;
+    font-size: 11px; font-weight: 700; color: var(--text-2);
+    text-transform: uppercase; letter-spacing: .04em; text-align: center;
+  }
+  .cal-month .day {
+    background: white; min-height: 110px; padding: 4px;
+    cursor: pointer; position: relative;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .cal-month .day:hover { background: #f8fafc; }
+  .cal-month .day.other-month { background: #fafafa; opacity: 0.55; }
+  .cal-month .day.today .day-num {
+    background: var(--brand); color: white; border-radius: 50%;
+    width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .cal-month .day-num {
+    font-size: 12px; font-weight: 600; color: var(--text);
+    padding: 2px 6px; align-self: flex-end;
+  }
+  .cal-month .day.weekend .day-num { color: var(--red); }
+
+  /* ============ CHIP DE POST ============ */
+  .cal-chip {
+    background: var(--_c, #94a3b8); color: white;
+    font-size: 10.5px; font-weight: 600;
+    padding: 3px 6px; border-radius: 4px;
+    display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    cursor: pointer; line-height: 1.3;
+    transition: transform .1s;
+  }
+  .cal-chip:hover { transform: scale(1.02); z-index: 2; position: relative; }
+  .cal-chip.viral { outline: 2px solid #dc2626; outline-offset: -2px; }
+  .cal-chip-plat {
+    display: inline-block; margin-right: 3px; opacity: 0.85; font-weight: 700;
+  }
+  .cal-more {
+    font-size: 10.5px; color: var(--text-2); font-weight: 600;
+    padding: 2px 6px; cursor: pointer;
+  }
+  .cal-more:hover { color: var(--brand); text-decoration: underline; }
+
+  /* ============ VISTA SEMANA ============ */
+  .cal-week {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    background: var(--border); gap: 1px;
+    min-height: 500px;
+  }
+  .cal-week .day-header {
+    background: var(--bg-soft); padding: 8px 6px; text-align: center;
+    border-bottom: 2px solid var(--border-strong);
+  }
+  .cal-week .day-header .dow { font-size: 11px; text-transform: uppercase; color: var(--text-2); font-weight: 700; }
+  .cal-week .day-header .num { font-size: 20px; font-weight: 700; color: var(--text); margin-top: 2px; }
+  .cal-week .day-header.today .num { background: var(--brand); color: white; border-radius: 50%; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; }
+  .cal-week .day-content {
+    background: white; padding: 6px; min-height: 400px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .cal-week .day-content .cal-chip {
+    padding: 5px 8px; font-size: 12px;
+  }
+
+  /* ============ VISTA DIA ============ */
+  .cal-day-list { padding: 20px; max-width: 900px; margin: 0 auto; }
+  .cal-day-list .day-title {
+    font-size: 22px; font-weight: 800; margin-bottom: 16px;
+  }
+  .cal-day-list .cal-day-item {
+    display: flex; gap: 14px; padding: 14px;
+    background: white; border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 10px;
     box-shadow: var(--shadow-sm);
   }
-  .rd-filterbar .rd-select { min-width: 150px; padding: 7px 10px; font-size: 13px; }
-  .rd-filterbar .rd-spacer { flex: 1; }
-  .rd-filterbar .rd-note { font-size: 12px; color: var(--text-2); }
+  .cal-day-list .cal-day-item.viral { border: 2px solid var(--red); }
+  .cal-day-list .cal-day-color { width: 6px; border-radius: 3px; background: var(--_c, #94a3b8); }
+  .cal-day-list .cal-day-body { flex: 1; }
+  .cal-day-list .cal-day-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .cal-day-list .cal-day-meta { font-size: 12px; color: var(--text-2); margin-bottom: 8px; }
+  .cal-day-list .cal-day-metrics { display: flex; gap: 16px; font-size: 12px; color: var(--text-2); }
+  .cal-day-list .cal-day-metrics b { color: var(--text); font-family: 'Inter', sans-serif; }
 
-  .rd-cmp-wrap {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); overflow-x: auto; box-shadow: var(--shadow-sm);
+  /* ============ VISTA AÑO ============ */
+  .cal-year {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 16px; padding: 20px;
   }
-  .rd-cmp {
-    width: 100%; border-collapse: separate; border-spacing: 0;
-    font-size: 13px; font-family: 'Inter', sans-serif;
+  .cal-year-month {
+    background: white; border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px;
   }
-  .rd-cmp thead th {
-    background: var(--bg-soft); color: var(--text);
-    font-weight: 700; font-size: 11.5px; text-transform: uppercase;
-    letter-spacing: 0.03em; padding: 10px 8px;
-    text-align: center; border-bottom: 2px solid var(--border-strong);
-    white-space: nowrap;
+  .cal-year-month h4 {
+    font-size: 13px; font-weight: 700; color: var(--text);
+    margin-bottom: 8px; text-align: center;
   }
-  .rd-cmp thead th:first-child { text-align: left; padding-left: 16px; }
-  .rd-cmp thead th.rd-total { background: #e2e8f0; }
+  .cal-year-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 2px; font-size: 10px;
+  }
+  .cal-year-grid .dow { color: var(--muted); text-align: center; font-weight: 600; padding: 2px 0; }
+  .cal-year-grid .cell {
+    aspect-ratio: 1; border-radius: 3px;
+    background: #f1f5f9; color: var(--text-2);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-weight: 500;
+  }
+  .cal-year-grid .cell:hover { outline: 2px solid var(--brand); z-index: 2; position: relative; }
+  .cal-year-grid .cell.empty { visibility: hidden; }
+  .cal-year-grid .cell.h1 { background: #dbeafe; color: #1e40af; }
+  .cal-year-grid .cell.h2 { background: #93c5fd; color: #1e3a8a; }
+  .cal-year-grid .cell.h3 { background: #3b82f6; color: white; }
+  .cal-year-grid .cell.h4 { background: #1e40af; color: white; font-weight: 700; }
 
-  .rd-cmp tbody td {
-    padding: 10px 8px; text-align: center; font-size: 13px;
-    border-bottom: 1px solid var(--border);
-    font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums;
-    cursor: pointer; transition: background .1s;
+  /* Leyenda de competidores */
+  .cal-legend {
+    display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 20px;
+    border-bottom: 1px solid var(--border); background: white;
+    font-size: 12px; align-items: center;
   }
-  .rd-cmp tbody td:first-child {
-    text-align: left; padding-left: 16px; font-family: 'Inter', sans-serif;
-    font-weight: 600; cursor: default; white-space: nowrap;
+  .cal-legend-item {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px; border-radius: 999px;
+    background: var(--_c, #94a3b8); color: white;
+    font-weight: 600; font-size: 11px; cursor: pointer;
   }
-  .rd-cmp tbody td:hover:not(:first-child) { background: #e0edff; }
-  .rd-cmp tbody td.zero { color: #cbd5e1; }
-  .rd-cmp tbody td.total {
-    background: #f8fafc; font-weight: 700; cursor: default;
-    font-family: 'JetBrains Mono', monospace;
-  }
-  .rd-cmp tfoot td {
-    background: #f1f5f9; font-weight: 700;
-    padding: 10px 8px; text-align: center;
-    border-top: 2px solid var(--border-strong);
-    font-family: 'JetBrains Mono', monospace;
-  }
-  .rd-cmp tfoot td:first-child { text-align: left; padding-left: 16px; font-family: 'Inter', sans-serif; }
+  .cal-legend-item.off { opacity: 0.3; }
 
-  /* Heatmap intensity — clases se aplican via JS */
-  .heat-1 { background: #fef9c3; }   /* warm bajo */
-  .heat-2 { background: #fef3c7; }
-  .heat-3 { background: #fde68a; font-weight: 600; }
-  .heat-4 { background: #fca5a5; color: #7f1d1d; font-weight: 700; }
-  .heat-5 { background: #ef4444; color: white; font-weight: 800; }
-
-  .rd-legend {
-    display: flex; align-items: center; gap: 6px;
-    font-size: 11px; color: var(--text-2); margin-top: 8px;
-  }
-  .rd-legend .swatch {
-    display: inline-block; width: 24px; height: 14px;
-    border-radius: 3px; border: 1px solid #e5e9f0;
-  }
+  /* Empty state */
+  .cal-empty { padding: 60px 20px; text-align: center; color: var(--text-2); }
 </style>
 {% endblock %}
 
@@ -106,165 +213,458 @@
       <a href="/radar" class="rd-back"><i data-lucide="arrow-left"></i> Volver</a>
       <div class="rd-topbar-title">
         <span class="rd-topbar-title-emoji">📅</span>
-        <span>Comparativa</span>
+        <span>Calendario</span>
       </div>
     </div>
     <div class="rd-topbar-right">
-      <span class="rd-user" id="rd-total">—</span>
+      <span class="rd-user" id="cal-count">—</span>
     </div>
   </header>
 
   <main class="rd-main">
-    <div class="rd-filterbar">
-      <select id="rd-f-anio" class="rd-select" title="Año"></select>
-      <select id="rd-f-plat" class="rd-select" title="Plataforma">
-        <option value="">🏆 Todas las plataformas</option>
+    <div class="cal-toolbar">
+      <button class="cal-btn" onclick="CalRadar.hoy()">Hoy</button>
+      <button class="cal-btn cal-nav-btn" onclick="CalRadar.prev()"><i data-lucide="chevron-left"></i></button>
+      <button class="cal-btn cal-nav-btn" onclick="CalRadar.next()"><i data-lucide="chevron-right"></i></button>
+      <div class="cal-title" id="cal-title">—</div>
+      <div class="cal-spacer"></div>
+      <div class="cal-view-switch">
+        <button class="cal-btn" data-view="dia">Día</button>
+        <button class="cal-btn active" data-view="semana">Semana</button>
+        <button class="cal-btn" data-view="mes">Mes</button>
+        <button class="cal-btn" data-view="anio">Año</button>
+        <button class="cal-btn" data-view="custom">Personalizado</button>
+      </div>
+    </div>
+
+    <div class="cal-filters">
+      <span style="color:var(--text-2);font-weight:600;">Filtros:</span>
+      <select id="cal-f-plat">
+        <option value="">Todas las plataformas</option>
+        <option value="Instagram">Instagram</option>
+        <option value="TikTok">TikTok</option>
+        <option value="Facebook">Facebook</option>
+        <option value="YouTube">YouTube</option>
       </select>
-      <select id="rd-f-metrica" class="rd-select" title="Métrica"></select>
-      <div class="rd-spacer"></div>
-      <span class="rd-note">Anclados excluidos · Clic en celda = ver posts</span>
+      <select id="cal-f-tier">
+        <option value="">Todos los tiers</option>
+      </select>
+      <span id="cal-custom-range" style="display:none;gap:6px;align-items:center;">
+        <label style="font-size:11px;">Desde</label>
+        <input type="date" id="cal-f-desde" style="padding:4px 6px;font-size:12px;border:1px solid var(--border-strong);border-radius:5px;">
+        <label style="font-size:11px;">Hasta</label>
+        <input type="date" id="cal-f-hasta" style="padding:4px 6px;font-size:12px;border:1px solid var(--border-strong);border-radius:5px;">
+      </span>
+      <div class="cal-spacer"></div>
+      <span style="color:var(--muted);font-size:11px;">Anclados excluidos</span>
     </div>
 
-    <div class="rd-cmp-wrap" id="rd-cmp-wrap">
-      <div style="padding: 40px; text-align: center; color: var(--text-2);">Cargando…</div>
-    </div>
+    <div class="cal-legend" id="cal-legend"></div>
 
-    <div class="rd-legend">
-      Intensidad:
-      <span class="swatch" style="background:white;"></span> 0
-      <span class="swatch heat-1"></span> bajo
-      <span class="swatch heat-3"></span> medio
-      <span class="swatch heat-4"></span> alto
-      <span class="swatch heat-5"></span> muy alto
+    <div class="cal-main" id="cal-main">
+      <div class="cal-empty">Cargando…</div>
     </div>
   </main>
 </div>
 
 <script src="/radar/radar.js"></script>
 <script>
-  const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const MESES_LARGO = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const MESES_CORTO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const DOW_CORTO   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const DOW_1L      = ['D','L','M','X','J','V','S'];
 
+  // ------- Helpers de fecha -------
+  function toISO(d) { return d.toISOString().slice(0,10); }
+  function fromISO(s) { return new Date(s + 'T00:00:00'); }
+  function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate()+n); return x; }
+  function startOfWeek(d) { const x = new Date(d); x.setDate(x.getDate() - x.getDay()); return x; }
+  function startOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
+  function endOfMonth(d) { return new Date(d.getFullYear(), d.getMonth()+1, 0); }
+  function isSameDay(a, b) { return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+  function esViralPlatChar(p) { return ({Instagram:'I', TikTok:'T', Facebook:'F', YouTube:'Y'})[p] || '?'; }
   function fmtNum(n) {
-    if (n == null || n === 0) return '0';
-    if (n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
-    if (n >= 1000)    return (n/1000).toFixed(1).replace(/\.0$/,'') + 'k';
-    if (Number.isInteger(n)) return n.toLocaleString('es-PE');
-    return n.toFixed(2);
+    n = n || 0;
+    if (n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'')+'M';
+    if (n >= 1000) return (n/1000).toFixed(1).replace(/\.0$/,'')+'k';
+    return n.toLocaleString('es-PE');
   }
 
-  function heatClass(val, max) {
-    if (!val || max === 0) return 'zero';
-    const p = val / max;
-    if (p >= 0.8) return 'heat-5';
-    if (p >= 0.6) return 'heat-4';
-    if (p >= 0.4) return 'heat-3';
-    if (p >= 0.2) return 'heat-2';
-    return 'heat-1';
-  }
+  window.CalRadar = {
+    vista: 'semana',
+    anclaFecha: new Date(),
+    posts: [],
+    competidores: [],
+    tiers: [],
+    filtros: { plataforma: '', tier_orden_max: '', desde: null, hasta: null },
+    competidoresOff: new Set(),  // filtros de leyenda
 
-  window.RadarCmp = {
-    async cargar() {
-      const anio = document.getElementById('rd-f-anio').value;
-      const plat = document.getElementById('rd-f-plat').value;
-      const metrica = document.getElementById('rd-f-metrica').value;
+    // ----- Init -----
+    async init() {
+      // Restaurar estado de localStorage
       try {
-        const data = await Radar.api('marketinghub.www.radar.comparativa.index.obtener_matriz',
-                                     {anio, plataforma: plat, metrica});
-        this._popularFiltros(data);
-        this._renderMatriz(data);
-      } catch (e) {
-        document.getElementById('rd-cmp-wrap').innerHTML =
-          `<div style="padding:40px;text-align:center;color:var(--red);">${Radar.escapeHtml(e.message)}</div>`;
+        const s = JSON.parse(localStorage.getItem('cal-radar') || '{}');
+        if (s.vista) this.vista = s.vista;
+        if (s.fecha) this.anclaFecha = fromISO(s.fecha);
+      } catch(e) {}
+      this._activarBotonVista();
+
+      this.competidores = await Radar.api('marketinghub.www.radar.comparativa.index.obtener_competidores');
+      this.tiers = await Radar.api('marketinghub.www.radar.comparativa.index.obtener_tiers');
+
+      // Poblar dropdown de tiers
+      const tSel = document.getElementById('cal-f-tier');
+      tSel.innerHTML = '<option value="">Todos los tiers</option>' +
+        this.tiers.map(t => `<option value="${t.orden}">${Radar.escapeHtml(t.nombre)} o mejor${t.es_viral?' 🔥':''}</option>`).join('');
+
+      this._renderLeyenda();
+      await this.cargar();
+    },
+
+    _guardarEstado() {
+      try {
+        localStorage.setItem('cal-radar', JSON.stringify({
+          vista: this.vista,
+          fecha: toISO(this.anclaFecha),
+        }));
+      } catch(e) {}
+    },
+
+    _rangoDeVista() {
+      const d = this.anclaFecha;
+      if (this.vista === 'dia')   return { desde: toISO(d), hasta: toISO(d) };
+      if (this.vista === 'semana') { const ini = startOfWeek(d); return { desde: toISO(ini), hasta: toISO(addDays(ini, 6)) }; }
+      if (this.vista === 'mes') {
+        const ini = startOfMonth(d);
+        const gridIni = startOfWeek(ini);
+        const gridFin = addDays(gridIni, 41);   // 6 semanas × 7
+        return { desde: toISO(gridIni), hasta: toISO(gridFin) };
+      }
+      if (this.vista === 'anio') {
+        return { desde: `${d.getFullYear()}-01-01`, hasta: `${d.getFullYear()}-12-31` };
+      }
+      if (this.vista === 'custom') {
+        const desde = document.getElementById('cal-f-desde').value || toISO(d);
+        const hasta = document.getElementById('cal-f-hasta').value || toISO(addDays(d, 30));
+        return { desde, hasta };
       }
     },
 
-    _popularFiltros(data) {
-      const anioSel = document.getElementById('rd-f-anio');
-      if (anioSel.options.length === 0) {
-        anioSel.innerHTML = data.anios_disponibles.map(a =>
-          `<option value="${a}" ${a === data.anio ? 'selected' : ''}>${a}</option>`
-        ).join('');
+    async cargar() {
+      const r = this._rangoDeVista();
+      const params = { desde: r.desde, hasta: r.hasta, ...this.filtros };
+      if (this.vista === 'anio') {
+        // Para año, cargamos conteos por dia (rápido) en vez de todos los posts
+        try {
+          this._conteos = await Radar.api('marketinghub.www.radar.comparativa.index.obtener_conteos_por_dia', {
+            anio: this.anclaFecha.getFullYear(),
+            plataforma: this.filtros.plataforma || '',
+          });
+        } catch(e) { console.error(e); this._conteos = {}; }
+        document.getElementById('cal-count').textContent = `${Object.values(this._conteos).reduce((a,b)=>a+b,0)} posts en ${this.anclaFecha.getFullYear()}`;
+      } else {
+        try {
+          this.posts = await Radar.api('marketinghub.www.radar.comparativa.index.obtener_eventos', params);
+        } catch(e) {
+          document.getElementById('cal-main').innerHTML = `<div class="cal-empty">Error: ${Radar.escapeHtml(e.message)}</div>`;
+          return;
+        }
+        // Aplicar filtro de competidores off (client-side)
+        this.posts = this.posts.filter(p => !this.competidoresOff.has(p.competidor));
+        document.getElementById('cal-count').textContent = `${this.posts.length} publicaciones`;
       }
-      const platSel = document.getElementById('rd-f-plat');
-      if (platSel.options.length <= 1) {
-        platSel.innerHTML = '<option value="">🏆 Todas las plataformas</option>' +
-          data.plataformas.map(p => `<option value="${Radar.escapeHtml(p)}">${Radar.escapeHtml(p)}</option>`).join('');
-      }
-      const metSel = document.getElementById('rd-f-metrica');
-      if (metSel.options.length === 0) {
-        metSel.innerHTML = data.metricas_disponibles.map(m =>
-          `<option value="${m.key}" ${m.key === data.metrica ? 'selected' : ''}>${Radar.escapeHtml(m.label)}</option>`
-        ).join('');
-      }
+      this._render();
     },
 
-    _renderMatriz(data) {
-      const wrap = document.getElementById('rd-cmp-wrap');
-      const { matriz, competidores, anio, plataforma, metrica } = data;
+    _render() {
+      this._actualizarTitulo();
+      this._actualizarRangoCustom();
+      if (this.vista === 'dia')     return this._renderDia();
+      if (this.vista === 'semana')  return this._renderSemana();
+      if (this.vista === 'mes')     return this._renderMes();
+      if (this.vista === 'anio')    return this._renderAnio();
+      if (this.vista === 'custom')  return this._renderCustom();
+    },
 
-      if (!competidores.length) {
-        wrap.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-2);">
-          Sin publicaciones en ${anio}${plataforma ? ' para ' + Radar.escapeHtml(plataforma) : ''}.
-        </div>`;
+    _actualizarTitulo() {
+      const d = this.anclaFecha;
+      const t = document.getElementById('cal-title');
+      if (this.vista === 'dia')     t.textContent = `${DOW_CORTO[d.getDay()]} ${d.getDate()} ${MESES_LARGO[d.getMonth()]} ${d.getFullYear()}`;
+      else if (this.vista === 'semana') { const ini = startOfWeek(d), fin = addDays(ini, 6); t.textContent = `${ini.getDate()} ${MESES_CORTO[ini.getMonth()]} — ${fin.getDate()} ${MESES_CORTO[fin.getMonth()]} ${fin.getFullYear()}`; }
+      else if (this.vista === 'mes')    t.textContent = `${MESES_LARGO[d.getMonth()]} ${d.getFullYear()}`;
+      else if (this.vista === 'anio')   t.textContent = `${d.getFullYear()}`;
+      else if (this.vista === 'custom') { const r = this._rangoDeVista(); t.textContent = `${r.desde} — ${r.hasta}`; }
+    },
+
+    _actualizarRangoCustom() {
+      document.getElementById('cal-custom-range').style.display =
+        (this.vista === 'custom') ? 'inline-flex' : 'none';
+    },
+
+    _renderLeyenda() {
+      const l = document.getElementById('cal-legend');
+      l.innerHTML = '<span style="color:var(--text-2);font-weight:600;margin-right:4px;">Competidores:</span>' +
+        this.competidores.map(c => `
+          <span class="cal-legend-item ${this.competidoresOff.has(c.nombre) ? 'off' : ''}"
+                style="--_c: ${c.color};" onclick="CalRadar.toggleComp('${Radar.escapeHtml(c.nombre)}')">
+            ${Radar.escapeHtml(c.nombre)}
+          </span>`).join('');
+    },
+
+    toggleComp(nombre) {
+      if (this.competidoresOff.has(nombre)) this.competidoresOff.delete(nombre);
+      else this.competidoresOff.add(nombre);
+      this._renderLeyenda();
+      this.cargar();
+    },
+
+    // ------- Navigation -------
+    hoy() { this.anclaFecha = new Date(); this._guardarEstado(); this.cargar(); },
+    prev() { this._nav(-1); },
+    next() { this._nav(+1); },
+    _nav(dir) {
+      const d = this.anclaFecha;
+      if (this.vista === 'dia')     this.anclaFecha = addDays(d, dir);
+      else if (this.vista === 'semana') this.anclaFecha = addDays(d, dir * 7);
+      else if (this.vista === 'mes')    this.anclaFecha = new Date(d.getFullYear(), d.getMonth()+dir, 1);
+      else if (this.vista === 'anio')   this.anclaFecha = new Date(d.getFullYear()+dir, 0, 1);
+      else if (this.vista === 'custom') this.anclaFecha = addDays(d, dir * 7);
+      this._guardarEstado();
+      this.cargar();
+    },
+
+    cambiarVista(v) {
+      this.vista = v;
+      this._activarBotonVista();
+      this._guardarEstado();
+      this.cargar();
+    },
+
+    _activarBotonVista() {
+      document.querySelectorAll('.cal-view-switch .cal-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.view === this.vista)
+      );
+    },
+
+    // ------- CHIP -------
+    _chip(p) {
+      const platChar = esViralPlatChar(p.plataforma);
+      const hook = (p.titulo_hook || '(sin título)').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      return `<span class="cal-chip ${p.es_viral ? 'viral' : ''}" style="--_c: ${p.color};"
+                onclick="CalRadar.abrirModal('${p.name}')"
+                title="${hook.replace(/'/g, '&#39;')}">
+                <span class="cal-chip-plat">${platChar}</span>${hook}
+              </span>`;
+    },
+
+    // ------- Vistas -------
+    _renderDia() {
+      const c = document.getElementById('cal-main');
+      if (!this.posts.length) {
+        c.innerHTML = `<div class="cal-empty">Sin publicaciones este día.</div>`;
         return;
       }
+      c.innerHTML = `<div class="cal-day-list">
+        <div class="day-title">${this.posts.length} publicación${this.posts.length===1?'':'es'}</div>
+        ${this.posts.map(p => `
+          <div class="cal-day-item ${p.es_viral?'viral':''}">
+            <div class="cal-day-color" style="--_c: ${p.color};"></div>
+            <div class="cal-day-body">
+              <div class="cal-day-title">${Radar.escapeHtml(p.titulo_hook || '(sin título)')}</div>
+              <div class="cal-day-meta">
+                <b style="color:var(--text);">${Radar.escapeHtml(p.competidor)}</b>
+                · ${Radar.escapeHtml(p.plataforma)}
+                · Tier: ${Radar.escapeHtml(p.tier || '—')}
+                ${p.es_viral ? '· <span style="color:var(--red);font-weight:700;">🔥 VIRAL</span>' : ''}
+              </div>
+              <div class="cal-day-metrics">
+                <span>👁️ <b>${fmtNum(p.vistas_actual)}</b></span>
+                <span>❤️ <b>${fmtNum(p.likes_actual)}</b></span>
+                <span>📊 <b>${(p.engagement_pct||0).toFixed(2)}%</b></span>
+              </div>
+            </div>
+            <div>
+              ${p.url_publicacion ? `<a href="${Radar.escapeHtml(p.url_publicacion)}" target="_blank" class="rd-btn rd-btn-secondary rd-btn-sm">Ver post ↗</a>` : ''}
+            </div>
+          </div>`).join('')}
+      </div>`;
+    },
 
-      // calcular máx global para el heatmap
-      let maxVal = 0;
-      let granTotal = 0;
-      const totalesMes = Array(13).fill(0); // idx 1..12
-      const totalesComp = {};
-      for (const c of competidores) {
-        totalesComp[c] = 0;
-        for (let m = 1; m <= 12; m++) {
-          const v = matriz[c][m] || 0;
-          totalesComp[c] += v;
-          totalesMes[m] += v;
-          granTotal += v;
-          if (v > maxVal) maxVal = v;
-        }
+    _renderSemana() {
+      const ini = startOfWeek(this.anclaFecha);
+      const today = new Date();
+      const dias = [0,1,2,3,4,5,6].map(i => addDays(ini, i));
+      const posts_por_dia = {};
+      dias.forEach(d => posts_por_dia[toISO(d)] = []);
+      this.posts.forEach(p => {
+        if (posts_por_dia[p.fecha_publicacion]) posts_por_dia[p.fecha_publicacion].push(p);
+      });
+
+      const c = document.getElementById('cal-main');
+      c.innerHTML = '<div class="cal-week">' + dias.map(d => `
+        <div>
+          <div class="day-header ${isSameDay(d, today)?'today':''}">
+            <div class="dow">${DOW_CORTO[d.getDay()]}</div>
+            <div class="num">${d.getDate()}</div>
+          </div>
+          <div class="day-content">
+            ${posts_por_dia[toISO(d)].map(p => this._chip(p)).join('')}
+            ${!posts_por_dia[toISO(d)].length ? '<div style="color:var(--muted);font-size:11px;text-align:center;padding:10px;">—</div>' : ''}
+          </div>
+        </div>`).join('') + '</div>';
+    },
+
+    _renderMes() {
+      const primerDia = startOfMonth(this.anclaFecha);
+      const inicio = startOfWeek(primerDia);
+      const today = new Date();
+      const cellsHtml = [];
+      // headers
+      for (let i = 0; i < 7; i++) cellsHtml.push(`<div class="dow">${DOW_CORTO[i]}</div>`);
+      // 42 celdas
+      for (let i = 0; i < 42; i++) {
+        const d = addDays(inicio, i);
+        const otro = d.getMonth() !== this.anclaFecha.getMonth();
+        const iso = toISO(d);
+        const posts = this.posts.filter(p => p.fecha_publicacion === iso);
+        const max = 3;
+        const shown = posts.slice(0, max);
+        const rest = posts.length - shown.length;
+        const isW = d.getDay() === 0 || d.getDay() === 6;
+        cellsHtml.push(`
+          <div class="day ${otro?'other-month':''} ${isSameDay(d, today)?'today':''} ${isW?'weekend':''}"
+               onclick="CalRadar.saltarADia('${iso}')">
+            <span class="day-num">${d.getDate()}</span>
+            ${shown.map(p => this._chip(p)).join('')}
+            ${rest > 0 ? `<span class="cal-more" onclick="event.stopPropagation();CalRadar.saltarADia('${iso}')">+${rest} más</span>` : ''}
+          </div>`);
       }
+      document.getElementById('cal-main').innerHTML = '<div class="cal-month">' + cellsHtml.join('') + '</div>';
+    },
 
-      let html = '<table class="rd-cmp"><thead><tr><th>Competidor</th>';
-      for (let m = 1; m <= 12; m++) html += `<th>${MESES[m-1]}</th>`;
-      html += '<th class="rd-total">Total</th></tr></thead><tbody>';
-
-      const plataformaAttr = plataforma ? encodeURIComponent(plataforma) : '';
-      for (const c of competidores) {
-        html += `<tr><td>🎯 ${Radar.escapeHtml(c)}</td>`;
-        for (let m = 1; m <= 12; m++) {
-          const v = matriz[c][m] || 0;
-          const cls = heatClass(v, maxVal);
-          const mesStr = String(m).padStart(2, '0');
-          const desde = `${anio}-${mesStr}-01`;
-          const hasta = _lastDayOfMonth(anio, m);
-          const url = `/radar/publicaciones?competidor=${encodeURIComponent(c)}` +
-                      (plataforma ? `&plataforma=${plataformaAttr}` : '') +
-                      `&fecha_desde=${desde}&fecha_hasta=${hasta}`;
-          html += `<td class="${cls}" onclick="location.href='${url}'" title="Ver ${fmtNum(v)} posts">${fmtNum(v)}</td>`;
+    _renderAnio() {
+      const y = this.anclaFecha.getFullYear();
+      const conteos = this._conteos || {};
+      const max = Math.max(1, ...Object.values(conteos));
+      const heatCls = (c) => {
+        if (!c) return '';
+        const p = c/max;
+        if (p >= 0.75) return 'h4';
+        if (p >= 0.5) return 'h3';
+        if (p >= 0.25) return 'h2';
+        return 'h1';
+      };
+      const meses = [];
+      for (let m = 0; m < 12; m++) {
+        const ini = startOfMonth(new Date(y, m, 1));
+        const finReal = endOfMonth(new Date(y, m, 1)).getDate();
+        const offset = ini.getDay(); // 0 = domingo
+        let cells = '';
+        for (let i = 0; i < 7; i++) cells += `<div class="dow">${DOW_1L[i]}</div>`;
+        for (let i = 0; i < offset; i++) cells += `<div class="cell empty"></div>`;
+        for (let d = 1; d <= finReal; d++) {
+          const iso = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const c = conteos[iso] || 0;
+          const cls = heatCls(c);
+          cells += `<div class="cell ${cls}" title="${d}/${m+1}: ${c} post${c===1?'':'s'}"
+                       onclick="CalRadar.saltarADia('${iso}')">${d}</div>`;
         }
-        html += `<td class="total">${fmtNum(totalesComp[c])}</td></tr>`;
+        meses.push(`<div class="cal-year-month">
+          <h4>${MESES_LARGO[m]}</h4>
+          <div class="cal-year-grid">${cells}</div>
+        </div>`);
       }
-      html += '</tbody><tfoot><tr><td>Total mes</td>';
-      for (let m = 1; m <= 12; m++) html += `<td>${fmtNum(totalesMes[m])}</td>`;
-      html += `<td>${fmtNum(granTotal)}</td></tr></tfoot></table>`;
+      document.getElementById('cal-main').innerHTML = '<div class="cal-year">' + meses.join('') + '</div>';
+    },
 
-      wrap.innerHTML = html;
-      document.getElementById('rd-total').textContent = `Total ${anio}: ${fmtNum(granTotal)}`;
-    }
+    _renderCustom() {
+      // Reusa la vista Semana pero potencialmente con muchos dias
+      const r = this._rangoDeVista();
+      const ini = fromISO(r.desde);
+      const fin = fromISO(r.hasta);
+      const dias = [];
+      let cur = new Date(ini);
+      let count = 0;
+      while (cur <= fin && count < 90) { dias.push(new Date(cur)); cur = addDays(cur, 1); count++; }
+      const posts_por_dia = {};
+      dias.forEach(d => posts_por_dia[toISO(d)] = []);
+      this.posts.forEach(p => {
+        if (posts_por_dia[p.fecha_publicacion]) posts_por_dia[p.fecha_publicacion].push(p);
+      });
+      const today = new Date();
+      const cols = Math.min(dias.length, 7);
+      const grid = `grid-template-columns: repeat(${cols}, 1fr);`;
+      document.getElementById('cal-main').innerHTML =
+        `<div class="cal-week" style="${grid}">` + dias.map(d => `
+          <div>
+            <div class="day-header ${isSameDay(d, today)?'today':''}">
+              <div class="dow">${DOW_CORTO[d.getDay()]}</div>
+              <div class="num">${d.getDate()}<span style="font-size:11px;color:var(--muted);font-weight:400;"> ${MESES_CORTO[d.getMonth()]}</span></div>
+            </div>
+            <div class="day-content">
+              ${posts_por_dia[toISO(d)].map(p => this._chip(p)).join('')}
+            </div>
+          </div>`).join('') + '</div>';
+    },
+
+    saltarADia(iso) {
+      this.anclaFecha = fromISO(iso);
+      this.vista = 'dia';
+      this._activarBotonVista();
+      this._guardarEstado();
+      this.cargar();
+    },
+
+    abrirModal(name) {
+      const p = this.posts.find(x => x.name === name);
+      if (!p) return;
+      const body = `
+        <div style="display:flex;gap:12px;">
+          <div style="width:6px;background:${p.color};border-radius:3px;"></div>
+          <div style="flex:1;">
+            <div style="font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em;">${Radar.escapeHtml(p.competidor)} · ${Radar.escapeHtml(p.plataforma)} · ${p.fecha_publicacion}</div>
+            <div style="font-size:15px;font-weight:700;margin:6px 0;">${Radar.escapeHtml(p.titulo_hook || '(sin título)')}</div>
+            <div style="display:flex;gap:16px;font-size:13px;color:var(--text-2);margin-bottom:10px;">
+              <span>👁️ <b style="color:var(--text);">${fmtNum(p.vistas_actual)}</b> vistas</span>
+              <span>❤️ <b style="color:var(--text);">${fmtNum(p.likes_actual)}</b> likes</span>
+              <span>📊 <b style="color:var(--text);">${(p.engagement_pct||0).toFixed(2)}%</b> eng.</span>
+            </div>
+            <div style="margin-bottom:12px;">
+              <span style="background:${p.es_viral?'var(--red)':'var(--bg-soft)'};color:${p.es_viral?'white':'var(--text)'};padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;">
+                ${p.es_viral ? '🔥 ' : ''}${Radar.escapeHtml(p.tier || 'Sin tier')}
+              </span>
+              <span style="margin-left:8px;padding:3px 10px;border:1px solid var(--border);border-radius:999px;font-size:11px;">Estado: ${Radar.escapeHtml(p.estado || 'Nuevo')}</span>
+            </div>
+          </div>
+        </div>`;
+      Radar.modal({
+        title: '📱 Publicación',
+        confirmText: p.url_publicacion ? 'Ver post ↗' : 'Cerrar',
+        cancelText: 'Cerrar',
+        bodyHtml: body,
+        onConfirm: () => {
+          if (p.url_publicacion) window.open(p.url_publicacion, '_blank');
+          return true;
+        }
+      });
+    },
   };
 
-  function _lastDayOfMonth(anio, mes) {
-    const d = new Date(anio, mes, 0);
-    return `${anio}-${String(mes).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  }
-
-  document.addEventListener('DOMContentLoaded', async function() {
+  document.addEventListener('DOMContentLoaded', function() {
     lucide.createIcons();
-    await RadarCmp.cargar();
-    ['rd-f-anio','rd-f-plat','rd-f-metrica'].forEach(id =>
-      document.getElementById(id).addEventListener('change', () => RadarCmp.cargar())
-    );
+    // Listeners
+    document.querySelectorAll('.cal-view-switch .cal-btn').forEach(b => {
+      b.addEventListener('click', () => CalRadar.cambiarVista(b.dataset.view));
+    });
+    document.getElementById('cal-f-plat').addEventListener('change', function() {
+      CalRadar.filtros.plataforma = this.value; CalRadar.cargar();
+    });
+    document.getElementById('cal-f-tier').addEventListener('change', function() {
+      CalRadar.filtros.tier_orden_max = this.value; CalRadar.cargar();
+    });
+    document.getElementById('cal-f-desde').addEventListener('change', () => CalRadar.cargar());
+    document.getElementById('cal-f-hasta').addEventListener('change', () => CalRadar.cargar());
+    CalRadar.init();
   });
 </script>
 {% endif %}
