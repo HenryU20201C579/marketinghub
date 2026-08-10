@@ -7,9 +7,9 @@
  "field_order": [
   "competidor",
   "plataforma",
-  "handle",
-  "cb_1",
   "url_perfil",
+  "cb_1",
+  "handle",
   "activo",
   "sb_metrics",
   "seguidores_actual",
@@ -38,22 +38,25 @@
    "in_standard_filter": 1
   },
   {
-   "fieldname": "handle",
+   "fieldname": "url_perfil",
    "fieldtype": "Data",
-   "label": "Handle",
+   "label": "URL del Perfil",
+   "options": "URL",
    "reqd": 1,
    "in_list_view": 1,
-   "description": "Usuario sin @ ni URL. Ej: 'lizarasocueros'."
+   "description": "Pega la URL completa del perfil. Ej: https://www.instagram.com/lizarasocueros/"
   },
   {
    "fieldname": "cb_1",
    "fieldtype": "Column Break"
   },
   {
-   "fieldname": "url_perfil",
+   "fieldname": "handle",
    "fieldtype": "Data",
-   "label": "URL del Perfil",
-   "options": "URL"
+   "label": "Handle",
+   "read_only": 1,
+   "hidden": 1,
+   "description": "Auto-calculado desde url_perfil (interno para scrapers y autoname)."
   },
   {
    "fieldname": "activo",
@@ -158,8 +161,8 @@
  "sort_order": "DESC",
  "states": [],
  "autoname": "format:{plataforma}-{handle}",
- "naming_rule": "By fieldname",
+ "naming_rule": "Expression (old style)",
  "title_field": "handle",
- "description": "Un perfil por red social de un competidor.",
- "search_fields": "handle,competidor,plataforma"
+ "description": "Un perfil por red social de un competidor. Se identifica por su URL; el handle se deriva.",
+ "search_fields": "handle,competidor,plataforma,url_perfil"
 }
