@@ -14,11 +14,24 @@
   /* ============================================
      LAYOUT AMPLIO (full-width para la tabla)
      ============================================ */
+  /* Override del contenedor Bootstrap de Frappe (max-width 1290) */
+  main.container.my-4,
+  body main.container,
+  .page-content-wrapper main.container {
+    max-width: none !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  .page_content { padding: 0 !important; }
+
   .rd-app.rd-wide .rd-main {
-    max-width: none;              /* usar todo el ancho disponible */
-    padding: 12px 16px 28px;      /* padding lateral chico */
+    max-width: none;
+    padding: 12px 16px 28px;
     width: 100%;
   }
+  .rd-app.rd-wide .rd-topbar { padding-left: 20px; padding-right: 20px; }
 
   /* Título integrado en el topbar */
   .rd-topbar { padding: 10px 20px; }
