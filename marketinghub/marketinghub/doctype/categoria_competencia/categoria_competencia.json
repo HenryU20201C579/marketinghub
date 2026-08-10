@@ -79,8 +79,8 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "autoname": "field:nombre_categoria",
- "naming_rule": "By fieldname",
+ "autoname": "format:{nombre_categoria}",
+ "naming_rule": "Expression (old style)",
  "title_field": "nombre_categoria",
  "description": "Categoría de marketing para agrupar competidores (no confundir con categoría de producto)."
 }

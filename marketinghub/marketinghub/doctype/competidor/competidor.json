@@ -132,8 +132,8 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "autoname": "field:nombre_comercial",
- "naming_rule": "By fieldname",
+ "autoname": "format:{nombre_comercial}",
+ "naming_rule": "Expression (old style)",
  "title_field": "nombre_comercial",
  "search_fields": "nombre_comercial,categoria,prioridad"
 }
