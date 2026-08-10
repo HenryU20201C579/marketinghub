@@ -386,7 +386,7 @@
   window.RadarPubs = {
     lista: [],
     tiersConfig: [],       // config visual de los tiers
-    tierPorNombre: {},     // map nombre → tier config
+    tierPorOrden: {},      // map orden → tier config (más robusto que por nombre)
     sortBy: 'tier_orden',
     sortDir: 'asc',        // menor orden = mejor tier
 
@@ -475,11 +475,12 @@
         ? `<a class="rd-hook-link" href="${Radar.escapeHtml(p.url_publicacion)}" target="_blank" rel="noopener" title="Abrir post · ${Radar.escapeHtml(p.descripcion || '')}"><span>${Radar.escapeHtml(hookText)}</span><i data-lucide="external-link" class="rd-ext-ico"></i></a>`
         : Radar.escapeHtml(hookText);
 
-      // celda tier: imagen + nombre coloreado
-      const tierCfg = this.tierPorNombre[p.tier] || {};
+      // celda tier: imagen + nombre coloreado (buscamos por ORDEN, no por nombre,
+      // porque el usuario puede haber renombrado el tier en Settings)
+      const tierCfg = this.tierPorOrden[p.tier_orden] || {};
       const tierImg = tierCfg.imagen_url || '';
       const tierColor = tierCfg.color_hex || '#94a3b8';
-      const tierName = p.tier || '—';
+      const tierName = tierCfg.nombre || p.tier || '—';
       const tierCell = `
         <div class="rd-tier-cell" title="${Radar.escapeHtml(tierName)}">
           ${tierImg ? `<img class="rd-tier-img" src="${Radar.escapeHtml(tierImg)}" alt="${Radar.escapeHtml(tierName)}">` : ''}
@@ -581,8 +582,8 @@
         opts.competidores.map(c => `<option value="${Radar.escapeHtml(c)}">${Radar.escapeHtml(c)}</option>`).join('');
       // tiers
       RadarPubs.tiersConfig = opts.tiers || [];
-      RadarPubs.tierPorNombre = {};
-      opts.tiers.forEach(t => { RadarPubs.tierPorNombre[t.nombre] = t; });
+      RadarPubs.tierPorOrden = {};
+      opts.tiers.forEach(t => { RadarPubs.tierPorOrden[t.orden] = t; });
       const selT = document.getElementById('rd-f-tier');
       selT.innerHTML = '<option value="">🏆 Todos los tiers</option>' +
         opts.tiers.map(t => `<option value="${t.orden}">${t.orden}. ${Radar.escapeHtml(t.nombre)}${t.es_viral ? ' 🔥' : ''} o mejor</option>`).join('');
