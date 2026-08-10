@@ -37,11 +37,19 @@ def obtener_contadores():
 	if not _has_role(VIEW_ROLES):
 		frappe.throw("Acceso denegado", frappe.PermissionError)
 
+	from datetime import date, timedelta
+	hoy = date.today()
+	hace_24h = hoy - timedelta(days=1)
+
 	return {
 		"categorias": frappe.db.count("Categoria Competencia"),
 		"competidores": frappe.db.count("Competidor", filters={"activo": 1}),
 		"cuentas": frappe.db.count("Cuenta Social", filters={"activo": 1}),
 		"publicaciones": frappe.db.count("Publicacion Competencia"),
 		"virales": frappe.db.count("Publicacion Competencia", filters={"es_viral": 1}),
+		"virales_hoy": frappe.db.count("Publicacion Competencia", filters={
+			"es_viral": 1,
+			"fecha_publicacion": [">=", hace_24h],
+		}),
 		"nuevos": frappe.db.count("Publicacion Competencia", filters={"estado": "Nuevo"}),
 	}

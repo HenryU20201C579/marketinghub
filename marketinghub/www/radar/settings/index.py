@@ -32,51 +32,71 @@ def get_context(context):
 
 @frappe.whitelist()
 def obtener_settings():
-	"""Retorna los valores actuales de Radar Settings."""
+	"""Retorna los valores actuales de Radar Settings + tabla de tiers."""
 	if not _has_role(VIEW_ROLES):
 		frappe.throw("Acceso denegado", frappe.PermissionError)
 	s = frappe.get_doc("Radar Settings")
+	tiers = []
+	for t in sorted(s.tiers_viralidad or [], key=lambda x: x.orden):
+		tiers.append({
+			"orden": t.orden,
+			"nombre": t.nombre,
+			"imagen_url": t.imagen_url,
+			"vistas_min": t.vistas_min,
+			"engagement_min": t.engagement_min,
+			"es_viral": int(t.es_viral or 0),
+			"color_hex": t.color_hex,
+		})
 	return {
-		"umbral_viralidad": s.umbral_viralidad or 2.0,
-		"piso_minimo_vistas": s.piso_minimo_vistas or 10000,
-		"umbral_velocidad": s.umbral_velocidad or 3.0,
-		"n_pubs_baseline": s.n_pubs_baseline or 30,
 		"dias_retencion_snapshots": s.dias_retencion_snapshots or 90,
 		"canal_alerta": s.canal_alerta or "In-app ERP",
 		"preset_frecuencia": s.preset_frecuencia or "Diario a las 6 AM",
 		"cron_scrape": s.cron_scrape or "0 6 * * *",
 		"posts_por_perfil": s.posts_por_perfil or 20,
+		"tiers": tiers,
 	}
 
 
 @frappe.whitelist()
 def guardar_settings(
-	umbral_viralidad=None,
-	piso_minimo_vistas=None,
-	umbral_velocidad=None,
-	n_pubs_baseline=None,
 	dias_retencion_snapshots=None,
 	canal_alerta=None,
 	preset_frecuencia=None,
 	cron_scrape=None,
 	posts_por_perfil=None,
+	tiers=None,
 ):
-	"""Guarda los valores de Radar Settings."""
+	"""Guarda los valores de Radar Settings. tiers = JSON string con la tabla."""
+	import json as _json
 	if not _has_role(ADMIN_ROLES):
 		frappe.throw(
 			"Solo un administrador puede modificar la configuración.",
 			frappe.PermissionError,
 		)
 	s = frappe.get_single("Radar Settings")
-	if umbral_viralidad is not None:      s.umbral_viralidad = float(umbral_viralidad)
-	if piso_minimo_vistas is not None:    s.piso_minimo_vistas = int(piso_minimo_vistas)
-	if umbral_velocidad is not None:      s.umbral_velocidad = float(umbral_velocidad)
-	if n_pubs_baseline is not None:       s.n_pubs_baseline = int(n_pubs_baseline)
 	if dias_retencion_snapshots is not None: s.dias_retencion_snapshots = int(dias_retencion_snapshots)
 	if canal_alerta is not None:          s.canal_alerta = canal_alerta
 	if preset_frecuencia is not None:     s.preset_frecuencia = preset_frecuencia
 	if cron_scrape is not None:           s.cron_scrape = cron_scrape.strip()
 	if posts_por_perfil is not None:      s.posts_por_perfil = int(posts_por_perfil)
+
+	if tiers is not None:
+		try:
+			tiers_data = _json.loads(tiers) if isinstance(tiers, str) else tiers
+		except Exception:
+			frappe.throw("Los tiers deben ser un JSON válido.")
+		s.tiers_viralidad = []
+		for t in tiers_data:
+			s.append("tiers_viralidad", {
+				"orden": int(t.get("orden") or 0),
+				"nombre": t.get("nombre") or "",
+				"imagen_url": t.get("imagen_url") or "",
+				"vistas_min": int(t.get("vistas_min") or 0),
+				"engagement_min": float(t.get("engagement_min") or 0),
+				"es_viral": 1 if t.get("es_viral") else 0,
+				"color_hex": t.get("color_hex") or "#94a3b8",
+			})
+
 	s.save(ignore_permissions=True)
 	frappe.db.commit()
 	return {"ok": True}

@@ -35,7 +35,7 @@ def get_context(context):
 
 
 @frappe.whitelist()
-def listar(competidor=None, plataforma=None, estado=None, solo_virales=None, limite=None):
+def listar(competidor=None, plataforma=None, estado=None, limite=None):
 	if not _has_role(VIEW_ROLES):
 		frappe.throw("Acceso denegado", frappe.PermissionError)
 	filters = {}
@@ -45,10 +45,8 @@ def listar(competidor=None, plataforma=None, estado=None, solo_virales=None, lim
 		filters["plataforma"] = plataforma
 	if estado:
 		filters["estado"] = estado
-	if solo_virales and str(solo_virales) in ("1", "true", "True"):
-		filters["es_viral"] = 1
 
-	limite = int(limite or 50)
+	limite = int(limite or 500)
 	pubs = frappe.db.get_all(
 		"Publicacion Competencia",
 		filters=filters,
@@ -58,11 +56,11 @@ def listar(competidor=None, plataforma=None, estado=None, solo_virales=None, lim
 			"titulo_hook", "descripcion",
 			"vistas_actual", "likes_actual", "comentarios_actual",
 			"compartidos_actual", "guardados_actual",
-			"engagement_pct", "score_viralidad", "es_viral",
-			"motivo_viralidad", "formato", "estado",
+			"engagement_pct", "es_viral", "tier", "tier_orden",
+			"formato", "estado",
 			"notas_analisis", "elementos_a_copiar",
 		],
-		order_by="fecha_publicacion desc, modified desc",
+		order_by="tier_orden asc, fecha_publicacion desc",
 		limit=limite,
 	)
 	return pubs
@@ -75,10 +73,22 @@ def opciones_filtros():
 	competidores = [c["name"] for c in frappe.db.get_all(
 		"Competidor", fields=["name"], order_by="nombre_comercial asc",
 	)]
+	# Tiers con su config visual
+	s = frappe.get_cached_doc("Radar Settings")
+	tiers = []
+	for t in sorted(s.tiers_viralidad or [], key=lambda x: x.orden):
+		tiers.append({
+			"orden": t.orden,
+			"nombre": t.nombre,
+			"imagen_url": t.imagen_url,
+			"color_hex": t.color_hex,
+			"es_viral": bool(t.es_viral),
+		})
 	return {
 		"competidores": competidores,
 		"plataformas": ["Instagram", "TikTok", "Facebook", "YouTube"],
 		"estados": list(ESTADOS),
+		"tiers": tiers,
 	}
 
 

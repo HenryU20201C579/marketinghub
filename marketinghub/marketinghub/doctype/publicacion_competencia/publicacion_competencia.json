@@ -27,10 +27,10 @@
   "guardados_actual",
   "sb_calc",
   "engagement_pct",
-  "score_viralidad",
   "cb_3",
   "es_viral",
-  "motivo_viralidad",
+  "tier",
+  "tier_orden",
   "sb_snapshots",
   "historico_metricas",
   "sb_analisis",
@@ -178,15 +178,6 @@
    "description": "Calc: (likes+coment+shares+guardados) / (vistas o seguidores) × 100."
   },
   {
-   "fieldname": "score_viralidad",
-   "fieldtype": "Float",
-   "label": "Score Viralidad",
-   "read_only": 1,
-   "in_list_view": 1,
-   "precision": "2",
-   "description": "Calc: engagement_pct / engagement_promedio_cuenta."
-  },
-  {
    "fieldname": "cb_3",
    "fieldtype": "Column Break"
   },
@@ -195,15 +186,24 @@
    "fieldtype": "Check",
    "label": "¿Es Viral?",
    "read_only": 1,
-   "in_list_view": 1
+   "in_list_view": 1,
+   "description": "Se marca automáticamente si el tier asignado tiene 'es_viral' activo."
   },
   {
-   "fieldname": "motivo_viralidad",
-   "fieldtype": "Select",
-   "label": "Motivo Viralidad",
-   "options": "\nengagement\nvelocidad\nambos",
+   "fieldname": "tier",
+   "fieldtype": "Data",
+   "label": "Tier",
    "read_only": 1,
-   "description": "Solo se llena si es_viral = 1."
+   "in_list_view": 1,
+   "description": "Nivel de viralidad (Dragón Plateado, Cetro de Rubí, Pollito, etc.)."
+  },
+  {
+   "fieldname": "tier_orden",
+   "fieldtype": "Int",
+   "label": "Tier (orden)",
+   "read_only": 1,
+   "hidden": 1,
+   "description": "Orden numérico del tier (1=mejor). Para ordenar reports."
   },
   {
    "fieldname": "sb_snapshots",

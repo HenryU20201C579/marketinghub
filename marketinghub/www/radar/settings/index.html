@@ -51,36 +51,17 @@
 
     <form class="rd-settings-form" id="rd-settings-form" onsubmit="event.preventDefault(); RadarSettings.guardar();">
       <div class="rd-settings-section">
-        <h3>🔥 Umbrales de viralidad</h3>
-
-        <div class="rd-field">
-          <label for="umbral_viralidad">¿Cuánto más engagement debe tener un post para ser viral?</label>
-          <input type="number" step="0.1" min="1" id="umbral_viralidad" name="umbral_viralidad" class="rd-input" required {% if not can_edit %}disabled{% endif %}>
-          <div class="rd-hint">Ejemplo: <b>2.0</b> significa que el post debe tener el doble de engagement que el promedio de esa cuenta.</div>
-        </div>
-
-        <div class="rd-field">
-          <label for="piso_minimo_vistas">Mínimo de vistas para ser considerado viral</label>
-          <input type="number" step="100" min="0" id="piso_minimo_vistas" name="piso_minimo_vistas" class="rd-input" required {% if not can_edit %}disabled{% endif %}>
-          <div class="rd-hint">Además del engagement, el post debe tener al menos esta cantidad de vistas.</div>
-        </div>
-
-        <div class="rd-field">
-          <label for="umbral_velocidad">Detector temprano de virales (velocidad)</label>
-          <input type="number" step="0.1" min="1" id="umbral_velocidad" name="umbral_velocidad" class="rd-input" required {% if not can_edit %}disabled{% endif %}>
-          <div class="rd-hint">Si un post nuevo crece <b>N veces</b> más rápido que el promedio, se marca viral incluso antes de acumular engagement.</div>
-        </div>
+        <h3>🏆 Tiers de Viralidad</h3>
+        <p class="rd-hint" style="margin-bottom: 12px;">
+          Cada post se clasifica en un tier según <b>vistas</b> y <b>engagement %</b>.
+          Se le asigna el tier <b>más alto</b> (menor "Orden") cuyos 2 umbrales cumple.
+          Los tiers marcados como "Viral" activan la fila roja en la tabla.
+        </p>
+        <div id="rd-tiers-table"></div>
       </div>
 
       <div class="rd-settings-section">
-        <h3>📐 Cálculo del baseline</h3>
-
-        <div class="rd-field">
-          <label for="n_pubs_baseline">¿Cuántas publicaciones usar para calcular el promedio?</label>
-          <input type="number" step="1" min="5" max="200" id="n_pubs_baseline" name="n_pubs_baseline" class="rd-input" required {% if not can_edit %}disabled{% endif %}>
-          <div class="rd-hint">El sistema usa la <b>mediana</b> de las últimas N publicaciones de cada cuenta para determinar su engagement promedio.</div>
-        </div>
-
+        <h3>📦 Retención de datos</h3>
         <div class="rd-field">
           <label for="dias_retencion_snapshots">¿Cuántos días guardar el histórico de métricas?</label>
           <input type="number" step="1" min="30" id="dias_retencion_snapshots" name="dias_retencion_snapshots" class="rd-input" required {% if not can_edit %}disabled{% endif %}>
@@ -166,23 +147,69 @@
 
 <script src="/radar/radar.js"></script>
 <script>
+  const CAN_EDIT_S = {{ 'true' if can_edit else 'false' }};
+
   window.RadarSettings = {
+    tiers: [],
     async cargar() {
       try {
         const data = await Radar.api('marketinghub.www.radar.settings.index.obtener_settings');
         for (const k of Object.keys(data)) {
           const el = document.getElementById(k);
-          if (el) el.value = data[k];
+          if (el && k !== 'tiers') el.value = data[k];
         }
+        this.tiers = data.tiers || [];
+        this.renderTiers();
         this._toggleCustomCron();
       } catch (e) {
         Radar.toast('Error al cargar: ' + e.message, 'error');
       }
       this.cargarEstado();
     },
+    renderTiers() {
+      const cont = document.getElementById('rd-tiers-table');
+      const disabled = CAN_EDIT_S ? '' : 'disabled';
+      cont.innerHTML = `
+        <table style="width:100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr style="background: var(--bg-soft); border-bottom: 1px solid var(--border);">
+              <th style="text-align:left; padding:8px; width:50px;">Orden</th>
+              <th style="text-align:left; padding:8px; width:60px;">Imagen</th>
+              <th style="text-align:left; padding:8px;">Nombre</th>
+              <th style="text-align:right; padding:8px; width:110px;">Vistas ≥</th>
+              <th style="text-align:right; padding:8px; width:100px;">Eng % ≥</th>
+              <th style="text-align:center; padding:8px; width:60px;">Viral</th>
+            </tr>
+          </thead>
+          <tbody>
+          ${this.tiers.map((t, i) => `
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding:6px;"><input type="number" value="${t.orden}" min="1" data-idx="${i}" data-k="orden" class="rd-input" style="width:60px;padding:4px 6px;" ${disabled}></td>
+              <td style="padding:6px;">${t.imagen_url ? `<img src="${Radar.escapeHtml(t.imagen_url)}" style="width:32px;height:32px;object-fit:contain;image-rendering:pixelated;">` : ''}</td>
+              <td style="padding:6px;"><input type="text" value="${Radar.escapeHtml(t.nombre)}" data-idx="${i}" data-k="nombre" class="rd-input" style="padding:4px 8px;" ${disabled}></td>
+              <td style="padding:6px;"><input type="number" value="${t.vistas_min}" min="0" data-idx="${i}" data-k="vistas_min" class="rd-input" style="width:100px;padding:4px 6px;text-align:right;" ${disabled}></td>
+              <td style="padding:6px;"><input type="number" step="0.1" value="${t.engagement_min}" min="0" data-idx="${i}" data-k="engagement_min" class="rd-input" style="width:90px;padding:4px 6px;text-align:right;" ${disabled}></td>
+              <td style="padding:6px;text-align:center;"><input type="checkbox" ${t.es_viral ? 'checked' : ''} data-idx="${i}" data-k="es_viral" ${disabled}></td>
+            </tr>
+          `).join('')}
+          </tbody>
+        </table>
+      `;
+      // listeners para editar en vivo
+      cont.querySelectorAll('[data-idx]').forEach(el => {
+        el.addEventListener('change', () => {
+          const idx = parseInt(el.dataset.idx);
+          const k = el.dataset.k;
+          if (el.type === 'checkbox') this.tiers[idx][k] = el.checked ? 1 : 0;
+          else if (el.type === 'number') this.tiers[idx][k] = parseFloat(el.value) || 0;
+          else this.tiers[idx][k] = el.value;
+        });
+      });
+    },
     async guardar() {
       const form = document.getElementById('rd-settings-form');
       const data = Object.fromEntries(new FormData(form));
+      data.tiers = JSON.stringify(this.tiers);
       try {
         await Radar.api('marketinghub.www.radar.settings.index.guardar_settings', data);
         Radar.toast('✓ Guardado', 'success');

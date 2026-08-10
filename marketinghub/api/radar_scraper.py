@@ -149,40 +149,6 @@ def _registrar_snapshot(doc):
 
 
 # ============================================================
-# SNAPSHOT DE SEGUIDORES por cuenta
-# ============================================================
-@frappe.whitelist()
-def registrar_seguidores(cuenta_social=None, seguidores=None):
-	"""Agrega o actualiza el snapshot de seguidores de HOY para la cuenta."""
-	_require_ingest_perm()
-	if not cuenta_social or seguidores is None:
-		frappe.throw("cuenta_social y seguidores son obligatorios.")
-
-	from datetime import date
-	hoy = date.today()
-	cuenta = frappe.get_doc("Cuenta Social", cuenta_social)
-
-	existente = None
-	for snap in cuenta.historico_seguidores or []:
-		if snap.fecha == hoy:
-			existente = snap
-			break
-	seguidores = cint(seguidores)
-	if existente:
-		existente.seguidores = seguidores
-	else:
-		cuenta.append("historico_seguidores", {
-			"fecha": hoy,
-			"seguidores": seguidores,
-		})
-	cuenta.save(ignore_permissions=True)
-	# Refrescar metricas calculadas de la cuenta
-	cuenta.refrescar_metricas()
-	frappe.db.commit()
-	return {"ok": True, "seguidores_actual": cuenta.seguidores_actual}
-
-
-# ============================================================
 # CORRIDA COMPLETA — scheduled job y trigger manual
 # ============================================================
 def _map_instagram(item):
@@ -237,7 +203,7 @@ def correr_scrape(limit_per_profile=20):
 	from frappe.utils.password import get_decrypted_password
 
 	inicio = time.time()
-	stats = {"insert": 0, "update": 0, "skip": 0, "error": 0, "seguidores": 0}
+	stats = {"insert": 0, "update": 0, "skip": 0, "error": 0}
 	log_lines = []
 
 	token = get_decrypted_password("Radar Settings", "Radar Settings", "apify_token")
@@ -297,38 +263,20 @@ def correr_scrape(limit_per_profile=20):
 			handles = [c["handle"] for c in cuentas_tt if c.get("handle")]
 			items = apify_actor.scrape_tiktok(token, handles, limit_per_profile)
 			handle_to_cuenta = {c["handle"].lower(): c for c in cuentas_tt if c.get("handle")}
-			seguidores_por_handle = {}
 			pinned_skip = 0
 			for item in items:
-				# authorMeta.fans siempre viene aunque el post sea pinned:
-				# lo usamos ANTES de decidir descartar.
-				author = item.get("authorMeta") or {}
-				owner_h = (author.get("name") or "").lower().lstrip("@")
-				cuenta = handle_to_cuenta.get(owner_h)
-				seg = author.get("fans")
-				if cuenta and seg and owner_h not in seguidores_por_handle:
-					seguidores_por_handle[owner_h] = (cuenta["name"], seg)
-
-				# Descartar pinned (posts viejos con metricas acumuladas)
 				if item.get("isPinned"):
 					pinned_skip += 1
 					continue
-
 				payload = _map_tiktok(item)
-				payload.pop("_owner_username", None)
+				owner_h = payload.pop("_owner_username", "")
 				payload.pop("_seguidores", None)
+				cuenta = handle_to_cuenta.get(owner_h)
 				if not cuenta or not payload["url_publicacion"]:
 					stats["skip"] += 1
 					continue
 				payload["cuenta_social"] = cuenta["name"]
 				_ejecutar_upsert(payload, stats)
-			# Registrar seguidores TikTok (unico por handle)
-			for handle, (cuenta_name, seg) in seguidores_por_handle.items():
-				try:
-					_registrar_seguidores_interno(cuenta_name, int(seg))
-					stats["seguidores"] += 1
-				except Exception as e:
-					frappe.log_error(f"seguidores {handle}: {e}", "Radar Scraper · TT seg")
 			log_lines.append(f"TikTok · {len(items)} items ({pinned_skip} anclados descartados)")
 		except Exception as e:
 			stats["error"] += 1
@@ -390,23 +338,6 @@ def _agregar_snapshot(doc):
 			setattr(existente, k, v)
 	else:
 		doc.append("historico_metricas", {"fecha_snapshot": hoy, **campos})
-
-
-def _registrar_seguidores_interno(cuenta_name, seguidores):
-	from datetime import date
-	cuenta = frappe.get_doc("Cuenta Social", cuenta_name)
-	hoy = date.today()
-	existente = None
-	for snap in cuenta.historico_seguidores or []:
-		if snap.fecha == hoy:
-			existente = snap
-			break
-	if existente:
-		existente.seguidores = seguidores
-	else:
-		cuenta.append("historico_seguidores", {"fecha": hoy, "seguidores": seguidores})
-	cuenta.save(ignore_permissions=True)
-	cuenta.refrescar_metricas()
 
 
 def _registrar_corrida(duracion_s, stats, estado, mensaje):
