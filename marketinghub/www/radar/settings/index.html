@@ -106,9 +106,14 @@
         </div>
 
         <div class="rd-field">
-          <label for="posts_por_perfil">Posts por perfil (por corrida)</label>
-          <input type="number" step="1" min="1" max="100" id="posts_por_perfil" name="posts_por_perfil" class="rd-input" required {% if not can_edit %}disabled{% endif %}>
-          <div class="rd-hint">Cuántos posts más recientes leer de cada cuenta. Más = más caro (~$0.003 por post en Apify).</div>
+          <label for="posts_por_perfil_ig">Posts por perfil de <b>Instagram</b> (por corrida)</label>
+          <input type="number" step="1" min="1" max="200" id="posts_por_perfil_ig" name="posts_por_perfil_ig" class="rd-input" required {% if not can_edit %}disabled{% endif %}>
+          <div class="rd-hint">Cuántos posts más recientes leer de cada cuenta IG. Cada uno ~$0.002 en Apify.</div>
+        </div>
+        <div class="rd-field">
+          <label for="posts_por_perfil_tiktok">Videos por perfil de <b>TikTok</b> (por corrida)</label>
+          <input type="number" step="1" min="1" max="200" id="posts_por_perfil_tiktok" name="posts_por_perfil_tiktok" class="rd-input" required {% if not can_edit %}disabled{% endif %}>
+          <div class="rd-hint">Cuántos videos más recientes leer de cada cuenta TikTok. Cada uno ~$0.0003 en Apify.</div>
         </div>
 
         {% if can_edit %}
@@ -234,8 +239,7 @@
       btn.innerHTML = '<i data-lucide="loader"></i> Encolando...';
       lucide.createIcons();
       try {
-        const r = await Radar.api('marketinghub.api.radar_scraper.ejecutar_scrape_ahora',
-                                  {limit: document.getElementById('posts_por_perfil').value || 20});
+        const r = await Radar.api('marketinghub.api.radar_scraper.ejecutar_scrape_ahora', {});
         Radar.toast(r.mensaje || '✓ Scrape encolado', 'success');
         // reload estado cada 5 segs para ver cuando termine
         this._pollEstado(10);

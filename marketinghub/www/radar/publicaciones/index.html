@@ -235,6 +235,9 @@
 
   /* Responsive escalonado. Con celdas mas compactas y hook 260px,
      el ancho total base es ~1120px y todo cabe hasta ~1150 viewport. */
+  @media (max-width: 1300px) {
+    .rd-col-scrapeado { display: none; }
+  }
   @media (max-width: 1150px) {
     .rd-col-guardados { display: none; }
   }
@@ -324,12 +327,13 @@
             <th class="rd-col-shares" style="text-align:right;">Shares</th>
             <th class="rd-col-guardados" style="text-align:right;">Guar.</th>
             <th class="rd-sortable" data-sort="engagement_pct" style="text-align:right;">Eng % <span class="rd-sort-ico"></span></th>
+            <th class="rd-col-scrapeado" style="width: 110px;">Scrapeado</th>
             <th>Estado</th>
             <th style="width: 96px;"></th>
           </tr>
         </thead>
         <tbody id="rd-tbody">
-          <tr><td colspan="13" class="rd-empty-tbl">Cargando…</td></tr>
+          <tr><td colspan="14" class="rd-empty-tbl">Cargando…</td></tr>
         </tbody>
       </table>
     </div>
@@ -355,6 +359,20 @@
       return d.toLocaleDateString('es-PE', {day: '2-digit', month: 'short', year: '2-digit'});
     } catch (e) { return s; }
   }
+  function fmtScrapeo(s) {
+    if (!s) return '—';
+    try {
+      const d = new Date(s.replace(' ', 'T'));
+      const now = new Date();
+      const diffH = (now - d) / 3600000;
+      if (diffH < 1)   return 'hace ' + Math.max(1, Math.round(diffH*60)) + ' min';
+      if (diffH < 24)  return 'hace ' + Math.round(diffH) + ' h';
+      if (diffH < 48)  return 'ayer';
+      const dias = Math.round(diffH / 24);
+      if (dias < 30)   return 'hace ' + dias + ' días';
+      return d.toLocaleDateString('es-PE', {day:'2-digit', month:'short'});
+    } catch (e) { return s; }
+  }
   function engClass(pct) {
     if (pct >= 5) return 'rd-eng-alto';
     if (pct >= 2) return 'rd-eng-medio';
@@ -369,11 +387,17 @@
     sortDir: 'asc',        // menor orden = mejor tier
 
     async cargar() {
+      // Si vinimos con ?fecha_desde=&fecha_hasta= (desde comparativa), aplicamos
+      // en el servidor. El resto de filtros son client-side.
+      const q = new URLSearchParams(location.search);
+      const args = {limite: 500};
+      if (q.get('fecha_desde')) args.fecha_desde = q.get('fecha_desde');
+      if (q.get('fecha_hasta')) args.fecha_hasta = q.get('fecha_hasta');
       try {
-        this.lista = await Radar.api('marketinghub.www.radar.publicaciones.index.listar', {limite: 500});
+        this.lista = await Radar.api('marketinghub.www.radar.publicaciones.index.listar', args);
       } catch (e) {
         document.getElementById('rd-tbody').innerHTML =
-          `<tr><td colspan="13" class="rd-empty-tbl"><b>Error:</b> ${Radar.escapeHtml(e.message)}</td></tr>`;
+          `<tr><td colspan="14" class="rd-empty-tbl"><b>Error:</b> ${Radar.escapeHtml(e.message)}</td></tr>`;
         return;
       }
       document.getElementById('rd-count').textContent = `${this.lista.length} publicaciones total`;
@@ -419,7 +443,7 @@
 
       const tb = document.getElementById('rd-tbody');
       if (!items.length) {
-        tb.innerHTML = `<tr><td colspan="13" class="rd-empty-tbl">
+        tb.innerHTML = `<tr><td colspan="14" class="rd-empty-tbl">
           <div style="font-size:15px;font-weight:600;margin-bottom:6px;">Sin resultados</div>
           <div>Ningún post coincide con los filtros aplicados.</div>
         </td></tr>`;
@@ -471,6 +495,7 @@
           <td class="rd-num rd-col-shares">${fmtNum(p.compartidos_actual)}</td>
           <td class="rd-num rd-col-guardados">${fmtNum(p.guardados_actual)}</td>
           <td class="rd-num"><span class="${engClass(eng)}">${eng.toFixed(2)}%</span></td>
+          <td class="rd-col-scrapeado" style="font-size:11px;color:var(--text-2);white-space:nowrap;">${fmtScrapeo(p.fecha_ultimo_scrapeo)}</td>
           <td><span class="rd-pill ${estCls}">${Radar.escapeHtml(p.estado || 'Nuevo')}</span></td>
           <td class="rd-actions">
             ${CAN_EDIT ? `<button class="rd-btn-analizar" onclick="RadarPubs.analizar('${Radar.escapeHtml(p.name)}')" title="Analizar / editar estado"><i data-lucide="edit-3"></i><span>Analizar</span></button>` : ''}
@@ -558,6 +583,24 @@
       selT.innerHTML = '<option value="">🏆 Todos los tiers</option>' +
         opts.tiers.map(t => `<option value="${t.orden}">${t.orden}. ${Radar.escapeHtml(t.nombre)}${t.es_viral ? ' 🔥' : ''} o mejor</option>`).join('');
     } catch (e) { console.error(e); }
+
+    // Aplicar filtros preseleccionados desde query string
+    const q = new URLSearchParams(location.search);
+    for (const [key, elId] of [
+      ['competidor', 'rd-f-comp'],
+      ['plataforma', 'rd-f-plat'],
+      ['estado', 'rd-f-estado'],
+    ]) {
+      if (q.get(key)) {
+        const el = document.getElementById(elId);
+        if (el) el.value = q.get(key);
+      }
+    }
+    // Si el usuario vino desde comparativa con fecha específica, deshabilito el
+    // filtro de "últimos N días" para no ocultar los resultados.
+    if (q.get('fecha_desde') || q.get('fecha_hasta')) {
+      document.getElementById('rd-f-fecha').value = '';
+    }
 
     RadarPubs.cargar();
 

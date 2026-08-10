@@ -1,0 +1,271 @@
+{% extends "templates/web.html" %}
+
+{% block navbar %}{% endblock %}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block style %}
+{{ super() }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="/radar/radar.css">
+<style>
+  main.container.my-4 { max-width: none !important; padding: 0 !important; }
+  .page_content { padding: 0 !important; }
+  .rd-app.rd-wide .rd-main { max-width: none; padding: 12px 16px 28px; width: 100%; }
+  .rd-topbar { padding: 10px 20px; }
+  .rd-topbar-title { font-size: 16px; font-weight: 700; color: var(--text);
+    display: flex; align-items: center; gap: 8px;
+    padding-left: 12px; border-left: 1px solid var(--border); margin-left: 4px;
+  }
+  .rd-topbar-title-emoji { font-size: 18px; }
+
+  .rd-filterbar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 8px 10px; margin-bottom: 10px;
+    box-shadow: var(--shadow-sm);
+  }
+  .rd-filterbar .rd-select { min-width: 150px; padding: 7px 10px; font-size: 13px; }
+  .rd-filterbar .rd-spacer { flex: 1; }
+  .rd-filterbar .rd-note { font-size: 12px; color: var(--text-2); }
+
+  .rd-cmp-wrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow-x: auto; box-shadow: var(--shadow-sm);
+  }
+  .rd-cmp {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    font-size: 13px; font-family: 'Inter', sans-serif;
+  }
+  .rd-cmp thead th {
+    background: var(--bg-soft); color: var(--text);
+    font-weight: 700; font-size: 11.5px; text-transform: uppercase;
+    letter-spacing: 0.03em; padding: 10px 8px;
+    text-align: center; border-bottom: 2px solid var(--border-strong);
+    white-space: nowrap;
+  }
+  .rd-cmp thead th:first-child { text-align: left; padding-left: 16px; }
+  .rd-cmp thead th.rd-total { background: #e2e8f0; }
+
+  .rd-cmp tbody td {
+    padding: 10px 8px; text-align: center; font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums;
+    cursor: pointer; transition: background .1s;
+  }
+  .rd-cmp tbody td:first-child {
+    text-align: left; padding-left: 16px; font-family: 'Inter', sans-serif;
+    font-weight: 600; cursor: default; white-space: nowrap;
+  }
+  .rd-cmp tbody td:hover:not(:first-child) { background: #e0edff; }
+  .rd-cmp tbody td.zero { color: #cbd5e1; }
+  .rd-cmp tbody td.total {
+    background: #f8fafc; font-weight: 700; cursor: default;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .rd-cmp tfoot td {
+    background: #f1f5f9; font-weight: 700;
+    padding: 10px 8px; text-align: center;
+    border-top: 2px solid var(--border-strong);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .rd-cmp tfoot td:first-child { text-align: left; padding-left: 16px; font-family: 'Inter', sans-serif; }
+
+  /* Heatmap intensity — clases se aplican via JS */
+  .heat-1 { background: #fef9c3; }   /* warm bajo */
+  .heat-2 { background: #fef3c7; }
+  .heat-3 { background: #fde68a; font-weight: 600; }
+  .heat-4 { background: #fca5a5; color: #7f1d1d; font-weight: 700; }
+  .heat-5 { background: #ef4444; color: white; font-weight: 800; }
+
+  .rd-legend {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--text-2); margin-top: 8px;
+  }
+  .rd-legend .swatch {
+    display: inline-block; width: 24px; height: 14px;
+    border-radius: 3px; border: 1px solid #e5e9f0;
+  }
+</style>
+{% endblock %}
+
+{% block page_content %}
+{% if no_access %}
+<div class="rd-na-screen"><div class="rd-na-card">
+  <div class="rd-na-brand"><span class="rd-na-dot"></span><span>Radar · Acceso denegado</span></div>
+  <div class="rd-na-body">No tienes permiso.
+    <ul class="rd-na-roles">{% for r in required_roles %}<li><code>{{ r }}</code></li>{% endfor %}</ul>
+  </div>
+</div></div>
+{% else %}
+<div class="rd-app rd-wide">
+  <header class="rd-topbar">
+    <div class="rd-topbar-left">
+      <a href="/radar" class="rd-back"><i data-lucide="arrow-left"></i> Volver</a>
+      <div class="rd-topbar-title">
+        <span class="rd-topbar-title-emoji">📅</span>
+        <span>Comparativa</span>
+      </div>
+    </div>
+    <div class="rd-topbar-right">
+      <span class="rd-user" id="rd-total">—</span>
+    </div>
+  </header>
+
+  <main class="rd-main">
+    <div class="rd-filterbar">
+      <select id="rd-f-anio" class="rd-select" title="Año"></select>
+      <select id="rd-f-plat" class="rd-select" title="Plataforma">
+        <option value="">🏆 Todas las plataformas</option>
+      </select>
+      <select id="rd-f-metrica" class="rd-select" title="Métrica"></select>
+      <div class="rd-spacer"></div>
+      <span class="rd-note">Anclados excluidos · Clic en celda = ver posts</span>
+    </div>
+
+    <div class="rd-cmp-wrap" id="rd-cmp-wrap">
+      <div style="padding: 40px; text-align: center; color: var(--text-2);">Cargando…</div>
+    </div>
+
+    <div class="rd-legend">
+      Intensidad:
+      <span class="swatch" style="background:white;"></span> 0
+      <span class="swatch heat-1"></span> bajo
+      <span class="swatch heat-3"></span> medio
+      <span class="swatch heat-4"></span> alto
+      <span class="swatch heat-5"></span> muy alto
+    </div>
+  </main>
+</div>
+
+<script src="/radar/radar.js"></script>
+<script>
+  const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+  function fmtNum(n) {
+    if (n == null || n === 0) return '0';
+    if (n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
+    if (n >= 1000)    return (n/1000).toFixed(1).replace(/\.0$/,'') + 'k';
+    if (Number.isInteger(n)) return n.toLocaleString('es-PE');
+    return n.toFixed(2);
+  }
+
+  function heatClass(val, max) {
+    if (!val || max === 0) return 'zero';
+    const p = val / max;
+    if (p >= 0.8) return 'heat-5';
+    if (p >= 0.6) return 'heat-4';
+    if (p >= 0.4) return 'heat-3';
+    if (p >= 0.2) return 'heat-2';
+    return 'heat-1';
+  }
+
+  window.RadarCmp = {
+    async cargar() {
+      const anio = document.getElementById('rd-f-anio').value;
+      const plat = document.getElementById('rd-f-plat').value;
+      const metrica = document.getElementById('rd-f-metrica').value;
+      try {
+        const data = await Radar.api('marketinghub.www.radar.comparativa.index.obtener_matriz',
+                                     {anio, plataforma: plat, metrica});
+        this._popularFiltros(data);
+        this._renderMatriz(data);
+      } catch (e) {
+        document.getElementById('rd-cmp-wrap').innerHTML =
+          `<div style="padding:40px;text-align:center;color:var(--red);">${Radar.escapeHtml(e.message)}</div>`;
+      }
+    },
+
+    _popularFiltros(data) {
+      const anioSel = document.getElementById('rd-f-anio');
+      if (anioSel.options.length === 0) {
+        anioSel.innerHTML = data.anios_disponibles.map(a =>
+          `<option value="${a}" ${a === data.anio ? 'selected' : ''}>${a}</option>`
+        ).join('');
+      }
+      const platSel = document.getElementById('rd-f-plat');
+      if (platSel.options.length <= 1) {
+        platSel.innerHTML = '<option value="">🏆 Todas las plataformas</option>' +
+          data.plataformas.map(p => `<option value="${Radar.escapeHtml(p)}">${Radar.escapeHtml(p)}</option>`).join('');
+      }
+      const metSel = document.getElementById('rd-f-metrica');
+      if (metSel.options.length === 0) {
+        metSel.innerHTML = data.metricas_disponibles.map(m =>
+          `<option value="${m.key}" ${m.key === data.metrica ? 'selected' : ''}>${Radar.escapeHtml(m.label)}</option>`
+        ).join('');
+      }
+    },
+
+    _renderMatriz(data) {
+      const wrap = document.getElementById('rd-cmp-wrap');
+      const { matriz, competidores, anio, plataforma, metrica } = data;
+
+      if (!competidores.length) {
+        wrap.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-2);">
+          Sin publicaciones en ${anio}${plataforma ? ' para ' + Radar.escapeHtml(plataforma) : ''}.
+        </div>`;
+        return;
+      }
+
+      // calcular máx global para el heatmap
+      let maxVal = 0;
+      let granTotal = 0;
+      const totalesMes = Array(13).fill(0); // idx 1..12
+      const totalesComp = {};
+      for (const c of competidores) {
+        totalesComp[c] = 0;
+        for (let m = 1; m <= 12; m++) {
+          const v = matriz[c][m] || 0;
+          totalesComp[c] += v;
+          totalesMes[m] += v;
+          granTotal += v;
+          if (v > maxVal) maxVal = v;
+        }
+      }
+
+      let html = '<table class="rd-cmp"><thead><tr><th>Competidor</th>';
+      for (let m = 1; m <= 12; m++) html += `<th>${MESES[m-1]}</th>`;
+      html += '<th class="rd-total">Total</th></tr></thead><tbody>';
+
+      const plataformaAttr = plataforma ? encodeURIComponent(plataforma) : '';
+      for (const c of competidores) {
+        html += `<tr><td>🎯 ${Radar.escapeHtml(c)}</td>`;
+        for (let m = 1; m <= 12; m++) {
+          const v = matriz[c][m] || 0;
+          const cls = heatClass(v, maxVal);
+          const mesStr = String(m).padStart(2, '0');
+          const desde = `${anio}-${mesStr}-01`;
+          const hasta = _lastDayOfMonth(anio, m);
+          const url = `/radar/publicaciones?competidor=${encodeURIComponent(c)}` +
+                      (plataforma ? `&plataforma=${plataformaAttr}` : '') +
+                      `&fecha_desde=${desde}&fecha_hasta=${hasta}`;
+          html += `<td class="${cls}" onclick="location.href='${url}'" title="Ver ${fmtNum(v)} posts">${fmtNum(v)}</td>`;
+        }
+        html += `<td class="total">${fmtNum(totalesComp[c])}</td></tr>`;
+      }
+      html += '</tbody><tfoot><tr><td>Total mes</td>';
+      for (let m = 1; m <= 12; m++) html += `<td>${fmtNum(totalesMes[m])}</td>`;
+      html += `<td>${fmtNum(granTotal)}</td></tr></tfoot></table>`;
+
+      wrap.innerHTML = html;
+      document.getElementById('rd-total').textContent = `Total ${anio}: ${fmtNum(granTotal)}`;
+    }
+  };
+
+  function _lastDayOfMonth(anio, mes) {
+    const d = new Date(anio, mes, 0);
+    return `${anio}-${String(mes).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  document.addEventListener('DOMContentLoaded', async function() {
+    lucide.createIcons();
+    await RadarCmp.cargar();
+    ['rd-f-anio','rd-f-plat','rd-f-metrica'].forEach(id =>
+      document.getElementById(id).addEventListener('change', () => RadarCmp.cargar())
+    );
+  });
+</script>
+{% endif %}
+{% endblock %}

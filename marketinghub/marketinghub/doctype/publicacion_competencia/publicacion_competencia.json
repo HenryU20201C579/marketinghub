@@ -31,6 +31,7 @@
   "es_viral",
   "tier",
   "tier_orden",
+  "fecha_ultimo_scrapeo",
   "sb_snapshots",
   "historico_metricas",
   "sb_analisis",
@@ -204,6 +205,13 @@
    "read_only": 1,
    "hidden": 1,
    "description": "Orden numérico del tier (1=mejor). Para ordenar reports."
+  },
+  {
+   "fieldname": "fecha_ultimo_scrapeo",
+   "fieldtype": "Datetime",
+   "label": "Último scrapeo",
+   "read_only": 1,
+   "description": "Momento en que el scraper actualizó por última vez las métricas."
   },
   {
    "fieldname": "sb_snapshots",
