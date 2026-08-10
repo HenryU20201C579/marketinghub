@@ -1,0 +1,155 @@
+{% extends "templates/web.html" %}
+
+{% block navbar %}{% endblock %}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block style %}
+{{ super() }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="/radar/radar.css">
+{% endblock %}
+
+{% block page_content %}
+{% if no_access %}
+<div class="rd-na-screen">
+  <div class="rd-na-card">
+    <div class="rd-na-brand">
+      <span class="rd-na-dot"></span>
+      <span>Radar · Acceso denegado</span>
+    </div>
+    <div class="rd-na-body">
+      No tienes permiso para acceder al Radar.
+      <ul class="rd-na-roles">
+        {% for r in required_roles %}<li><code>{{ r }}</code></li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="rd-app">
+  <header class="rd-topbar">
+    <div class="rd-topbar-left">
+      <a href="/radar" class="rd-back" aria-label="Volver">
+        <i data-lucide="arrow-left"></i> Volver
+      </a>
+      <div class="rd-logo">
+        <span class="rd-logo-dot"></span>
+        <span class="rd-logo-text">Radar · Configuración</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="rd-main">
+    <div class="rd-hero">
+      <h1>⚙️ Configuración</h1>
+      <p class="rd-hero-sub">Ajusta cuándo el sistema debe considerar un video como viral. Todos los valores son cambiables en cualquier momento.</p>
+    </div>
+
+    <form class="rd-settings-form" id="rd-settings-form" onsubmit="event.preventDefault(); RadarSettings.guardar();">
+      <div class="rd-settings-section">
+        <h3>🔥 Umbrales de viralidad</h3>
+
+        <div class="rd-field">
+          <label for="umbral_viralidad">¿Cuánto más engagement debe tener un post para ser viral?</label>
+          <input type="number" step="0.1" min="1" id="umbral_viralidad" name="umbral_viralidad" class="rd-input" required {% if not can_edit %}disabled{% endif %}>
+          <div class="rd-hint">Ejemplo: <b>2.0</b> significa que el post debe tener el doble de engagement que el promedio de esa cuenta.</div>
+        </div>
+
+        <div class="rd-field">
+          <label for="piso_minimo_vistas">Mínimo de vistas para ser considerado viral</label>
+          <input type="number" step="100" min="0" id="piso_minimo_vistas" name="piso_minimo_vistas" class="rd-input" required {% if not can_edit %}disabled{% endif %}>
+          <div class="rd-hint">Además del engagement, el post debe tener al menos esta cantidad de vistas.</div>
+        </div>
+
+        <div class="rd-field">
+          <label for="umbral_velocidad">Detector temprano de virales (velocidad)</label>
+          <input type="number" step="0.1" min="1" id="umbral_velocidad" name="umbral_velocidad" class="rd-input" required {% if not can_edit %}disabled{% endif %}>
+          <div class="rd-hint">Si un post nuevo crece <b>N veces</b> más rápido que el promedio, se marca viral incluso antes de acumular engagement.</div>
+        </div>
+      </div>
+
+      <div class="rd-settings-section">
+        <h3>📐 Cálculo del baseline</h3>
+
+        <div class="rd-field">
+          <label for="n_pubs_baseline">¿Cuántas publicaciones usar para calcular el promedio?</label>
+          <input type="number" step="1" min="5" max="200" id="n_pubs_baseline" name="n_pubs_baseline" class="rd-input" required {% if not can_edit %}disabled{% endif %}>
+          <div class="rd-hint">El sistema usa la <b>mediana</b> de las últimas N publicaciones de cada cuenta para determinar su engagement promedio.</div>
+        </div>
+
+        <div class="rd-field">
+          <label for="dias_retencion_snapshots">¿Cuántos días guardar el histórico de métricas?</label>
+          <input type="number" step="1" min="30" id="dias_retencion_snapshots" name="dias_retencion_snapshots" class="rd-input" required {% if not can_edit %}disabled{% endif %}>
+          <div class="rd-hint">Snapshots más viejos que este límite se borran automáticamente.</div>
+        </div>
+      </div>
+
+      <div class="rd-settings-section">
+        <h3>🔔 Alertas</h3>
+
+        <div class="rd-field">
+          <label for="canal_alerta">¿Por dónde avisar cuando aparezca un viral?</label>
+          <select id="canal_alerta" name="canal_alerta" class="rd-select" required {% if not can_edit %}disabled{% endif %}>
+            <option value="In-app ERP">In-app ERP (campanita del ERP)</option>
+            <option value="Email">Email</option>
+            <option value="Telegram">Telegram</option>
+            <option value="WhatsApp">WhatsApp</option>
+          </select>
+        </div>
+      </div>
+
+      {% if can_edit %}
+      <div class="rd-settings-actions">
+        <button type="button" class="rd-btn rd-btn-secondary" onclick="RadarSettings.cargar()">Restablecer</button>
+        <button type="submit" class="rd-btn">
+          <i data-lucide="check"></i> Guardar cambios
+        </button>
+      </div>
+      {% else %}
+      <div class="rd-settings-actions">
+        <span style="color: var(--text-2); font-size: 13px;">
+          <i data-lucide="lock" style="width:14px;height:14px;vertical-align:middle;"></i>
+          Solo administradores pueden modificar estos valores.
+        </span>
+      </div>
+      {% endif %}
+    </form>
+  </main>
+</div>
+
+<script src="/radar/radar.js"></script>
+<script>
+  window.RadarSettings = {
+    async cargar() {
+      try {
+        const data = await Radar.api('marketinghub.www.radar.settings.index.obtener_settings');
+        for (const k of Object.keys(data)) {
+          const el = document.getElementById(k);
+          if (el) el.value = data[k];
+        }
+      } catch (e) {
+        Radar.toast('Error al cargar: ' + e.message, 'error');
+      }
+    },
+    async guardar() {
+      const form = document.getElementById('rd-settings-form');
+      const data = Object.fromEntries(new FormData(form));
+      try {
+        await Radar.api('marketinghub.www.radar.settings.index.guardar_settings', data);
+        Radar.toast('✓ Guardado', 'success');
+      } catch (e) {
+        Radar.toast('Error al guardar: ' + e.message, 'error');
+      }
+    }
+  };
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.lucide) lucide.createIcons();
+    RadarSettings.cargar();
+  });
+</script>
+{% endif %}
+{% endblock %}
