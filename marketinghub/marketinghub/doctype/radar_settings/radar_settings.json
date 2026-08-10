@@ -13,6 +13,8 @@
   "canal_alerta",
   "sb_scraper",
   "apify_token",
+  "posts_por_perfil_ig",
+  "posts_por_perfil_tiktok",
   "posts_por_perfil",
   "sb_scheduler",
   "preset_frecuencia",
@@ -74,11 +76,26 @@
    "description": "Token de https://console.apify.com. Se guarda encriptado."
   },
   {
+   "fieldname": "posts_por_perfil_ig",
+   "fieldtype": "Int",
+   "label": "Posts por perfil de Instagram",
+   "default": "20",
+   "description": "Cuántos posts más recientes leer de cada cuenta IG activa. Cada post cuesta ~$0.002 en Apify."
+  },
+  {
+   "fieldname": "posts_por_perfil_tiktok",
+   "fieldtype": "Int",
+   "label": "Videos por perfil de TikTok",
+   "default": "20",
+   "description": "Cuántos videos más recientes leer de cada cuenta TikTok activa. Cada video cuesta ~$0.0003 en Apify."
+  },
+  {
    "fieldname": "posts_por_perfil",
    "fieldtype": "Int",
-   "label": "Posts por perfil (por corrida)",
+   "label": "(legacy) Posts por perfil global",
    "default": "20",
-   "description": "Cuántos posts más recientes leer por cada Cuenta Social activa."
+   "hidden": 1,
+   "description": "Fallback si posts_por_perfil_ig/_tiktok están vacíos. Deprecado — no usar."
   },
   {
    "fieldname": "sb_scheduler",

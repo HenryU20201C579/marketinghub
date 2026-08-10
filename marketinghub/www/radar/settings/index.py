@@ -52,7 +52,8 @@ def obtener_settings():
 		"canal_alerta": s.canal_alerta or "In-app ERP",
 		"preset_frecuencia": s.preset_frecuencia or "Diario a las 6 AM",
 		"cron_scrape": s.cron_scrape or "0 6 * * *",
-		"posts_por_perfil": s.posts_por_perfil or 20,
+		"posts_por_perfil_ig": s.posts_por_perfil_ig or 20,
+		"posts_por_perfil_tiktok": s.posts_por_perfil_tiktok or 20,
 		"tiers": tiers,
 	}
 
@@ -63,7 +64,8 @@ def guardar_settings(
 	canal_alerta=None,
 	preset_frecuencia=None,
 	cron_scrape=None,
-	posts_por_perfil=None,
+	posts_por_perfil_ig=None,
+	posts_por_perfil_tiktok=None,
 	tiers=None,
 ):
 	"""Guarda los valores de Radar Settings. tiers = JSON string con la tabla."""
@@ -78,7 +80,8 @@ def guardar_settings(
 	if canal_alerta is not None:          s.canal_alerta = canal_alerta
 	if preset_frecuencia is not None:     s.preset_frecuencia = preset_frecuencia
 	if cron_scrape is not None:           s.cron_scrape = cron_scrape.strip()
-	if posts_por_perfil is not None:      s.posts_por_perfil = int(posts_por_perfil)
+	if posts_por_perfil_ig is not None:   s.posts_por_perfil_ig = int(posts_por_perfil_ig)
+	if posts_por_perfil_tiktok is not None: s.posts_por_perfil_tiktok = int(posts_por_perfil_tiktok)
 
 	if tiers is not None:
 		try:

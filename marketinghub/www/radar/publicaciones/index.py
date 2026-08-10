@@ -35,7 +35,8 @@ def get_context(context):
 
 
 @frappe.whitelist()
-def listar(competidor=None, plataforma=None, estado=None, limite=None):
+def listar(competidor=None, plataforma=None, estado=None,
+           fecha_desde=None, fecha_hasta=None, limite=None):
 	if not _has_role(VIEW_ROLES):
 		frappe.throw("Acceso denegado", frappe.PermissionError)
 	filters = {}
@@ -45,6 +46,12 @@ def listar(competidor=None, plataforma=None, estado=None, limite=None):
 		filters["plataforma"] = plataforma
 	if estado:
 		filters["estado"] = estado
+	if fecha_desde and fecha_hasta:
+		filters["fecha_publicacion"] = ["between", [fecha_desde, fecha_hasta]]
+	elif fecha_desde:
+		filters["fecha_publicacion"] = [">=", fecha_desde]
+	elif fecha_hasta:
+		filters["fecha_publicacion"] = ["<=", fecha_hasta]
 
 	limite = int(limite or 500)
 	pubs = frappe.db.get_all(
@@ -57,7 +64,7 @@ def listar(competidor=None, plataforma=None, estado=None, limite=None):
 			"vistas_actual", "likes_actual", "comentarios_actual",
 			"compartidos_actual", "guardados_actual",
 			"engagement_pct", "es_viral", "tier", "tier_orden",
-			"formato", "estado",
+			"formato", "estado", "fecha_ultimo_scrapeo",
 			"notas_analisis", "elementos_a_copiar",
 		],
 		order_by="tier_orden asc, fecha_publicacion desc",

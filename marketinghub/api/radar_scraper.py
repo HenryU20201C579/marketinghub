@@ -198,20 +198,29 @@ def _map_tiktok(item):
 	}
 
 
-def correr_scrape(limit_per_profile=20):
-	"""Se invoca desde el scheduled job o manualmente. NO usa HTTP — corre in-process."""
+def correr_scrape(limit_per_profile=None):
+	"""Se invoca desde el scheduled job o manualmente. NO usa HTTP — corre in-process.
+
+	limit_per_profile: si se pasa, se usa como FALLBACK global. Por default se leen
+	los valores separados de Radar Settings (posts_por_perfil_ig/tiktok)."""
 	from frappe.utils.password import get_decrypted_password
 
 	inicio = time.time()
 	stats = {"insert": 0, "update": 0, "skip": 0, "error": 0}
 	log_lines = []
 
+	settings = frappe.get_cached_doc("Radar Settings")
 	token = get_decrypted_password("Radar Settings", "Radar Settings", "apify_token")
 	if not token:
 		msg = "apify_token no configurado en Radar Settings"
 		_registrar_corrida(0, stats, "error", msg)
 		frappe.log_error(msg, "Radar Scraper")
 		return {"ok": False, "error": msg}
+
+	# Limites por red social (con fallback al valor global legacy)
+	fallback = int(limit_per_profile or settings.posts_por_perfil or 20)
+	limit_ig = int(settings.posts_por_perfil_ig or fallback)
+	limit_tt = int(settings.posts_por_perfil_tiktok or fallback)
 
 	cuentas = frappe.db.get_all(
 		"Cuenta Social",
@@ -231,7 +240,7 @@ def correr_scrape(limit_per_profile=20):
 		try:
 			cuentas_ig = por_plataforma["Instagram"]
 			urls = [c["url_perfil"] for c in cuentas_ig if c.get("url_perfil")]
-			items = apify_actor.scrape_instagram(token, urls, limit_per_profile)
+			items = apify_actor.scrape_instagram(token, urls, limit_ig)
 			url_to_cuenta = {c["url_perfil"].rstrip("/"): c for c in cuentas_ig}
 			handle_to_cuenta = {c["handle"].lower(): c for c in cuentas_ig if c.get("handle")}
 			pinned_skip = 0
@@ -261,7 +270,7 @@ def correr_scrape(limit_per_profile=20):
 		try:
 			cuentas_tt = por_plataforma["TikTok"]
 			handles = [c["handle"] for c in cuentas_tt if c.get("handle")]
-			items = apify_actor.scrape_tiktok(token, handles, limit_per_profile)
+			items = apify_actor.scrape_tiktok(token, handles, limit_tt)
 			handle_to_cuenta = {c["handle"].lower(): c for c in cuentas_tt if c.get("handle")}
 			pinned_skip = 0
 			for item in items:
@@ -311,6 +320,8 @@ def _ejecutar_upsert(payload, stats):
 			for k, v in payload.items():
 				setattr(doc, k, v)
 			accion = "insert"
+		# Marca cuándo el scraper vio este post por última vez
+		doc.fecha_ultimo_scrapeo = now_datetime()
 		doc.save(ignore_permissions=True)
 		_agregar_snapshot(doc)
 		doc.save(ignore_permissions=True)
@@ -354,17 +365,16 @@ def _registrar_corrida(duracion_s, stats, estado, mensaje):
 
 
 @frappe.whitelist()
-def ejecutar_scrape_ahora(limit=20):
+def ejecutar_scrape_ahora():
 	"""Endpoint para el boton 'Ejecutar ahora' en /radar/settings."""
 	roles = set(frappe.get_roles(frappe.session.user))
 	if not (roles & set(INGEST_ROLES)):
 		frappe.throw("Permiso denegado", frappe.PermissionError)
-	# Encolar en background para no bloquear el request
+	# Encolar en background — usa los limites de Radar Settings
 	frappe.enqueue(
 		"marketinghub.api.radar_scraper.correr_scrape",
 		queue="long",
 		timeout=600,
-		limit_per_profile=int(limit),
 	)
 	return {"ok": True, "mensaje": "Scrape encolado. Verifica 'Última corrida' en unos minutos."}
 
