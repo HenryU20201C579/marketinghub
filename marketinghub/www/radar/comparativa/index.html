@@ -146,10 +146,17 @@
 
   /* Filtros del sidebar */
   .cal-sidebar .cal-sb-filter {
-    width: 100%; padding: 6px 10px; font-size: 12px;
+    width: 100%; padding: 6px 28px 6px 10px;
+    font-size: 12px; line-height: 1.4;
     border: 1px solid var(--border-strong); border-radius: 6px;
-    background: white; margin-bottom: 6px; font-family: inherit;
+    background: white; margin-bottom: 6px;
+    font-family: inherit; color: var(--text);
+    appearance: auto; -webkit-appearance: auto;
+    height: auto; min-height: 32px;
+    box-sizing: border-box;
+    display: block;
   }
+  .cal-sidebar .cal-sb-filter option { color: var(--text); background: white; }
 
   /* Lista de competidores (con checkbox y color) */
   .cal-sidebar .cal-comp-list { display: flex; flex-direction: column; gap: 4px; }
