@@ -123,26 +123,31 @@
   }
   .mini-cal-grid .day {
     aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; border-radius: 50%; color: var(--text);
-    font-weight: 500;
+    cursor: pointer; color: var(--text);
+    font-weight: 500; position: relative;
+    border-radius: 0;
   }
-  .mini-cal-grid .day:hover { background: var(--bg-soft); }
+  .mini-cal-grid .day span {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 50%;
+  }
+  .mini-cal-grid .day:hover span { background: var(--bg-soft); }
   .mini-cal-grid .day.other { color: var(--muted); }
-  .mini-cal-grid .day.today {
+  .mini-cal-grid .day.today span {
     background: var(--brand); color: white; font-weight: 700;
   }
-  .mini-cal-grid .day.today:hover { background: var(--brand-strong); }
-  .mini-cal-grid .day.selected {
-    outline: 2px solid var(--brand); outline-offset: -2px;
+  .mini-cal-grid .day.today:hover span { background: var(--brand-strong); }
+  .mini-cal-grid .day.selected:not(.today) span {
+    background: var(--brand-bg);
     color: var(--brand); font-weight: 700;
   }
   .mini-cal-grid .day.has-events::after {
-    content: ''; position: absolute; bottom: 2px; left: 50%;
+    content: ''; position: absolute; bottom: 1px; left: 50%;
     transform: translateX(-50%);
     width: 4px; height: 4px; border-radius: 50%;
     background: var(--brand);
   }
-  .mini-cal-grid .day { position: relative; }
+  .mini-cal-grid .day.today.has-events::after { background: white; }
 
   /* Filtros del sidebar */
   .cal-sidebar .cal-sb-filter {
@@ -331,13 +336,16 @@
 <div class="rd-app rd-cal">
   <!-- ============ TOPBAR ============ -->
   <header class="cal-topbar">
-    <button class="cal-icon-btn" onclick="CalRadar.toggleSidebar()" title="Ocultar/mostrar sidebar (S)">
+    <a href="/radar" class="rd-back" style="margin-right:4px;" title="Volver al dashboard">
+      <i data-lucide="arrow-left"></i> Volver
+    </a>
+    <button class="cal-icon-btn" onclick="CalRadar.toggleSidebar()" title="Ocultar/mostrar sidebar">
       <i data-lucide="menu"></i>
     </button>
-    <a href="/radar" class="cal-brand" style="text-decoration:none;">
+    <div class="cal-brand">
       <span class="cal-brand-emoji">📅</span>
-      <span>Radar Calendario</span>
-    </a>
+      <span>Calendario</span>
+    </div>
     <button class="cal-btn-today" onclick="CalRadar.hoy()" title="Ir a hoy (T)">Hoy</button>
     <button class="cal-icon-btn" onclick="CalRadar.prev()" title="Anterior (←)">
       <i data-lucide="chevron-left"></i>
@@ -574,7 +582,7 @@
           isSameDay(day, this.anclaFecha) && this.vista !== 'anio' ? 'selected' : '',
           this.diasConEventos.has(iso) ? 'has-events' : '',
         ].filter(Boolean).join(' ');
-        html += `<div class="day ${cls}" onclick="CalRadar.saltarADia('${iso}')">${day.getDate()}</div>`;
+        html += `<div class="day ${cls}" onclick="CalRadar.saltarADia('${iso}')"><span>${day.getDate()}</span></div>`;
         if (i >= 27 && day.getMonth() !== d.getMonth() && (i+1) % 7 === 0) break;
       }
       grid.innerHTML = html;
