@@ -14,7 +14,11 @@
   /* ============================================
      LAYOUT AMPLIO (full-width para la tabla)
      ============================================ */
-  .rd-app.rd-wide .rd-main { max-width: 1600px; padding: 12px 20px 28px; }
+  .rd-app.rd-wide .rd-main {
+    max-width: none;              /* usar todo el ancho disponible */
+    padding: 12px 16px 28px;      /* padding lateral chico */
+    width: 100%;
+  }
 
   /* Título integrado en el topbar */
   .rd-topbar { padding: 10px 20px; }
@@ -94,9 +98,9 @@
   }
   .rd-tbl thead th {
     background: var(--bg-soft); color: var(--text);
-    font-weight: 700; font-size: 11.5px; text-transform: uppercase;
-    letter-spacing: 0.03em;
-    padding: 9px 8px; text-align: left;
+    font-weight: 700; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.02em;
+    padding: 8px 6px; text-align: left;
     border-bottom: 2px solid var(--border-strong);
     white-space: nowrap; user-select: none;
   }
@@ -126,15 +130,15 @@
   .rd-tbl tbody tr.rd-row-viral td.rd-num { color: #7f1d1d; }
 
   .rd-tbl td {
-    padding: 8px 8px; vertical-align: middle;
+    padding: 7px 6px; vertical-align: middle;
     white-space: nowrap;
   }
   .rd-tbl td.rd-num {
     text-align: right; font-family: 'JetBrains Mono', ui-monospace, monospace;
-    font-variant-numeric: tabular-nums; font-size: 12.5px;
+    font-variant-numeric: tabular-nums; font-size: 12px;
   }
   .rd-tbl td.rd-cell-hook {
-    max-width: 320px; overflow: hidden; text-overflow: ellipsis;
+    max-width: 260px; overflow: hidden; text-overflow: ellipsis;
     white-space: nowrap; font-weight: 500;
   }
   .rd-tbl td.rd-cell-comp { font-weight: 600; color: var(--text); }
@@ -190,12 +194,12 @@
   .rd-row-viral .rd-hook-link:hover { color: #b91c1c; }
 
   /* Boton Analizar unico en columna acciones */
-  .rd-tbl td.rd-actions { padding: 0 12px 0 4px; text-align: right; }
+  .rd-tbl td.rd-actions { padding: 0 10px 0 4px; text-align: right; }
   .rd-btn-analizar {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 5px 10px; font-size: 12px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 8px; font-size: 11.5px; font-weight: 600;
     background: transparent; color: var(--brand);
-    border: 1px solid var(--brand); border-radius: 6px;
+    border: 1px solid var(--brand); border-radius: 5px;
     cursor: pointer; font-family: inherit;
     transition: background .12s;
   }
@@ -208,27 +212,22 @@
 
   .rd-empty-tbl { padding: 60px 20px; text-align: center; color: var(--text-2); }
 
-  /* Responsive escalonado — anchos reales de la tabla:
-     32+44+130+90+280+70+60+70+70+60+80+80+90+96 ≈ 1250 sin padding.
-     Ocultamos columnas para que la tabla ENTRE en el viewport y evitar
-     scroll horizontal que cortaba la columna 'Analizar'. */
-  @media (max-width: 1500px) {
+  /* Responsive escalonado. Con celdas mas compactas y hook 260px,
+     el ancho total base es ~1120px y todo cabe hasta ~1150 viewport. */
+  @media (max-width: 1150px) {
     .rd-col-guardados { display: none; }
   }
-  @media (max-width: 1400px) {
+  @media (max-width: 1050px) {
     .rd-col-shares { display: none; }
   }
-  @media (max-width: 1250px) {
+  @media (max-width: 950px) {
     .rd-col-coment { display: none; }
-    .rd-tbl td.rd-cell-hook { max-width: 240px; }
-  }
-  @media (max-width: 1050px) {
-    .rd-col-fecha { display: none; }
     .rd-tbl td.rd-cell-hook { max-width: 200px; }
   }
-  @media (max-width: 850px) {
+  @media (max-width: 800px) {
+    .rd-col-fecha { display: none; }
     .rd-btn-analizar span { display: none; }
-    .rd-btn-analizar { padding: 5px 8px; }
+    .rd-btn-analizar { padding: 4px 6px; }
   }
 
   .rd-notas-modal-body textarea { min-height: 100px; }
