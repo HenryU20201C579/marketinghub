@@ -164,20 +164,63 @@
   .cal-sidebar .cal-sb-filter option { color: var(--text); background: white; }
 
   /* Lista de competidores (con checkbox y color) */
-  .cal-sidebar .cal-comp-list { display: flex; flex-direction: column; gap: 4px; }
+  .cal-sidebar .cal-comp-list { display: flex; flex-direction: column; gap: 2px; }
   .cal-comp-item {
-    display: flex; align-items: center; gap: 8px; padding: 4px 6px;
-    cursor: pointer; border-radius: 4px; font-size: 12px;
+    display: flex; align-items: center; gap: 8px; padding: 5px 6px;
+    border-radius: 4px; font-size: 12px;
+    position: relative;
   }
   .cal-comp-item:hover { background: var(--bg-soft); }
   .cal-comp-color {
-    width: 14px; height: 14px; border-radius: 3px;
+    width: 16px; height: 16px; border-radius: 3px;
     flex-shrink: 0; border: 2px solid transparent;
-    box-sizing: border-box;
+    box-sizing: border-box; cursor: pointer;
+    transition: transform .1s;
   }
-  .cal-comp-item .cal-comp-name { flex: 1; color: var(--text); }
+  .cal-comp-color:hover { transform: scale(1.15); }
+  .cal-comp-item .cal-comp-name {
+    flex: 1; color: var(--text); cursor: pointer;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
   .cal-comp-item.off .cal-comp-color { background: transparent !important; border-color: var(--_c); }
   .cal-comp-item.off .cal-comp-name { color: var(--muted); text-decoration: line-through; }
+
+  /* Popup de paleta de colores */
+  .cal-color-popup {
+    position: absolute; z-index: 100;
+    background: white; border: 1px solid var(--border);
+    border-radius: 8px; box-shadow: var(--shadow-lg);
+    padding: 8px; width: 168px;
+  }
+  .cal-color-popup .cal-color-grid {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
+  }
+  .cal-color-popup .cal-color-swatch {
+    width: 20px; height: 20px; border-radius: 4px;
+    cursor: pointer; border: 2px solid transparent;
+    transition: transform .1s;
+  }
+  .cal-color-popup .cal-color-swatch:hover { transform: scale(1.15); }
+  .cal-color-popup .cal-color-swatch.selected {
+    border-color: var(--text);
+    box-shadow: 0 0 0 2px white inset;
+  }
+  .cal-color-popup .cal-color-custom {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);
+    font-size: 11px; color: var(--text-2);
+  }
+  .cal-color-popup .cal-color-custom input[type=color] {
+    width: 24px; height: 24px; border: 1px solid var(--border-strong);
+    border-radius: 4px; padding: 0; cursor: pointer;
+  }
+  .cal-color-popup .cal-color-reset {
+    background: transparent; border: 1px solid var(--border-strong);
+    color: var(--text-2); font-size: 10px; padding: 2px 6px;
+    border-radius: 4px; cursor: pointer; margin-left: auto;
+    font-family: inherit;
+  }
+  .cal-color-popup .cal-color-reset:hover { background: var(--bg-soft); color: var(--text); }
 
   /* ============ MAIN CALENDAR AREA ============ */
   .cal-main-area {
@@ -455,6 +498,7 @@
     posts: [],
     competidores: [],
     tiers: [],
+    paleta: [],
     filtros: { plataforma: '', tier_orden_max: '' },
     competidoresOff: new Set(),
     diasConEventos: new Set(),  // para marcar el mini-cal
@@ -471,6 +515,7 @@
 
       this.competidores = await Radar.api('marketinghub.www.radar.comparativa.index.obtener_competidores');
       this.tiers = await Radar.api('marketinghub.www.radar.comparativa.index.obtener_tiers');
+      this.paleta = await Radar.api('marketinghub.www.radar.comparativa.index.obtener_paleta');
 
       const tSel = document.getElementById('cal-f-tier');
       tSel.innerHTML = '<option value="">Todos los tiers</option>' +
@@ -592,9 +637,13 @@
       const c = document.getElementById('cal-comp-list');
       c.innerHTML = this.competidores.map(x => `
         <div class="cal-comp-item ${this.competidoresOff.has(x.nombre) ? 'off' : ''}"
-             style="--_c: ${x.color};" onclick="CalRadar.toggleComp('${Radar.escapeHtml(x.nombre)}')">
-          <div class="cal-comp-color" style="background:${x.color};"></div>
-          <span class="cal-comp-name">${Radar.escapeHtml(x.nombre)}</span>
+             style="--_c: ${x.color};" data-comp="${Radar.escapeHtml(x.nombre)}">
+          <div class="cal-comp-color" style="background:${x.color};"
+               onclick="event.stopPropagation();CalRadar.abrirColorPicker(event,'${Radar.escapeHtml(x.nombre)}')"
+               title="Cambiar color"></div>
+          <span class="cal-comp-name"
+                onclick="CalRadar.toggleComp('${Radar.escapeHtml(x.nombre)}')"
+                title="Ocultar/mostrar en el calendario">${Radar.escapeHtml(x.nombre)}</span>
         </div>`).join('');
     },
 
@@ -603,6 +652,75 @@
       else this.competidoresOff.add(nombre);
       this._renderCompList();
       this.cargar();
+    },
+
+    // ============ COLOR PICKER ============
+    abrirColorPicker(e, nombre) {
+      this._cerrarColorPicker();
+      const comp = this.competidores.find(c => c.nombre === nombre);
+      if (!comp) return;
+
+      const popup = document.createElement('div');
+      popup.className = 'cal-color-popup';
+      popup.id = 'cal-color-popup';
+      popup.innerHTML = `
+        <div class="cal-color-grid">
+          ${this.paleta.map(p => `
+            <div class="cal-color-swatch ${comp.color.toLowerCase() === p.color.toLowerCase() ? 'selected' : ''}"
+                 style="background:${p.color};"
+                 title="${Radar.escapeHtml(p.nombre)}"
+                 onclick="CalRadar.guardarColor('${Radar.escapeHtml(nombre)}', '${p.color}')"></div>
+          `).join('')}
+        </div>
+        <div class="cal-color-custom">
+          <input type="color" value="${comp.color}"
+                 onchange="CalRadar.guardarColor('${Radar.escapeHtml(nombre)}', this.value)"
+                 title="Elegir color custom">
+          <span>Custom</span>
+          <button class="cal-color-reset"
+                  onclick="CalRadar.guardarColor('${Radar.escapeHtml(nombre)}', '')"
+                  title="Restablecer al color automático">Reset</button>
+        </div>
+      `;
+      // Posicionar al lado del swatch clickeado
+      const rect = e.target.getBoundingClientRect();
+      popup.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+      popup.style.left = (rect.left + window.scrollX) + 'px';
+      document.body.appendChild(popup);
+
+      // Cerrar al click fuera
+      setTimeout(() => {
+        document.addEventListener('click', this._colorClickOutside, {once: true});
+      }, 0);
+    },
+
+    _cerrarColorPicker() {
+      const p = document.getElementById('cal-color-popup');
+      if (p) p.remove();
+    },
+
+    _colorClickOutside(e) {
+      if (!e.target.closest('.cal-color-popup') && !e.target.classList.contains('cal-comp-color')) {
+        CalRadar._cerrarColorPicker();
+      }
+    },
+
+    async guardarColor(nombre, color) {
+      try {
+        const r = await Radar.api(
+          'marketinghub.www.radar.comparativa.index.guardar_color_competidor',
+          {competidor: nombre, color},
+        );
+        // Actualizar en memoria
+        const c = this.competidores.find(x => x.nombre === nombre);
+        if (c) { c.color = r.color; c.personalizado = r.personalizado; }
+        this._cerrarColorPicker();
+        this._renderCompList();
+        this.cargar();  // re-render del calendario con nuevos colores
+        Radar.toast('✓ Color actualizado', 'success');
+      } catch (e) {
+        Radar.toast('Error: ' + e.message, 'error');
+      }
     },
 
     toggleSidebar() {
