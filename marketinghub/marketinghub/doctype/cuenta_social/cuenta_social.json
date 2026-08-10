@@ -10,13 +10,7 @@
   "url_perfil",
   "cb_1",
   "handle",
-  "activo",
-  "sb_metrics",
-  "seguidores_actual",
-  "engagement_promedio",
-  "velocidad_promedio",
-  "sb_hist",
-  "historico_seguidores"
+  "activo"
  ],
  "fields": [
   {
@@ -65,45 +59,6 @@
    "default": "1",
    "in_list_view": 1,
    "description": "Desmarcar para pausar el scrapeo de esta cuenta."
-  },
-  {
-   "fieldname": "sb_metrics",
-   "fieldtype": "Section Break",
-   "label": "Métricas calculadas"
-  },
-  {
-   "fieldname": "seguidores_actual",
-   "fieldtype": "Int",
-   "label": "Seguidores Actuales",
-   "read_only": 1,
-   "in_list_view": 1,
-   "description": "Calculado: último Seguidores Snapshot."
-  },
-  {
-   "fieldname": "engagement_promedio",
-   "fieldtype": "Percent",
-   "label": "Engagement Promedio",
-   "read_only": 1,
-   "description": "Calculado: MEDIANA(engagement_pct) de últimas 30 publicaciones."
-  },
-  {
-   "fieldname": "velocidad_promedio",
-   "fieldtype": "Float",
-   "label": "Velocidad Promedio (vistas/día)",
-   "read_only": 1,
-   "precision": "2",
-   "description": "Calculado: mediana de velocidad_diaria de snapshots recientes."
-  },
-  {
-   "fieldname": "sb_hist",
-   "fieldtype": "Section Break",
-   "label": "Histórico de seguidores"
-  },
-  {
-   "fieldname": "historico_seguidores",
-   "fieldtype": "Table",
-   "label": "Histórico Seguidores",
-   "options": "Seguidores Snapshot"
   }
  ],
  "index_web_pages_for_search": 1,

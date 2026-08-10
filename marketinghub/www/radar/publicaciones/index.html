@@ -172,10 +172,19 @@
   .rd-eng-medio { background: #fef3c7; color: #92400e; font-weight: 600; padding: 3px 8px; border-radius: 4px; }
   .rd-eng-bajo  { color: #94a3b8; padding: 3px 8px; }
 
-  /* Colores para score de viralidad */
-  .rd-score-viral   { background: var(--red); color: white; font-weight: 800; padding: 3px 9px; border-radius: 4px; }
-  .rd-score-alto    { background: #ffedd5; color: var(--orange); font-weight: 700; padding: 3px 8px; border-radius: 4px; }
-  .rd-score-normal  { color: var(--text-2); padding: 3px 8px; }
+  /* Tier: imagen + nombre en badge */
+  .rd-tier-cell { display: flex; align-items: center; gap: 6px; }
+  .rd-tier-img {
+    width: 28px; height: 28px; object-fit: contain;
+    image-rendering: pixelated; /* mantiene el look 8-bit */
+    flex-shrink: 0;
+  }
+  .rd-tier-name {
+    font-size: 11px; font-weight: 700;
+    padding: 2px 6px; border-radius: 4px;
+    white-space: nowrap;
+    color: var(--text);
+  }
 
   /* Badge de estado tipo pill */
   .rd-pill {
@@ -188,8 +197,7 @@
   .rd-pill-guardado   { background: #dcfce7; color: #166534; }
   .rd-pill-descartado { background: #e5e7eb; color: #4b5563; }
 
-  /* Fire icon en primera columna cuando es viral (solo emoji, sin circulo) */
-  .rd-fire { font-size: 14px; line-height: 1; }
+  /* (columna del fuego eliminada — el tier tiene su propia imagen) */
 
   /* Titulo clickeable (abre post en nueva pestaña) */
   .rd-hook-link {
@@ -273,11 +281,15 @@
   <main class="rd-main">
     <!-- BARRA DE FILTROS -->
     <div class="rd-filterbar">
-      <label class="rd-viral-toggle" id="rd-toggle-viral">
-        <input type="checkbox" id="rd-f-viral">
-        <i data-lucide="flame" style="width:16px;height:16px;"></i>
-        Solo virales <span class="rd-viral-count" id="rd-viral-count">0</span>
-      </label>
+      <select id="rd-f-tier" class="rd-select" title="Tier mínimo">
+        <option value="">🏆 Todos los tiers</option>
+      </select>
+      <select id="rd-f-fecha" class="rd-select" title="Fecha">
+        <option value="1">📅 Últimas 24h</option>
+        <option value="7" selected>📅 Últimos 7 días</option>
+        <option value="30">📅 Últimos 30 días</option>
+        <option value="">📅 Todos</option>
+      </select>
       <input type="text" id="rd-f-search" class="rd-input" placeholder="🔍 Buscar en título / caption...">
       <select id="rd-f-comp" class="rd-select"><option value="">Todos los competidores</option></select>
       <select id="rd-f-plat" class="rd-select">
@@ -301,7 +313,7 @@
       <table class="rd-tbl" id="rd-tbl">
         <thead>
           <tr>
-            <th style="width: 32px;">🔥</th>
+            <th class="rd-sortable rd-asc" data-sort="tier_orden" style="width: 180px;">Tier <span class="rd-sort-ico"></span></th>
             <th style="width: 44px;">Plat</th>
             <th class="rd-sortable" data-sort="competidor">Competidor <span class="rd-sort-ico"></span></th>
             <th class="rd-sortable rd-col-fecha" data-sort="fecha_publicacion">Fecha <span class="rd-sort-ico"></span></th>
@@ -312,13 +324,12 @@
             <th class="rd-col-shares" style="text-align:right;">Shares</th>
             <th class="rd-col-guardados" style="text-align:right;">Guar.</th>
             <th class="rd-sortable" data-sort="engagement_pct" style="text-align:right;">Eng % <span class="rd-sort-ico"></span></th>
-            <th class="rd-sortable rd-desc" data-sort="score_viralidad" style="text-align:right;">Score <span class="rd-sort-ico"></span></th>
             <th>Estado</th>
             <th style="width: 96px;"></th>
           </tr>
         </thead>
         <tbody id="rd-tbody">
-          <tr><td colspan="14" class="rd-empty-tbl">Cargando…</td></tr>
+          <tr><td colspan="13" class="rd-empty-tbl">Cargando…</td></tr>
         </tbody>
       </table>
     </div>
@@ -349,45 +360,47 @@
     if (pct >= 2) return 'rd-eng-medio';
     return 'rd-eng-bajo';
   }
-  function scoreClass(score, viral) {
-    if (viral) return 'rd-score-viral';
-    if (score >= 1.5) return 'rd-score-alto';
-    return 'rd-score-normal';
-  }
 
   window.RadarPubs = {
     lista: [],
-    sortBy: 'score_viralidad',
-    sortDir: 'desc',
+    tiersConfig: [],       // config visual de los tiers
+    tierPorNombre: {},     // map nombre → tier config
+    sortBy: 'tier_orden',
+    sortDir: 'asc',        // menor orden = mejor tier
 
     async cargar() {
       try {
-        // pedimos SIN filtros al servidor, filtramos en cliente para responsividad
         this.lista = await Radar.api('marketinghub.www.radar.publicaciones.index.listar', {limite: 500});
       } catch (e) {
         document.getElementById('rd-tbody').innerHTML =
-          `<tr><td colspan="14" class="rd-empty-tbl"><b>Error:</b> ${Radar.escapeHtml(e.message)}</td></tr>`;
+          `<tr><td colspan="13" class="rd-empty-tbl"><b>Error:</b> ${Radar.escapeHtml(e.message)}</td></tr>`;
         return;
       }
-      const viralCount = this.lista.filter(p => p.es_viral).length;
-      document.getElementById('rd-viral-count').textContent = viralCount;
       document.getElementById('rd-count').textContent = `${this.lista.length} publicaciones total`;
       this.render();
     },
 
     render() {
-      const q     = document.getElementById('rd-f-search').value.toLowerCase().trim();
-      const comp  = document.getElementById('rd-f-comp').value;
-      const plat  = document.getElementById('rd-f-plat').value;
-      const est   = document.getElementById('rd-f-estado').value;
-      const viral = document.getElementById('rd-f-viral').checked;
+      const q       = document.getElementById('rd-f-search').value.toLowerCase().trim();
+      const comp    = document.getElementById('rd-f-comp').value;
+      const plat    = document.getElementById('rd-f-plat').value;
+      const est     = document.getElementById('rd-f-estado').value;
+      const tierMin = document.getElementById('rd-f-tier').value;  // orden mínimo (más alto)
+      const dias    = document.getElementById('rd-f-fecha').value; // '1','7','30',''
+
+      let cutoffDate = null;
+      if (dias) {
+        cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - parseInt(dias));
+      }
 
       let items = this.lista.filter(p =>
         (!q     || (p.titulo_hook || '').toLowerCase().includes(q) || (p.descripcion || '').toLowerCase().includes(q)) &&
         (!comp  || p.competidor === comp) &&
         (!plat  || p.plataforma === plat) &&
         (!est   || p.estado === est) &&
-        (!viral || p.es_viral)
+        (!tierMin || (p.tier_orden && p.tier_orden <= parseInt(tierMin))) &&
+        (!cutoffDate || (p.fecha_publicacion && new Date(p.fecha_publicacion + 'T00:00:00') >= cutoffDate))
       );
 
       // Ordenar
@@ -406,7 +419,7 @@
 
       const tb = document.getElementById('rd-tbody');
       if (!items.length) {
-        tb.innerHTML = `<tr><td colspan="14" class="rd-empty-tbl">
+        tb.innerHTML = `<tr><td colspan="13" class="rd-empty-tbl">
           <div style="font-size:15px;font-weight:600;margin-bottom:6px;">Sin resultados</div>
           <div>Ningún post coincide con los filtros aplicados.</div>
         </td></tr>`;
@@ -427,17 +440,27 @@
       const plat = (p.plataforma || '?').toLowerCase();
       const plat_ini = (p.plataforma || '?').charAt(0).toUpperCase();
       const eng = p.engagement_pct || 0;
-      const sc  = p.score_viralidad || 0;
       const estCls = 'rd-pill-' + (p.estado || 'nuevo').toLowerCase();
       const hookText = p.titulo_hook || p.descripcion || '—';
 
       const hookHtml = p.url_publicacion
-        ? `<a class="rd-hook-link" href="${Radar.escapeHtml(p.url_publicacion)}" target="_blank" rel="noopener" title="Abrir post en nueva pestaña · ${Radar.escapeHtml(p.descripcion || '')}"><span>${Radar.escapeHtml(hookText)}</span><i data-lucide="external-link" class="rd-ext-ico"></i></a>`
+        ? `<a class="rd-hook-link" href="${Radar.escapeHtml(p.url_publicacion)}" target="_blank" rel="noopener" title="Abrir post · ${Radar.escapeHtml(p.descripcion || '')}"><span>${Radar.escapeHtml(hookText)}</span><i data-lucide="external-link" class="rd-ext-ico"></i></a>`
         : Radar.escapeHtml(hookText);
+
+      // celda tier: imagen + nombre coloreado
+      const tierCfg = this.tierPorNombre[p.tier] || {};
+      const tierImg = tierCfg.imagen_url || '';
+      const tierColor = tierCfg.color_hex || '#94a3b8';
+      const tierName = p.tier || '—';
+      const tierCell = `
+        <div class="rd-tier-cell" title="${Radar.escapeHtml(tierName)}">
+          ${tierImg ? `<img class="rd-tier-img" src="${Radar.escapeHtml(tierImg)}" alt="${Radar.escapeHtml(tierName)}">` : ''}
+          <span class="rd-tier-name" style="background:${tierColor}20; color:${tierColor}; border:1px solid ${tierColor}40;">${Radar.escapeHtml(tierName)}</span>
+        </div>`;
 
       return `
         <tr class="${p.es_viral ? 'rd-row-viral' : ''}">
-          <td style="text-align:center;">${p.es_viral ? '<span class="rd-fire">🔥</span>' : ''}</td>
+          <td>${tierCell}</td>
           <td><span class="rd-plat-chip rd-plat-${plat}">${plat_ini}</span></td>
           <td class="rd-cell-comp">${Radar.escapeHtml(p.competidor || '')}</td>
           <td class="rd-col-fecha" style="color:var(--text-2);">${fmtDate(p.fecha_publicacion)}</td>
@@ -448,7 +471,6 @@
           <td class="rd-num rd-col-shares">${fmtNum(p.compartidos_actual)}</td>
           <td class="rd-num rd-col-guardados">${fmtNum(p.guardados_actual)}</td>
           <td class="rd-num"><span class="${engClass(eng)}">${eng.toFixed(2)}%</span></td>
-          <td class="rd-num"><span class="${scoreClass(sc, p.es_viral)}">${sc.toFixed(2)}×</span></td>
           <td><span class="rd-pill ${estCls}">${Radar.escapeHtml(p.estado || 'Nuevo')}</span></td>
           <td class="rd-actions">
             ${CAN_EDIT ? `<button class="rd-btn-analizar" onclick="RadarPubs.analizar('${Radar.escapeHtml(p.name)}')" title="Analizar / editar estado"><i data-lucide="edit-3"></i><span>Analizar</span></button>` : ''}
@@ -467,12 +489,10 @@
     },
 
     limpiarFiltros() {
-      ['rd-f-search','rd-f-comp','rd-f-plat','rd-f-estado'].forEach(id => {
+      ['rd-f-search','rd-f-comp','rd-f-plat','rd-f-estado','rd-f-tier'].forEach(id => {
         document.getElementById(id).value = '';
       });
-      const chk = document.getElementById('rd-f-viral');
-      chk.checked = false;
-      document.getElementById('rd-toggle-viral').classList.remove('rd-on');
+      document.getElementById('rd-f-fecha').value = '7';
       this.render();
     },
 
@@ -524,27 +544,28 @@
 
   document.addEventListener('DOMContentLoaded', async function() {
     lucide.createIcons();
-    // poblar dropdown competidores
+    // poblar dropdowns
     try {
       const opts = await Radar.api('marketinghub.www.radar.publicaciones.index.opciones_filtros');
-      const sel = document.getElementById('rd-f-comp');
-      sel.innerHTML = '<option value="">Todos los competidores</option>' +
+      // competidores
+      document.getElementById('rd-f-comp').innerHTML = '<option value="">Todos los competidores</option>' +
         opts.competidores.map(c => `<option value="${Radar.escapeHtml(c)}">${Radar.escapeHtml(c)}</option>`).join('');
+      // tiers
+      RadarPubs.tiersConfig = opts.tiers || [];
+      RadarPubs.tierPorNombre = {};
+      opts.tiers.forEach(t => { RadarPubs.tierPorNombre[t.nombre] = t; });
+      const selT = document.getElementById('rd-f-tier');
+      selT.innerHTML = '<option value="">🏆 Todos los tiers</option>' +
+        opts.tiers.map(t => `<option value="${t.orden}">${t.orden}. ${Radar.escapeHtml(t.nombre)}${t.es_viral ? ' 🔥' : ''} o mejor</option>`).join('');
     } catch (e) { console.error(e); }
 
     RadarPubs.cargar();
 
     // Listeners
-    ['rd-f-comp','rd-f-plat','rd-f-estado'].forEach(id => {
+    ['rd-f-comp','rd-f-plat','rd-f-estado','rd-f-tier','rd-f-fecha'].forEach(id => {
       document.getElementById(id).addEventListener('change', () => RadarPubs.render());
     });
     document.getElementById('rd-f-search').addEventListener('input', () => RadarPubs.render());
-    // El <input> vive DENTRO del <label>, por lo que el click nativo del label
-    // ya hace toggle del checkbox. Solo escuchamos el change para actualizar UI.
-    document.getElementById('rd-f-viral').addEventListener('change', function() {
-      document.getElementById('rd-toggle-viral').classList.toggle('rd-on', this.checked);
-      RadarPubs.render();
-    });
 
     // Sort clicks
     document.querySelectorAll('.rd-tbl thead th.rd-sortable').forEach(th => {

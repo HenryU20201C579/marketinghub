@@ -1,0 +1,97 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-10 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "istable": 1,
+ "field_order": [
+  "orden",
+  "nombre",
+  "imagen_url",
+  "cb_1",
+  "vistas_min",
+  "engagement_min",
+  "cb_2",
+  "es_viral",
+  "color_hex"
+ ],
+ "fields": [
+  {
+   "fieldname": "orden",
+   "fieldtype": "Int",
+   "label": "Orden",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 1,
+   "description": "1 = más alto (mejor). 10 = más bajo (Pollito)."
+  },
+  {
+   "fieldname": "nombre",
+   "fieldtype": "Data",
+   "label": "Nombre",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 3
+  },
+  {
+   "fieldname": "imagen_url",
+   "fieldtype": "Data",
+   "label": "Imagen",
+   "in_list_view": 1,
+   "columns": 2,
+   "description": "Ruta relativa (ej: /radar/tiers/01_dragon_plateado.png)"
+  },
+  {"fieldname": "cb_1", "fieldtype": "Column Break"},
+  {
+   "fieldname": "vistas_min",
+   "fieldtype": "Int",
+   "label": "Vistas ≥",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 1,
+   "default": "0"
+  },
+  {
+   "fieldname": "engagement_min",
+   "fieldtype": "Float",
+   "label": "Engagement % ≥",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 1,
+   "precision": "2",
+   "default": "0"
+  },
+  {"fieldname": "cb_2", "fieldtype": "Column Break"},
+  {
+   "fieldname": "es_viral",
+   "fieldtype": "Check",
+   "label": "Cuenta como viral",
+   "in_list_view": 1,
+   "columns": 1,
+   "description": "Si está marcado, los posts en este tier o superior se consideran virales."
+  },
+  {
+   "fieldname": "color_hex",
+   "fieldtype": "Data",
+   "label": "Color",
+   "columns": 1,
+   "default": "#94a3b8",
+   "description": "Color del badge (ej: #dc2626)."
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-08-10 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "MarketingHub",
+ "name": "Tier Viralidad",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "description": "Nivel de viralidad tipo Gunbound. Configurable en Radar Settings."
+}
