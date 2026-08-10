@@ -1,3 +1,4 @@
+[pre_model_sync]
 marketinghub.patches.v0_1.crear_roles_radar
 marketinghub.patches.v0_1.fix_cuenta_social_autoname
 marketinghub.patches.v0_1.borrar_publicaciones_pinned
