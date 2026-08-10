@@ -1,0 +1,129 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-09 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sb_umbrales",
+  "umbral_viralidad",
+  "piso_minimo_vistas",
+  "cb_1",
+  "umbral_velocidad",
+  "sb_baseline",
+  "n_pubs_baseline",
+  "dias_retencion_snapshots",
+  "sb_alertas",
+  "canal_alerta"
+ ],
+ "fields": [
+  {
+   "fieldname": "sb_umbrales",
+   "fieldtype": "Section Break",
+   "label": "Umbrales de viralidad"
+  },
+  {
+   "fieldname": "umbral_viralidad",
+   "fieldtype": "Float",
+   "label": "Umbral Score Viralidad",
+   "default": "2.0",
+   "precision": "2",
+   "description": "Un post es viral si score_viralidad ≥ este valor."
+  },
+  {
+   "fieldname": "piso_minimo_vistas",
+   "fieldtype": "Int",
+   "label": "Piso Mínimo de Vistas",
+   "default": "10000",
+   "description": "Un post no se marca viral si tiene menos vistas que este piso."
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "umbral_velocidad",
+   "fieldtype": "Float",
+   "label": "Umbral Velocidad",
+   "default": "3.0",
+   "precision": "2",
+   "description": "Un post es viral (temprano) si velocidad_diaria/velocidad_promedio_cuenta ≥ este valor."
+  },
+  {
+   "fieldname": "sb_baseline",
+   "fieldtype": "Section Break",
+   "label": "Cálculo de baseline"
+  },
+  {
+   "fieldname": "n_pubs_baseline",
+   "fieldtype": "Int",
+   "label": "N publicaciones para baseline",
+   "default": "30",
+   "description": "Baseline = mediana de engagement_pct de las últimas N publicaciones."
+  },
+  {
+   "fieldname": "dias_retencion_snapshots",
+   "fieldtype": "Int",
+   "label": "Días de retención de snapshots",
+   "default": "90",
+   "description": "Snapshots más viejos que este límite se borran automáticamente."
+  },
+  {
+   "fieldname": "sb_alertas",
+   "fieldtype": "Section Break",
+   "label": "Alertas"
+  },
+  {
+   "fieldname": "canal_alerta",
+   "fieldtype": "Select",
+   "label": "Canal de Alerta Virales",
+   "options": "\nIn-app ERP\nEmail\nTelegram\nWhatsApp",
+   "default": "In-app ERP"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-09 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "MarketingHub",
+ "name": "Radar Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "Marketinghub-Radar-Administrar",
+   "create": 1,
+   "read": 1,
+   "write": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "System Manager",
+   "create": 1,
+   "read": 1,
+   "write": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "Marketinghub-Radar-Analista",
+   "read": 1
+  },
+  {
+   "role": "Marketinghub-Radar-Ver",
+   "read": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "issingle": 1,
+ "description": "Umbrales configurables del Radar de Competencia."
+}

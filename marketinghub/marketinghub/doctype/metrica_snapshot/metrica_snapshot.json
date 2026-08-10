@@ -1,0 +1,125 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-09 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "fecha_snapshot",
+  "dias_desde_publicacion",
+  "vistas",
+  "likes",
+  "comentarios",
+  "compartidos",
+  "guardados",
+  "velocidad_diaria"
+ ],
+ "fields": [
+  {
+   "fieldname": "fecha_snapshot",
+   "fieldtype": "Date",
+   "label": "Fecha",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "dias_desde_publicacion",
+   "fieldtype": "Int",
+   "label": "Días",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "vistas",
+   "fieldtype": "Int",
+   "label": "Vistas",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "likes",
+   "fieldtype": "Int",
+   "label": "Likes"
+  },
+  {
+   "fieldname": "comentarios",
+   "fieldtype": "Int",
+   "label": "Coment"
+  },
+  {
+   "fieldname": "compartidos",
+   "fieldtype": "Int",
+   "label": "Shares"
+  },
+  {
+   "fieldname": "guardados",
+   "fieldtype": "Int",
+   "label": "Guardados"
+  },
+  {
+   "fieldname": "velocidad_diaria",
+   "fieldtype": "Float",
+   "label": "Vel. diaria (vistas/día)",
+   "read_only": 1,
+   "in_list_view": 1,
+   "precision": "2",
+   "description": "Calculado: Δ vistas / días desde snapshot anterior."
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-09 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "MarketingHub",
+ "name": "Metrica Snapshot",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "Marketinghub-Radar-Administrar",
+   "create": 1,
+   "read": 1,
+   "write": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "Marketinghub-Radar-Analista",
+   "create": 1,
+   "read": 1,
+   "write": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "Marketinghub-Radar-Ver",
+   "read": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "System Manager",
+   "create": 1,
+   "read": 1,
+   "write": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1,
+ "editable_grid": 1,
+ "description": "Foto diaria de métricas por Publicación. Sirve para tracking de velocidad de crecimiento."
+}

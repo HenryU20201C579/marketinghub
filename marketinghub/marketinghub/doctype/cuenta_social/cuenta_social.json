@@ -1,0 +1,165 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-09 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "competidor",
+  "plataforma",
+  "handle",
+  "cb_1",
+  "url_perfil",
+  "activo",
+  "sb_metrics",
+  "seguidores_actual",
+  "engagement_promedio",
+  "velocidad_promedio",
+  "sb_hist",
+  "historico_seguidores"
+ ],
+ "fields": [
+  {
+   "fieldname": "competidor",
+   "fieldtype": "Link",
+   "label": "Competidor",
+   "options": "Competidor",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "plataforma",
+   "fieldtype": "Select",
+   "label": "Plataforma",
+   "options": "\nInstagram\nTikTok\nFacebook\nYouTube",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "handle",
+   "fieldtype": "Data",
+   "label": "Handle",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Usuario sin @ ni URL. Ej: 'lizarasocueros'."
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "url_perfil",
+   "fieldtype": "Data",
+   "label": "URL del Perfil",
+   "options": "URL"
+  },
+  {
+   "fieldname": "activo",
+   "fieldtype": "Check",
+   "label": "Activo (scrapear)",
+   "default": "1",
+   "in_list_view": 1,
+   "description": "Desmarcar para pausar el scrapeo de esta cuenta."
+  },
+  {
+   "fieldname": "sb_metrics",
+   "fieldtype": "Section Break",
+   "label": "Métricas calculadas"
+  },
+  {
+   "fieldname": "seguidores_actual",
+   "fieldtype": "Int",
+   "label": "Seguidores Actuales",
+   "read_only": 1,
+   "in_list_view": 1,
+   "description": "Calculado: último Seguidores Snapshot."
+  },
+  {
+   "fieldname": "engagement_promedio",
+   "fieldtype": "Percent",
+   "label": "Engagement Promedio",
+   "read_only": 1,
+   "description": "Calculado: MEDIANA(engagement_pct) de últimas 30 publicaciones."
+  },
+  {
+   "fieldname": "velocidad_promedio",
+   "fieldtype": "Float",
+   "label": "Velocidad Promedio (vistas/día)",
+   "read_only": 1,
+   "precision": "2",
+   "description": "Calculado: mediana de velocidad_diaria de snapshots recientes."
+  },
+  {
+   "fieldname": "sb_hist",
+   "fieldtype": "Section Break",
+   "label": "Histórico de seguidores"
+  },
+  {
+   "fieldname": "historico_seguidores",
+   "fieldtype": "Table",
+   "label": "Histórico Seguidores",
+   "options": "Seguidores Snapshot"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-09 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "MarketingHub",
+ "name": "Cuenta Social",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "Marketinghub-Radar-Administrar",
+   "create": 1,
+   "read": 1,
+   "write": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "Marketinghub-Radar-Analista",
+   "create": 1,
+   "read": 1,
+   "write": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "Marketinghub-Radar-Ver",
+   "read": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "System Manager",
+   "create": 1,
+   "read": 1,
+   "write": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "format:{plataforma}-{handle}",
+ "naming_rule": "By fieldname",
+ "title_field": "handle",
+ "description": "Un perfil por red social de un competidor.",
+ "search_fields": "handle,competidor,plataforma"
+}
