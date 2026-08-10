@@ -39,10 +39,13 @@ def extraer_handle(url: str, plataforma: str) -> str | None:
 
 
 class CuentaSocial(Document):
-	def before_save(self):
+	def autoname(self):
+		"""Se ejecuta antes de set_new_name (antes que before_insert).
+		Deriva el handle desde la URL y asigna el nombre del documento."""
 		self._derivar_handle()
+		self.name = f"{self.plataforma}-{self.handle}"
 
-	def before_insert(self):
+	def before_save(self):
 		self._derivar_handle()
 
 	def _derivar_handle(self):

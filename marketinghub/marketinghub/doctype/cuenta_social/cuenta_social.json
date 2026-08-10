@@ -160,8 +160,8 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "autoname": "format:{plataforma}-{handle}",
- "naming_rule": "Expression (old style)",
+ "autoname": "hash",
+ "naming_rule": "Random",
  "title_field": "handle",
  "description": "Un perfil por red social de un competidor. Se identifica por su URL; el handle se deriva.",
  "search_fields": "handle,competidor,plataforma,url_perfil"

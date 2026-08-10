@@ -1,1 +1,2 @@
 marketinghub.patches.v0_1.crear_roles_radar
+marketinghub.patches.v0_1.fix_cuenta_social_autoname
