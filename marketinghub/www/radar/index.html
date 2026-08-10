@@ -1,0 +1,125 @@
+{% extends "templates/web.html" %}
+
+{% block navbar %}{% endblock %}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block style %}
+{{ super() }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="/radar/radar.css">
+{% endblock %}
+
+{% block page_content %}
+{% if no_access %}
+<div class="rd-na-screen">
+  <div class="rd-na-card">
+    <div class="rd-na-brand">
+      <span class="rd-na-dot"></span>
+      <span>Radar de Competencia · Acceso denegado</span>
+    </div>
+    <div class="rd-na-body">
+      No tienes permiso para acceder al <b>Radar de Competencia</b>.
+      Se requiere alguno de los siguientes roles:
+      <ul class="rd-na-roles">
+        {% for r in required_roles %}
+        <li><code>{{ r }}</code></li>
+        {% endfor %}
+      </ul>
+      <p class="rd-na-hint">Contacta a un administrador del ERP para que te asigne uno de estos roles.</p>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="rd-app">
+  <header class="rd-topbar">
+    <div class="rd-topbar-left">
+      <div class="rd-logo">
+        <span class="rd-logo-dot"></span>
+        <span class="rd-logo-text">Radar</span>
+      </div>
+    </div>
+    <div class="rd-topbar-right">
+      <span class="rd-user"><i data-lucide="user-round"></i> {{ usuario }}</span>
+    </div>
+  </header>
+
+  <main class="rd-main">
+    <div class="rd-hero">
+      <h1>👋 ¡Hola!</h1>
+      <p class="rd-hero-sub">Este es tu Radar de Competencia. Aquí puedes ver qué publican tus competidores y encontrar ideas para tus propios videos.</p>
+    </div>
+
+    <section class="rd-stats" id="rd-stats">
+      <div class="rd-stat"><div class="rd-stat-num" data-key="categorias">–</div><div class="rd-stat-label">Categorías</div></div>
+      <div class="rd-stat"><div class="rd-stat-num" data-key="competidores">–</div><div class="rd-stat-label">Competidores</div></div>
+      <div class="rd-stat"><div class="rd-stat-num" data-key="cuentas">–</div><div class="rd-stat-label">Cuentas Sociales</div></div>
+      <div class="rd-stat"><div class="rd-stat-num" data-key="publicaciones">–</div><div class="rd-stat-label">Publicaciones</div></div>
+      <div class="rd-stat rd-stat-viral"><div class="rd-stat-num" data-key="virales">–</div><div class="rd-stat-label">🔥 Virales</div></div>
+      <div class="rd-stat rd-stat-new"><div class="rd-stat-num" data-key="nuevos">–</div><div class="rd-stat-label">✨ Sin analizar</div></div>
+    </section>
+
+    <section class="rd-actions">
+      <h2>¿Qué quieres hacer hoy?</h2>
+      <div class="rd-action-list">
+        <a href="/radar/publicaciones" class="rd-action rd-action-primary">
+          <div class="rd-action-icon"><i data-lucide="flame"></i></div>
+          <div class="rd-action-body">
+            <div class="rd-action-title">Ver publicaciones virales</div>
+            <div class="rd-action-sub">Los posts que más engagement están consiguiendo</div>
+          </div>
+          <i data-lucide="arrow-right" class="rd-action-arrow"></i>
+        </a>
+
+        <a href="/radar/competidores" class="rd-action">
+          <div class="rd-action-icon"><i data-lucide="users"></i></div>
+          <div class="rd-action-body">
+            <div class="rd-action-title">Gestionar competidores</div>
+            <div class="rd-action-sub">Marcas que quieres monitorear</div>
+          </div>
+          <i data-lucide="arrow-right" class="rd-action-arrow"></i>
+        </a>
+
+        <a href="/radar/cuentas" class="rd-action">
+          <div class="rd-action-icon"><i data-lucide="at-sign"></i></div>
+          <div class="rd-action-body">
+            <div class="rd-action-title">Cuentas sociales</div>
+            <div class="rd-action-sub">Perfiles de IG, TikTok, FB, YouTube por competidor</div>
+          </div>
+          <i data-lucide="arrow-right" class="rd-action-arrow"></i>
+        </a>
+
+        <a href="/radar/categorias" class="rd-action">
+          <div class="rd-action-icon"><i data-lucide="tag"></i></div>
+          <div class="rd-action-body">
+            <div class="rd-action-title">Categorías</div>
+            <div class="rd-action-sub">Agrupa competidores por tipo (cuero, calzado, etc.)</div>
+          </div>
+          <i data-lucide="arrow-right" class="rd-action-arrow"></i>
+        </a>
+
+        <a href="/radar/settings" class="rd-action">
+          <div class="rd-action-icon"><i data-lucide="settings"></i></div>
+          <div class="rd-action-body">
+            <div class="rd-action-title">Configuración</div>
+            <div class="rd-action-sub">Ajusta cuándo un video se considera viral</div>
+          </div>
+          <i data-lucide="arrow-right" class="rd-action-arrow"></i>
+        </a>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="/radar/radar.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.lucide) lucide.createIcons();
+    if (window.RadarDash) RadarDash.init();
+  });
+</script>
+{% endif %}
+{% endblock %}
