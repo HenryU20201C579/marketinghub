@@ -45,8 +45,32 @@ class CuentaSocial(Document):
 		self._derivar_handle()
 		self.name = f"{self.plataforma}-{self.handle}"
 
+	def validate(self):
+		self._derivar_handle()
+		self._validar_no_duplicado()
+
 	def before_save(self):
 		self._derivar_handle()
+
+	def _validar_no_duplicado(self):
+		"""Impide crear 2 cuentas con mismo (competidor, plataforma, handle)."""
+		if not (self.competidor and self.plataforma and self.handle):
+			return
+		existe = frappe.db.get_value(
+			"Cuenta Social",
+			{
+				"competidor": self.competidor,
+				"plataforma": self.plataforma,
+				"handle": self.handle,
+				"name": ["!=", self.name],
+			},
+			"name",
+		)
+		if existe:
+			frappe.throw(
+				f"Ya existe una Cuenta Social para {self.competidor} en "
+				f"{self.plataforma} con handle {self.handle!r} (id: {existe})."
+			)
 
 	def _derivar_handle(self):
 		"""Deriva self.handle desde self.url_perfil + self.plataforma."""

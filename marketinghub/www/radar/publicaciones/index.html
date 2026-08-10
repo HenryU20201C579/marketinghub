@@ -311,6 +311,9 @@
         {% for e in estados %}<option value="{{ e }}">{{ e }}</option>{% endfor %}
       </select>
       <button class="rd-btn-clear" onclick="RadarPubs.limpiarFiltros()">Limpiar</button>
+      <button class="rd-btn-clear" onclick="RadarPubs.exportarCSV()" title="Descargar los resultados filtrados como CSV">
+        <i data-lucide="download" style="width:12px;height:12px;vertical-align:middle;"></i> CSV
+      </button>
       <div class="rd-spacer"></div>
       <span class="rd-counter" id="rd-counter">0 / 0</span>
     </div>
@@ -527,6 +530,55 @@
       });
       document.getElementById('rd-f-fecha').value = '7';
       this.render();
+    },
+
+    exportarCSV() {
+      // Aplicar mismos filtros que render() para exportar solo lo visible
+      const q       = document.getElementById('rd-f-search').value.toLowerCase().trim();
+      const comp    = document.getElementById('rd-f-comp').value;
+      const plat    = document.getElementById('rd-f-plat').value;
+      const est     = document.getElementById('rd-f-estado').value;
+      const tierMin = document.getElementById('rd-f-tier').value;
+      const dias    = document.getElementById('rd-f-fecha').value;
+      let cutoffDate = null;
+      if (dias) { cutoffDate = new Date(); cutoffDate.setDate(cutoffDate.getDate() - parseInt(dias)); }
+      const items = this.lista.filter(p =>
+        (!q     || (p.titulo_hook || '').toLowerCase().includes(q) || (p.descripcion || '').toLowerCase().includes(q)) &&
+        (!comp  || p.competidor === comp) &&
+        (!plat  || p.plataforma === plat) &&
+        (!est   || p.estado === est) &&
+        (!tierMin || (p.tier_orden && p.tier_orden <= parseInt(tierMin))) &&
+        (!cutoffDate || (p.fecha_publicacion && new Date(p.fecha_publicacion + 'T00:00:00') >= cutoffDate))
+      );
+      if (!items.length) { Radar.toast('Sin datos para exportar', 'error'); return; }
+
+      const cols = [
+        ['tier', 'Tier'], ['plataforma', 'Plataforma'], ['competidor', 'Competidor'],
+        ['fecha_publicacion', 'Fecha'], ['titulo_hook', 'Título'],
+        ['vistas_actual', 'Vistas'], ['likes_actual', 'Likes'],
+        ['comentarios_actual', 'Coment'], ['compartidos_actual', 'Shares'],
+        ['guardados_actual', 'Guardados'], ['engagement_pct', 'Eng %'],
+        ['es_viral', 'Viral'], ['estado', 'Estado'],
+        ['url_publicacion', 'URL'], ['fecha_ultimo_scrapeo', 'Último scrapeo'],
+      ];
+      const esc = v => {
+        if (v == null) return '';
+        const s = String(v).replace(/"/g, '""');
+        return /[,\n"]/.test(s) ? `"${s}"` : s;
+      };
+      let csv = cols.map(c => c[1]).join(',') + '\n';
+      items.forEach(p => {
+        csv += cols.map(([k]) => esc(p[k])).join(',') + '\n';
+      });
+      // BOM + descarga
+      const blob = new Blob(['﻿' + csv], {type: 'text/csv;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const stamp = new Date().toISOString().slice(0,10);
+      a.href = url; a.download = `radar-publicaciones-${stamp}.csv`;
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
+      Radar.toast(`✓ ${items.length} publicaciones exportadas`, 'success');
     },
 
     analizar(name) {

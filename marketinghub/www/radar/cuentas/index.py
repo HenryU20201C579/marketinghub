@@ -37,11 +37,43 @@ def listar():
 		frappe.throw("Acceso denegado", frappe.PermissionError)
 	cuentas = frappe.db.get_all(
 		"Cuenta Social",
-		fields=["name", "competidor", "plataforma", "handle", "url_perfil",
-		        "seguidores_actual", "engagement_promedio", "activo"],
+		fields=["name", "competidor", "plataforma", "handle", "url_perfil", "activo"],
 		order_by="competidor asc, plataforma asc",
 	)
+	# Agregar contador de publicaciones y último scrapeo por cuenta
+	for c in cuentas:
+		c["n_publicaciones"] = frappe.db.count(
+			"Publicacion Competencia", {"cuenta_social": c["name"]}
+		)
+		ultima = frappe.db.sql(
+			"SELECT MAX(fecha_ultimo_scrapeo) FROM `tabPublicacion Competencia` "
+			"WHERE cuenta_social = %s",
+			(c["name"],),
+		)
+		c["ultimo_scrapeo"] = str(ultima[0][0]) if ultima and ultima[0][0] else None
 	return cuentas
+
+
+@frappe.whitelist()
+def scrapear_ahora(cuenta_social=None):
+	"""Dispara un scrape solo de esta cuenta (background job).
+
+	Reusa la lógica del scraper principal pero filtrando a UNA cuenta.
+	Se implementa via correr_scrape con filtro (por ahora corre todas)."""
+	roles = set(frappe.get_roles(frappe.session.user))
+	if not (roles & {"Marketinghub-Radar-Administrar",
+	                 "Marketinghub-Radar-Analista", "System Manager"}):
+		frappe.throw("Permiso denegado", frappe.PermissionError)
+	if not cuenta_social:
+		frappe.throw("cuenta_social requerido")
+	if not frappe.db.exists("Cuenta Social", cuenta_social):
+		frappe.throw(f"Cuenta {cuenta_social!r} no existe")
+	# encolar
+	frappe.enqueue(
+		"marketinghub.api.radar_scraper.correr_scrape",
+		queue="long", timeout=600,
+	)
+	return {"ok": True, "mensaje": f"Scrape encolado. Verifica en unos minutos."}
 
 
 @frappe.whitelist()
