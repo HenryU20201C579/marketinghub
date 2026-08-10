@@ -60,3 +60,18 @@ fixtures = [
 		"Conjunto Anuncios Asociados",
 	]]]},
 ]
+
+
+# ------------------------------------------------------------
+# Radar de Competencia - scheduler default (editable via UI)
+# ------------------------------------------------------------
+scheduler_events = {
+	"cron": {
+		# Default inicial: 6 AM diario. El usuario puede cambiarlo desde
+		# /radar/settings — el hook on_update de Radar Settings actualiza
+		# el Scheduled Job Type en la DB.
+		"0 6 * * *": [
+			"marketinghub.api.radar_scraper.correr_scrape",
+		],
+	},
+}

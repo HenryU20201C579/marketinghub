@@ -102,6 +102,49 @@
         </div>
       </div>
 
+      <div class="rd-settings-section">
+        <h3>📅 Programación del scrapeo</h3>
+
+        <div class="rd-field">
+          <label for="preset_frecuencia">¿Con qué frecuencia debe correr el scraper?</label>
+          <select id="preset_frecuencia" name="preset_frecuencia" class="rd-select" required {% if not can_edit %}disabled{% endif %}>
+            <option value="Diario a las 6 AM">Diario a las 6 AM</option>
+            <option value="Diario a las 8 PM">Diario a las 8 PM</option>
+            <option value="Cada 12 horas">Cada 12 horas</option>
+            <option value="Cada 6 horas">Cada 6 horas</option>
+            <option value="Cada hora">Cada hora</option>
+            <option value="Personalizado">Personalizado (defino mi propio cron)</option>
+          </select>
+        </div>
+
+        <div class="rd-field" id="rd-cron-custom-wrap">
+          <label for="cron_scrape">Expresión Cron</label>
+          <input type="text" id="cron_scrape" name="cron_scrape" class="rd-input"
+                 placeholder="0 6 * * *" pattern="[\d\*\/,\-\s]+" {% if not can_edit %}disabled{% endif %}>
+          <div class="rd-hint"><code>min hora día mes día-semana</code> · Ej: <code>0 */6 * * *</code> = cada 6 horas · <code>30 8 * * 1</code> = lunes 8:30 AM</div>
+        </div>
+
+        <div class="rd-field">
+          <label for="posts_por_perfil">Posts por perfil (por corrida)</label>
+          <input type="number" step="1" min="1" max="100" id="posts_por_perfil" name="posts_por_perfil" class="rd-input" required {% if not can_edit %}disabled{% endif %}>
+          <div class="rd-hint">Cuántos posts más recientes leer de cada cuenta. Más = más caro (~$0.003 por post en Apify).</div>
+        </div>
+
+        {% if can_edit %}
+        <div class="rd-field" style="margin-top: 20px;">
+          <button type="button" class="rd-btn rd-btn-secondary" onclick="RadarSettings.ejecutarAhora()" id="rd-btn-run">
+            <i data-lucide="play"></i> Ejecutar scrape ahora
+          </button>
+          <div class="rd-hint">Dispara una corrida manual ahora mismo, sin esperar al cron. Corre en background.</div>
+        </div>
+        {% endif %}
+
+        <div class="rd-field" id="rd-ultima-corrida" style="margin-top: 24px; background: var(--bg-soft); border-radius: 8px; padding: 12px; display: none;">
+          <div style="font-weight: 600; margin-bottom: 6px;">📊 Última corrida</div>
+          <div id="rd-ultima-info" style="font-size: 13px; color: var(--text-2); line-height: 1.6;">—</div>
+        </div>
+      </div>
+
       {% if can_edit %}
       <div class="rd-settings-actions">
         <button type="button" class="rd-btn rd-btn-secondary" onclick="RadarSettings.cargar()">Restablecer</button>
@@ -131,9 +174,11 @@
           const el = document.getElementById(k);
           if (el) el.value = data[k];
         }
+        this._toggleCustomCron();
       } catch (e) {
         Radar.toast('Error al cargar: ' + e.message, 'error');
       }
+      this.cargarEstado();
     },
     async guardar() {
       const form = document.getElementById('rd-settings-form');
@@ -141,14 +186,92 @@
       try {
         await Radar.api('marketinghub.www.radar.settings.index.guardar_settings', data);
         Radar.toast('✓ Guardado', 'success');
+        this.cargarEstado();
       } catch (e) {
         Radar.toast('Error al guardar: ' + e.message, 'error');
+      }
+    },
+    _toggleCustomCron() {
+      const preset = document.getElementById('preset_frecuencia').value;
+      const wrap = document.getElementById('rd-cron-custom-wrap');
+      const input = document.getElementById('cron_scrape');
+      const custom = preset === 'Personalizado';
+      // wrap siempre visible; input solo editable si custom
+      input.readOnly = !custom;
+      input.style.opacity = custom ? '1' : '0.65';
+      input.style.background = custom ? 'var(--surface)' : 'var(--bg-soft)';
+    },
+    async ejecutarAhora() {
+      const btn = document.getElementById('rd-btn-run');
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="loader"></i> Encolando...';
+      lucide.createIcons();
+      try {
+        const r = await Radar.api('marketinghub.api.radar_scraper.ejecutar_scrape_ahora',
+                                  {limit: document.getElementById('posts_por_perfil').value || 20});
+        Radar.toast(r.mensaje || '✓ Scrape encolado', 'success');
+        // reload estado cada 5 segs para ver cuando termine
+        this._pollEstado(10);
+      } catch (e) {
+        Radar.toast('Error: ' + e.message, 'error');
+      } finally {
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerHTML = '<i data-lucide="play"></i> Ejecutar scrape ahora';
+          lucide.createIcons();
+        }, 3000);
+      }
+    },
+    _pollEstado(remainingTries) {
+      if (remainingTries <= 0) return;
+      setTimeout(() => {
+        this.cargarEstado();
+        this._pollEstado(remainingTries - 1);
+      }, 5000);
+    },
+    async cargarEstado() {
+      try {
+        const st = await Radar.api('marketinghub.api.radar_scraper.obtener_estado_scheduler');
+        const wrap = document.getElementById('rd-ultima-corrida');
+        const info = document.getElementById('rd-ultima-info');
+        if (!st.ultima_corrida) {
+          wrap.style.display = 'none';
+          return;
+        }
+        wrap.style.display = 'block';
+        const stats = st.ultima_corrida_stats || {};
+        const badgeColor = st.ultima_corrida_estado === 'ok' ? 'var(--green)'
+                          : st.ultima_corrida_estado === 'warn' ? 'var(--orange)'
+                          : 'var(--red)';
+        info.innerHTML = `
+          <div><b>Cuándo:</b> ${Radar.escapeHtml(st.ultima_corrida)} · <b>Duración:</b> ${st.ultima_corrida_duracion || 0}s
+            · <span style="color:${badgeColor};font-weight:600;">${Radar.escapeHtml(st.ultima_corrida_estado || '?')}</span></div>
+          <div><b>Resultado:</b> insert ${stats.insert || 0} · update ${stats.update || 0}
+            · skip ${stats.skip || 0} · error ${stats.error || 0} · seguidores ${stats.seguidores || 0}</div>
+          <div style="color:var(--muted);margin-top:4px;">${Radar.escapeHtml(st.ultima_corrida_mensaje || '')}</div>
+          ${st.scheduled_job ? `<div style="margin-top:6px;"><b>Próxima corrida programada:</b> <code>${Radar.escapeHtml(st.scheduled_job.cron_format)}</code></div>` : ''}
+        `;
+      } catch (e) {
+        console.error(e);
       }
     }
   };
   document.addEventListener('DOMContentLoaded', function() {
     if (window.lucide) lucide.createIcons();
     RadarSettings.cargar();
+    document.getElementById('preset_frecuencia').addEventListener('change', function() {
+      RadarSettings._toggleCustomCron();
+      // Al cambiar preset (no personalizado), refleja el cron correspondiente en el input
+      const presets = {
+        'Diario a las 6 AM': '0 6 * * *',
+        'Diario a las 8 PM': '0 20 * * *',
+        'Cada 12 horas':     '0 */12 * * *',
+        'Cada 6 horas':      '0 */6 * * *',
+        'Cada hora':         '0 * * * *',
+      };
+      const p = this.value;
+      if (presets[p]) document.getElementById('cron_scrape').value = presets[p];
+    });
   });
 </script>
 {% endif %}
