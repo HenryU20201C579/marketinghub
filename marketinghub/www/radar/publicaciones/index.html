@@ -174,30 +174,52 @@
   /* Fire icon en primera columna cuando es viral (solo emoji, sin circulo) */
   .rd-fire { font-size: 14px; line-height: 1; }
 
-  /* Iconos de acción compactos */
-  .rd-tbl td.rd-actions { padding-right: 12px; }
-  .rd-actions a, .rd-actions button {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 28px; height: 28px; margin-left: 4px;
-    background: transparent; border: 1px solid var(--border);
-    border-radius: 6px; cursor: pointer; color: var(--text-2);
-    transition: all .12s;
+  /* Titulo clickeable (abre post en nueva pestaña) */
+  .rd-hook-link {
+    color: var(--text); text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .rd-actions a:hover, .rd-actions button:hover {
-    background: var(--brand-bg); color: var(--brand); border-color: var(--brand);
-    text-decoration: none;
+  .rd-hook-link:hover { color: var(--brand); text-decoration: none; }
+  .rd-hook-link:hover .rd-ext-ico { opacity: 1; }
+  .rd-ext-ico {
+    width: 12px; height: 12px; opacity: 0.35; flex-shrink: 0;
+    color: var(--muted); transition: opacity .12s;
   }
-  .rd-actions i { width: 14px; height: 14px; }
+  .rd-row-viral .rd-hook-link { color: #7f1d1d; }
+  .rd-row-viral .rd-hook-link:hover { color: #b91c1c; }
+
+  /* Boton Analizar unico en columna acciones */
+  .rd-tbl td.rd-actions { padding: 0 12px 0 4px; text-align: right; }
+  .rd-btn-analizar {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 10px; font-size: 12px; font-weight: 600;
+    background: transparent; color: var(--brand);
+    border: 1px solid var(--brand); border-radius: 6px;
+    cursor: pointer; font-family: inherit;
+    transition: background .12s;
+  }
+  .rd-btn-analizar:hover { background: var(--brand); color: white; }
+  .rd-btn-analizar i { width: 12px; height: 12px; }
+  .rd-row-viral .rd-btn-analizar {
+    border-color: var(--red); color: var(--red);
+  }
+  .rd-row-viral .rd-btn-analizar:hover { background: var(--red); color: white; }
 
   .rd-empty-tbl { padding: 60px 20px; text-align: center; color: var(--text-2); }
 
-  /* Responsive: bajo cierto ancho, columnas menos importantes se ocultan */
-  @media (max-width: 1200px) {
+  /* Responsive escalonado */
+  @media (max-width: 1400px) {
     .rd-col-shares, .rd-col-guardados { display: none; }
   }
+  @media (max-width: 1150px) {
+    .rd-col-coment { display: none; }
+  }
   @media (max-width: 900px) {
-    .rd-col-fecha, .rd-col-coment { display: none; }
+    .rd-col-fecha { display: none; }
     .rd-tbl td.rd-cell-hook { max-width: 200px; }
+    .rd-btn-analizar span { display: none; }
+    .rd-btn-analizar { padding: 5px 8px; }
   }
 
   .rd-notas-modal-body textarea { min-height: 100px; }
@@ -271,7 +293,7 @@
             <th class="rd-sortable" data-sort="engagement_pct" style="text-align:right;">Eng % <span class="rd-sort-ico"></span></th>
             <th class="rd-sortable rd-desc" data-sort="score_viralidad" style="text-align:right;">Score <span class="rd-sort-ico"></span></th>
             <th>Estado</th>
-            <th style="width: 90px;"></th>
+            <th style="width: 96px;"></th>
           </tr>
         </thead>
         <tbody id="rd-tbody">
@@ -388,13 +410,17 @@
       const estCls = 'rd-pill-' + (p.estado || 'nuevo').toLowerCase();
       const hookText = p.titulo_hook || p.descripcion || '—';
 
+      const hookHtml = p.url_publicacion
+        ? `<a class="rd-hook-link" href="${Radar.escapeHtml(p.url_publicacion)}" target="_blank" rel="noopener" title="Abrir post en nueva pestaña · ${Radar.escapeHtml(p.descripcion || '')}"><span>${Radar.escapeHtml(hookText)}</span><i data-lucide="external-link" class="rd-ext-ico"></i></a>`
+        : Radar.escapeHtml(hookText);
+
       return `
-        <tr class="${p.es_viral ? 'rd-row-viral' : ''}" title="${Radar.escapeHtml(p.descripcion || '')}">
+        <tr class="${p.es_viral ? 'rd-row-viral' : ''}">
           <td style="text-align:center;">${p.es_viral ? '<span class="rd-fire">🔥</span>' : ''}</td>
           <td><span class="rd-plat-chip rd-plat-${plat}">${plat_ini}</span></td>
           <td class="rd-cell-comp">${Radar.escapeHtml(p.competidor || '')}</td>
           <td class="rd-col-fecha" style="color:var(--text-2);">${fmtDate(p.fecha_publicacion)}</td>
-          <td class="rd-cell-hook">${Radar.escapeHtml(hookText)}</td>
+          <td class="rd-cell-hook">${hookHtml}</td>
           <td class="rd-num" style="font-weight:700;">${fmtNum(p.vistas_actual)}</td>
           <td class="rd-num">${fmtNum(p.likes_actual)}</td>
           <td class="rd-num rd-col-coment">${fmtNum(p.comentarios_actual)}</td>
@@ -403,9 +429,8 @@
           <td class="rd-num"><span class="${engClass(eng)}">${eng.toFixed(2)}%</span></td>
           <td class="rd-num"><span class="${scoreClass(sc, p.es_viral)}">${sc.toFixed(2)}×</span></td>
           <td><span class="rd-pill ${estCls}">${Radar.escapeHtml(p.estado || 'Nuevo')}</span></td>
-          <td class="rd-actions" style="text-align:right;">
-            ${p.url_publicacion ? `<a href="${Radar.escapeHtml(p.url_publicacion)}" target="_blank" rel="noopener" title="Abrir post"><i data-lucide="external-link"></i></a>` : ''}
-            ${CAN_EDIT ? `<button onclick="RadarPubs.analizar('${Radar.escapeHtml(p.name)}')" title="Analizar / editar estado"><i data-lucide="edit-3"></i></button>` : ''}
+          <td class="rd-actions">
+            ${CAN_EDIT ? `<button class="rd-btn-analizar" onclick="RadarPubs.analizar('${Radar.escapeHtml(p.name)}')" title="Analizar / editar estado"><i data-lucide="edit-3"></i><span>Analizar</span></button>` : ''}
           </td>
         </tr>`;
     },
