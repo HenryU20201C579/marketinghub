@@ -11,6 +11,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
 <link rel="stylesheet" href="/radar/radar.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  .rd-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 30px 0; }
+  @media (max-width: 900px) { .rd-charts { grid-template-columns: 1fr; } }
+  .rd-chart-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .rd-chart-card h3 {
+    font-size: 14px; font-weight: 700; color: var(--text);
+    margin-bottom: 12px;
+  }
+  .rd-chart-card.full { grid-column: 1 / -1; }
+  .rd-chart-wrap { position: relative; height: 240px; }
+</style>
 {% endblock %}
 
 {% block page_content %}
@@ -61,6 +77,21 @@
       <div class="rd-stat rd-stat-viral"><div class="rd-stat-num" data-key="virales_hoy">–</div><div class="rd-stat-label">🔥 Virales hoy</div></div>
       <div class="rd-stat rd-stat-viral"><div class="rd-stat-num" data-key="virales">–</div><div class="rd-stat-label">🔥 Virales total</div></div>
       <div class="rd-stat rd-stat-new"><div class="rd-stat-num" data-key="nuevos">–</div><div class="rd-stat-label">✨ Sin analizar</div></div>
+    </section>
+
+    <section class="rd-charts" id="rd-charts">
+      <div class="rd-chart-card full">
+        <h3>📊 Publicaciones por mes (últimos 6 meses)</h3>
+        <div class="rd-chart-wrap"><canvas id="chart-posts"></canvas></div>
+      </div>
+      <div class="rd-chart-card">
+        <h3>❤️ Engagement promedio por competidor</h3>
+        <div class="rd-chart-wrap"><canvas id="chart-eng"></canvas></div>
+      </div>
+      <div class="rd-chart-card">
+        <h3>🏆 Distribución por tier</h3>
+        <div class="rd-chart-wrap"><canvas id="chart-tiers"></canvas></div>
+      </div>
     </section>
 
     <section class="rd-actions">

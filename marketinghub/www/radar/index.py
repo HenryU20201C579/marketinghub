@@ -32,6 +32,47 @@ def get_context(context):
 
 
 @frappe.whitelist()
+def obtener_stats_graficos():
+	"""Datos para los 3 gráficos del dashboard."""
+	if not _has_role(VIEW_ROLES):
+		frappe.throw("Acceso denegado", frappe.PermissionError)
+	from datetime import date, timedelta
+
+	hoy = date.today()
+	hace_6m = date(hoy.year, hoy.month, 1) - timedelta(days=180)
+
+	# 1. Posts por mes últimos 6 meses (barras)
+	posts_mes = frappe.db.sql("""
+		SELECT DATE_FORMAT(fecha_publicacion, '%%Y-%%m') AS mes, COUNT(*) AS c
+		FROM `tabPublicacion Competencia`
+		WHERE fecha_publicacion >= %s
+		GROUP BY mes ORDER BY mes
+	""", (hace_6m,), as_dict=True)
+
+	# 2. Engagement promedio por competidor (líneas horizontales / barras)
+	eng_comp = frappe.db.sql("""
+		SELECT competidor, ROUND(AVG(engagement_pct), 2) AS eng, COUNT(*) AS n
+		FROM `tabPublicacion Competencia`
+		WHERE engagement_pct IS NOT NULL AND competidor IS NOT NULL
+		GROUP BY competidor ORDER BY eng DESC
+	""", as_dict=True)
+
+	# 3. Distribución por tier (circular)
+	tiers = frappe.db.sql("""
+		SELECT COALESCE(tier, 'Sin tier') AS tier, tier_orden, COUNT(*) AS c
+		FROM `tabPublicacion Competencia`
+		GROUP BY tier, tier_orden
+		ORDER BY tier_orden ASC
+	""", as_dict=True)
+
+	return {
+		"posts_por_mes": posts_mes,
+		"engagement_competidor": eng_comp,
+		"distribucion_tiers": tiers,
+	}
+
+
+@frappe.whitelist()
 def obtener_contadores():
 	"""Retorna contadores para el dashboard."""
 	if not _has_role(VIEW_ROLES):

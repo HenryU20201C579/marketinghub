@@ -117,6 +117,7 @@
 	};
 
 	// ---------- Dashboard ----------
+	const MESES_C = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 	window.RadarDash = {
 		async init() {
 			try {
@@ -129,6 +130,68 @@
 				console.error(e);
 				toast('No se pudieron cargar los contadores: ' + e.message, 'error');
 			}
-		}
+			this.renderCharts();
+		},
+
+		async renderCharts() {
+			if (typeof Chart === 'undefined') return;
+			let stats;
+			try {
+				stats = await apiCall('marketinghub.www.radar.index.obtener_stats_graficos');
+			} catch(e) { console.error(e); return; }
+
+			// 1. Posts por mes
+			const meses = (stats.posts_por_mes || []).map(r => {
+				const [y, m] = r.mes.split('-');
+				return `${MESES_C[parseInt(m)-1]} ${y.slice(-2)}`;
+			});
+			const cants = (stats.posts_por_mes || []).map(r => r.c);
+			this._chart('chart-posts', {
+				type: 'bar',
+				data: { labels: meses, datasets: [{
+					label: 'Publicaciones', data: cants,
+					backgroundColor: '#3b82f6', borderRadius: 4,
+				}]},
+				options: { responsive:true, maintainAspectRatio:false,
+					plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} },
+			});
+
+			// 2. Engagement por competidor (barras horizontales)
+			const comps = (stats.engagement_competidor || []).map(r => r.competidor);
+			const engs  = (stats.engagement_competidor || []).map(r => r.eng);
+			this._chart('chart-eng', {
+				type: 'bar',
+				data: { labels: comps, datasets: [{
+					label: 'Engagement %', data: engs,
+					backgroundColor: '#10b981', borderRadius: 4,
+				}]},
+				options: { responsive:true, maintainAspectRatio:false, indexAxis:'y',
+					plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true}} },
+			});
+
+			// 3. Distribución tiers (pie / doughnut)
+			const tiers = stats.distribucion_tiers || [];
+			const tierColors = ['#c0c0c0','#2563eb','#06b6d4','#dc2626','#3b82f6','#d4af37','#94a3b8','#6b7280','#a16207','#facc15'];
+			this._chart('chart-tiers', {
+				type: 'doughnut',
+				data: {
+					labels: tiers.map(t => t.tier),
+					datasets: [{
+						data: tiers.map(t => t.c),
+						backgroundColor: tiers.map(t => tierColors[(t.tier_orden || 10) - 1] || '#94a3b8'),
+					}]
+				},
+				options: { responsive:true, maintainAspectRatio:false,
+					plugins:{legend:{position:'right', labels:{boxWidth:12, font:{size:11}}}} },
+			});
+		},
+
+		_chart(canvasId, config) {
+			const canvas = document.getElementById(canvasId);
+			if (!canvas) return;
+			// destruir chart previo si existe
+			if (canvas._chartInstance) canvas._chartInstance.destroy();
+			canvas._chartInstance = new Chart(canvas, config);
+		},
 	};
 })();

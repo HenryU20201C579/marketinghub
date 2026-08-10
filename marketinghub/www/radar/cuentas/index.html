@@ -101,6 +101,19 @@
     if (n >= 1000) return (n/1000).toFixed(1) + 'k';
     return n.toLocaleString('es-PE');
   }
+  function fmtUltimo(s) {
+    if (!s) return 'nunca';
+    try {
+      const d = new Date(s.replace(' ', 'T'));
+      const diffH = (new Date() - d) / 3600000;
+      if (diffH < 1)  return 'hace ' + Math.max(1, Math.round(diffH*60)) + ' min';
+      if (diffH < 24) return 'hace ' + Math.round(diffH) + ' h';
+      if (diffH < 48) return 'ayer';
+      const dias = Math.round(diffH / 24);
+      if (dias < 30) return 'hace ' + dias + ' d';
+      return d.toLocaleDateString('es-PE', {day:'2-digit', month:'short'});
+    } catch(e) { return '—'; }
+  }
 
   window.RadarCtas = {
     lista: [],
@@ -145,12 +158,12 @@
           ${c.url_perfil ? `<a href="${Radar.escapeHtml(c.url_perfil)}" target="_blank" rel="noopener" class="rd-cta-url">${Radar.escapeHtml(c.url_perfil)}</a>` : ''}
           <div class="rd-cta-metrics">
             <div class="rd-cta-metric">
-              <div class="rd-cta-metric-val">${fmtNum(c.seguidores_actual || 0)}</div>
-              <div class="rd-cta-metric-lbl">Seguidores</div>
+              <div class="rd-cta-metric-val">${fmtNum(c.n_publicaciones || 0)}</div>
+              <div class="rd-cta-metric-lbl">Publicaciones</div>
             </div>
             <div class="rd-cta-metric">
-              <div class="rd-cta-metric-val">${(c.engagement_promedio || 0).toFixed(2)}%</div>
-              <div class="rd-cta-metric-lbl">Engagement prom.</div>
+              <div class="rd-cta-metric-val" style="font-size:11px;">${fmtUltimo(c.ultimo_scrapeo)}</div>
+              <div class="rd-cta-metric-lbl">Último scrapeo</div>
             </div>
             <div class="rd-cta-metric">
               <div class="rd-cta-metric-val">${c.activo ? '✓' : '⏸'}</div>
@@ -161,6 +174,9 @@
           <div class="rd-cta-actions">
             <button class="rd-btn rd-btn-secondary rd-btn-sm" onclick="RadarCtas.editar('${Radar.escapeHtml(c.name)}')">
               <i data-lucide="pencil"></i> Editar
+            </button>
+            <button class="rd-btn rd-btn-secondary rd-btn-sm" onclick="RadarCtas.scrapear('${Radar.escapeHtml(c.name)}')" title="Forzar scrape ahora">
+              <i data-lucide="refresh-cw"></i> Actualizar
             </button>
             <button class="rd-btn rd-btn-danger rd-btn-sm" onclick="RadarCtas.borrar('${Radar.escapeHtml(c.name)}')">
               <i data-lucide="trash-2"></i>
@@ -249,6 +265,14 @@
       if (urlInput.value) revisar();
     },
     editar(name) { const c = this.lista.find(x => x.name === name); if (c) this.abrirModal(c); },
+    async scrapear(name) {
+      try {
+        const r = await Radar.api('marketinghub.www.radar.cuentas.index.scrapear_ahora', {cuenta_social: name});
+        Radar.toast('✓ ' + (r.mensaje || 'Scrape encolado'), 'success');
+      } catch (e) {
+        Radar.toast('Error: ' + e.message, 'error');
+      }
+    },
     borrar(name) {
       Radar.modal({
         title: 'Borrar cuenta social', confirmText: 'Sí, borrar', danger: true,
