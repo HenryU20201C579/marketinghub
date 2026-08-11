@@ -154,9 +154,20 @@ def obtener_eventos(desde=None, hasta=None, plataforma=None,
 		order_by="fecha_publicacion asc",
 		limit=2000,
 	)
-	# adjuntar color por competidor
+	# Precargar colores personalizados de todos los competidores en juego (una sola query)
+	comps_en_juego = list({p["competidor"] for p in posts if p.get("competidor")})
+	colores_custom = {}
+	if comps_en_juego:
+		for c in frappe.db.get_all(
+			"Competidor",
+			filters={"name": ["in", comps_en_juego]},
+			fields=["name", "color"],
+		):
+			colores_custom[c.name] = c.color  # puede ser None
+	# adjuntar color por competidor: personalizado si existe, sino hash estable
 	for p in posts:
-		p["color"] = _color_for(p["competidor"] or "")
+		comp = p.get("competidor") or ""
+		p["color"] = colores_custom.get(comp) or _color_for(comp)
 		# fecha_publicacion viene como date object — a string YYYY-MM-DD
 		if p.get("fecha_publicacion") and hasattr(p["fecha_publicacion"], "isoformat"):
 			p["fecha_publicacion"] = p["fecha_publicacion"].isoformat()
