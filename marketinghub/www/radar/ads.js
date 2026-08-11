@@ -170,7 +170,7 @@
 		});
 
 		if (!lista.length) {
-			tb.innerHTML = `<tr><td colspan="11" class="empty">
+			tb.innerHTML = `<tr><td colspan="10" class="empty">
 				<b>Sin ads con estos filtros.</b><br>
 				<span style="font-size:11.5px;">Prueba quitar filtros o corre "🔄 Actualizar" arriba a la derecha.</span>
 			</td></tr>`;
@@ -187,11 +187,10 @@
 			const copy = (a.copy_texto || '').replace(/\n/g, ' ').substring(0, 200);
 			return `
 				<tr class="${cls}" data-name="${_escape(a.name)}">
-					<td><span class="thumb ${thumbCls}" onclick="RadarAds.abrir('${_escape(a.name)}')">${thumbIco}</span></td>
+					<td><span class="thumb ${thumbCls}" title="${_escape(a.formato || '')}" onclick="RadarAds.abrir('${_escape(a.name)}')">${thumbIco}</span></td>
 					<td><span class="dias">${a.dias_activo || 0}d</span></td>
 					<td><span class="badge ${cls_badge}">${lbl_badge}</span> ${activo_dot}</td>
 					<td><span class="comp-tag"><span class="dot" style="background:${_escape(a.color)};"></span>${_escape(a.competidor || '')}</span></td>
-					<td class="fmt">${thumbIco}</td>
 					<td><span class="fecha">${_fmtDDMMYY(a.fecha_inicio)}</span></td>
 					<td class="copy-cell" title="${_escape(a.copy_texto || '')}">${_escape(copy)}</td>
 					<td>${a.cta_type ? `<span class="cta-pill">${_escape(a.cta_type)}</span>` : ''}</td>
