@@ -125,6 +125,8 @@
 		return n.toLocaleString('es-PE');
 	}
 	window.RadarDash = {
+		_topRangeDias: 30,
+
 		async init() {
 			try {
 				const c = await apiCall('marketinghub.www.radar.index.obtener_contadores');
@@ -136,48 +138,35 @@
 				console.error(e);
 				toast('No se pudieron cargar los contadores: ' + e.message, 'error');
 			}
-			this.renderCharts();
-		},
-
-		async renderCharts() {
+			this._wireTopRange();
 			await Promise.all([
-				this._renderTimeline(),
 				this._renderTopVirales(),
-				this._renderHeatmap(),
+				this._renderViralesPorComp(),
+				this._renderDiasSemana(),
 			]);
 		},
 
-		async _renderTimeline() {
-			if (typeof Chart === 'undefined') return;
-			try {
-				const data = await apiCall('marketinghub.www.radar.index.obtener_timeline_virales',
-				                           {semanas: 12, tier_orden_max: 5});
-				this._chart('chart-timeline', {
-					type: 'line',
-					data: { labels: data.labels, datasets: data.datasets },
-					options: {
-						responsive:true, maintainAspectRatio:false,
-						plugins:{
-							legend:{position:'bottom', labels:{boxWidth:12, font:{size:11}}},
-							tooltip:{callbacks:{title:(items) => 'Semana del ' + items[0].label}},
-						},
-						scales:{
-							y:{beginAtZero:true, ticks:{stepSize:1, precision:0}, title:{display:true,text:'Virales por semana'}},
-							x:{ticks:{font:{size:10}}},
-						},
-					},
+		_wireTopRange() {
+			document.querySelectorAll('#rd-top-range button').forEach(btn => {
+				btn.addEventListener('click', async () => {
+					document.querySelectorAll('#rd-top-range button').forEach(b => b.classList.remove('on'));
+					btn.classList.add('on');
+					this._topRangeDias = parseInt(btn.dataset.dias);
+					await this._renderTopVirales();
 				});
-			} catch(e) { console.error('timeline:', e); }
+			});
 		},
 
 		async _renderTopVirales() {
 			const cont = document.getElementById('rd-top-list');
 			if (!cont) return;
+			cont.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:16px;font-size:12px;">Cargando…</div>';
 			try {
 				const posts = await apiCall('marketinghub.www.radar.index.obtener_top_virales',
-				                             {limite: 10, dias: 30});
+				                             {limite: 10, dias: this._topRangeDias});
 				if (!posts.length) {
-					cont.innerHTML = '<div style="text-align:center;color:var(--muted);padding:30px;font-size:12px;">Sin publicaciones en el último mes.</div>';
+					const txt = this._topRangeDias === 7 ? 'esta semana' : 'este mes';
+					cont.innerHTML = `<div style="text-align:center;color:#9ca3af;padding:20px;font-size:12px;">Sin publicaciones ${txt}.</div>`;
 					return;
 				}
 				cont.innerHTML = posts.map((p, i) => {
@@ -200,56 +189,55 @@
 			} catch(e) { console.error('top:', e); }
 		},
 
-		async _renderHeatmap() {
-			const cont = document.getElementById('rd-heatmap-wrap');
+		async _renderViralesPorComp() {
+			const cont = document.getElementById('rd-vpc');
 			if (!cont) return;
 			try {
-				const data = await apiCall('marketinghub.www.radar.index.obtener_heatmap_semana', {semanas: 12});
-				const total = data.matriz.reduce((a, fila) => a + fila.reduce((b, x) => b + x, 0), 0);
-				if (!total) {
-					cont.innerHTML = '<div class="rd-heatmap-empty">Sin datos suficientes.</div>';
+				const rows = await apiCall('marketinghub.www.radar.index.obtener_virales_por_competidor', {dias: 30});
+				if (!rows.length) {
+					cont.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:16px;font-size:12px;">Sin virales en el último mes.</div>';
 					return;
 				}
-				const heatCls = (v) => {
-					if (!v || !data.max) return '';
-					const p = v / data.max;
-					if (p >= 0.75) return 'h4';
-					if (p >= 0.5)  return 'h3';
-					if (p >= 0.25) return 'h2';
-					return 'h1';
-				};
-				const n = data.labels_semana.length;
-				let html = `<div class="rd-heatmap" style="--_n:${n};">`;
-				// header
-				html += `<div class="rd-heatmap-header" style="--_n:${n};">
-					<div></div>
-					${data.labels_semana.map(l => `<div class="lbl-sem">${l}</div>`).join('')}
-				</div>`;
-				// filas por día
-				data.labels_dia.forEach((dow, i) => {
-					html += `<div class="rd-heatmap-row" style="--_n:${n};">
-						<div class="rd-heatmap-dow">${dow}</div>
-						${data.matriz[i].map(v => `<div class="rd-heatmap-cell ${heatCls(v)}" title="${v} posts">${v || ''}</div>`).join('')}
-					</div>`;
-				});
-				html += '</div>';
-				cont.innerHTML = html;
-			} catch(e) { console.error('heatmap:', e); }
+				const maxTotal = Math.max(...rows.map(r => r.total)) || 1;
+				cont.innerHTML = rows.map(r => {
+					const pctV = (r.virales / maxTotal) * 100;
+					const pctC = (r.casi_virales / maxTotal) * 100;
+					return `
+						<div class="row">
+							<div class="name">
+								<span class="dot" style="background:${escapeHtml(r.color)};"></span>
+								<span title="${escapeHtml(r.competidor)}">${escapeHtml(r.competidor)}</span>
+							</div>
+							<div class="bar">
+								${r.virales      ? `<div class="seg seg-v" style="width:${pctV}%;" title="${r.virales} virales">${r.virales >= 2 ? r.virales : ''}</div>` : ''}
+								${r.casi_virales ? `<div class="seg seg-c" style="width:${pctC}%;" title="${r.casi_virales} casi virales">${r.casi_virales >= 2 ? r.casi_virales : ''}</div>` : ''}
+							</div>
+							<div class="cnt">${r.total}</div>
+						</div>`;
+				}).join('');
+			} catch(e) { console.error('vpc:', e); cont.innerHTML = ''; }
 		},
 
-		_chart(canvasId, config) {
-			const canvas = document.getElementById(canvasId);
-			if (!canvas) return;
-			if (canvas._chartInstance) canvas._chartInstance.destroy();
-			canvas._chartInstance = new Chart(canvas, config);
-		},
-
-		_chart(canvasId, config) {
-			const canvas = document.getElementById(canvasId);
-			if (!canvas) return;
-			// destruir chart previo si existe
-			if (canvas._chartInstance) canvas._chartInstance.destroy();
-			canvas._chartInstance = new Chart(canvas, config);
+		async _renderDiasSemana() {
+			const cont = document.getElementById('rd-dow');
+			if (!cont) return;
+			try {
+				const rows = await apiCall('marketinghub.www.radar.index.obtener_publicaciones_por_dia_semana', {dias: 90});
+				const maxC = Math.max(...rows.map(r => r.count)) || 1;
+				if (!rows.some(r => r.count)) {
+					cont.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:16px;font-size:12px;">Sin datos suficientes.</div>';
+					return;
+				}
+				cont.innerHTML = rows.map(r => {
+					const pct = Math.round((r.count / maxC) * 100);
+					return `
+						<div class="row">
+							<div class="n">${escapeHtml(r.nombre)}</div>
+							<div class="bar"><div style="width:${pct}%;"></div></div>
+							<div class="c">${r.count}</div>
+						</div>`;
+				}).join('');
+			} catch(e) { console.error('dow:', e); }
 		},
 	};
 })();

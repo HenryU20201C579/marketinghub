@@ -8,88 +8,196 @@
 {{ super() }}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
 <link rel="stylesheet" href="/radar/radar.css">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-  .rd-charts { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin: 30px 0; }
-  @media (max-width: 1050px) { .rd-charts { grid-template-columns: 1fr; } }
-  .rd-chart-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 16px;
-    box-shadow: var(--shadow-sm);
+  /* Full-width: quitar constraints de Frappe */
+  main.container.my-4,
+  body main.container,
+  .page-content-wrapper main.container {
+    max-width: none !important; padding: 0 !important; margin: 0 !important;
   }
-  .rd-chart-card h3 {
-    font-size: 14px; font-weight: 700; color: var(--text);
-    margin-bottom: 12px;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .rd-chart-card.full { grid-column: 1 / -1; }
-  .rd-chart-wrap { position: relative; height: 260px; }
+  .page_content { padding: 0 !important; }
 
-  /* Top virales */
-  .rd-top-list { display: flex; flex-direction: column; gap: 8px; max-height: 480px; overflow-y: auto; }
-  .rd-top-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
-    text-decoration: none; color: inherit;
-    transition: box-shadow .1s, border-color .1s;
-    background: white;
+  body { background: #fafbfc; }
+
+  /* Layout general — full width, sin hero, sin scroll ideal en 1440x900 */
+  .rd-main { max-width: none !important; padding: 12px 20px 20px !important; }
+
+  /* Stats compactos en 1 fila */
+  .rd-stats-row {
+    display: flex; flex-wrap: wrap; gap: 0;
+    background: #fff; border: 1px solid #eef1f5; border-radius: 8px;
+    padding: 8px 6px; margin-bottom: 12px;
   }
-  .rd-top-item:hover { border-color: var(--brand); box-shadow: var(--shadow); text-decoration: none; }
+  .rd-stats-row .st {
+    display: flex; align-items: baseline; gap: 6px;
+    padding: 4px 14px; border-right: 1px solid #f1f3f5;
+    font-size: 13px; color: #6b7280;
+  }
+  .rd-stats-row .st:last-child { border-right: none; }
+  .rd-stats-row .st .n {
+    font-size: 18px; font-weight: 700; color: #111827;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .rd-stats-row .st.viral .n { color: #dc2626; }
+  .rd-stats-row .st.new .n { color: #ea580c; }
+
+  /* Grid principal 2 cols */
+  .rd-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .rd-card {
+    background: #fff; border: 1px solid #eef1f5; border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .rd-card h3 {
+    font-size: 13px; font-weight: 600; color: #111827;
+    margin: 0 0 12px; display: flex; align-items: center; gap: 8px;
+  }
+  .rd-card h3 .spacer { flex: 1; }
+  .rd-card h3 .sub { font-size: 11px; color: #9ca3af; font-weight: 400; }
+
+  /* Toggle chico semana/mes */
+  .tg {
+    display: inline-flex; padding: 2px; background: #f3f4f6; border-radius: 5px;
+  }
+  .tg button {
+    padding: 3px 10px; font-size: 11px; font-weight: 500; color: #6b7280;
+    background: transparent; border: none; border-radius: 3px;
+    cursor: pointer; font-family: inherit;
+  }
+  .tg button:hover { color: #111827; }
+  .tg button.on { background: #fff; color: #111827; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+
+  /* Top 10 virales — filas MUY compactas */
+  .rd-top-list { display: flex; flex-direction: column; gap: 3px; max-height: 360px; overflow-y: auto; }
+  .rd-top-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; border-radius: 5px;
+    text-decoration: none; color: inherit;
+    background: #fff;
+  }
+  .rd-top-item:hover { background: #f9fafb; text-decoration: none; color: inherit; }
   .rd-top-rank {
-    width: 28px; height: 28px; border-radius: 50%;
+    width: 22px; height: 22px; border-radius: 50%;
     display: inline-flex; align-items: center; justify-content: center;
-    background: var(--bg-soft); color: var(--text-2);
-    font-weight: 800; font-size: 12px; flex-shrink: 0;
+    background: #f3f4f6; color: #6b7280;
+    font-weight: 700; font-size: 11px; flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace;
   }
   .rd-top-item.rank-1 .rd-top-rank { background: #ffd700; color: #78350f; }
   .rd-top-item.rank-2 .rd-top-rank { background: #d4d4d8; color: #3f3f46; }
   .rd-top-item.rank-3 .rd-top-rank { background: #f4a261; color: #7c2d12; }
-  .rd-top-color { width: 4px; height: 40px; border-radius: 2px; flex-shrink: 0; }
+  .rd-top-color { width: 3px; height: 26px; border-radius: 2px; flex-shrink: 0; }
   .rd-top-body { flex: 1; min-width: 0; }
   .rd-top-hook {
-    font-size: 12.5px; font-weight: 600; color: var(--text);
+    font-size: 12.5px; font-weight: 500; color: #111827;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .rd-top-meta { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+  .rd-top-meta { font-size: 11px; color: #6b7280; margin-top: 1px; }
   .rd-top-metrics {
-    text-align: right; font-size: 11px; color: var(--text-2);
-    font-family: 'JetBrains Mono', monospace;
-    white-space: nowrap;
+    text-align: right; font-size: 11px; color: #6b7280;
+    font-family: 'JetBrains Mono', monospace; white-space: nowrap;
+    flex-shrink: 0;
   }
-  .rd-top-metrics b { color: var(--text); display: block; font-size: 13px; }
+  .rd-top-metrics b { color: #111827; display: block; font-size: 12px; }
 
-  /* Heatmap */
-  .rd-heatmap {
-    display: grid; gap: 2px; overflow-x: auto;
-    padding: 4px 0;
+  /* Virales por competidor — barras horizontales apiladas */
+  .rd-vpc { display: flex; flex-direction: column; gap: 8px; }
+  .rd-vpc .row {
+    display: grid; grid-template-columns: 90px 1fr 60px; gap: 8px; align-items: center;
+    font-size: 12px;
   }
-  .rd-heatmap-row {
-    display: grid; grid-template-columns: 40px repeat(var(--_n, 12), minmax(24px, 1fr));
-    gap: 2px; align-items: center;
+  .rd-vpc .name {
+    color: #111827; font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    display: flex; align-items: center; gap: 6px;
   }
-  .rd-heatmap-dow {
-    font-size: 10.5px; color: var(--text-2); font-weight: 600;
-    text-align: right; padding-right: 6px;
+  .rd-vpc .name .dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+  .rd-vpc .bar {
+    display: flex; height: 18px; background: #f3f4f6; border-radius: 3px; overflow: hidden;
   }
-  .rd-heatmap-cell {
-    aspect-ratio: 1; border-radius: 3px; background: #f1f5f9;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 9.5px; color: var(--text-2);
-    cursor: default;
+  .rd-vpc .bar .seg-v { background: #dc2626; }
+  .rd-vpc .bar .seg-c { background: #f59e0b; }
+  .rd-vpc .bar .seg { display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: 600; }
+  .rd-vpc .cnt { color: #6b7280; font-family: 'JetBrains Mono', monospace; font-size: 11px; text-align: right; }
+  .rd-vpc-legend {
+    display: flex; gap: 12px; margin-top: 8px; padding-top: 8px;
+    border-top: 1px solid #f1f3f5; font-size: 10.5px; color: #6b7280;
   }
-  .rd-heatmap-cell.h1 { background: #dbeafe; }
-  .rd-heatmap-cell.h2 { background: #93c5fd; color: white; }
-  .rd-heatmap-cell.h3 { background: #3b82f6; color: white; }
-  .rd-heatmap-cell.h4 { background: #1e40af; color: white; font-weight: 700; }
-  .rd-heatmap-header {
-    display: grid; grid-template-columns: 40px repeat(var(--_n, 12), minmax(24px, 1fr));
-    gap: 2px; margin-bottom: 6px; font-size: 9.5px; color: var(--muted);
+  .rd-vpc-legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .rd-vpc-legend .dot { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+
+  /* Cuándo publican — lista ordenada */
+  .rd-dow-list { display: flex; flex-direction: column; gap: 4px; }
+  .rd-dow-list .row {
+    display: grid; grid-template-columns: 90px 1fr 40px; gap: 8px; align-items: center;
+    font-size: 12px;
   }
-  .rd-heatmap-header .lbl-sem { text-align: center; }
-  .rd-heatmap-empty { text-align: center; padding: 30px; color: var(--muted); font-size: 12px; }
+  .rd-dow-list .n { color: #111827; font-weight: 500; }
+  .rd-dow-list .bar {
+    height: 14px; background: #f3f4f6; border-radius: 3px; overflow: hidden;
+  }
+  .rd-dow-list .bar > div {
+    height: 100%; background: linear-gradient(90deg, #3b82f6, #1e40af);
+    transition: width .2s;
+  }
+  .rd-dow-list .c {
+    color: #6b7280; font-family: 'JetBrains Mono', monospace;
+    text-align: right; font-size: 11px;
+  }
+
+  /* Grid de acciones — 4×2 compacto */
+  .rd-actions-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  }
+  .rd-action {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; background: #fff; border: 1px solid #eef1f5;
+    border-radius: 8px; text-decoration: none; color: inherit;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .rd-action:hover {
+    border-color: #cbd5e1; box-shadow: 0 2px 6px rgba(15,23,42,.06);
+    text-decoration: none; color: inherit;
+  }
+  .rd-action.primary {
+    border-color: #dbeafe; background: linear-gradient(to right, #f0f7ff, #fff);
+  }
+  .rd-action.primary:hover { border-color: #1f5eff; }
+  .rd-action .ico {
+    width: 32px; height: 32px; border-radius: 6px;
+    background: #f3f4f6; color: #6b7280;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .rd-action.primary .ico { background: #ecf3ff; color: #1f5eff; }
+  .rd-action .ico i { width: 16px; height: 16px; }
+  .rd-action .body { flex: 1; min-width: 0; }
+  .rd-action .t { font-size: 13px; font-weight: 600; color: #111827; margin-bottom: 1px; }
+  .rd-action .s { font-size: 11px; color: #6b7280; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Responsive */
+  @media (max-width: 1100px) {
+    .rd-grid { grid-template-columns: 1fr; }
+    .rd-actions-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .rd-actions-grid { grid-template-columns: 1fr; }
+    .rd-stats-row .st { border-right: none; padding: 4px 8px; }
+  }
+
+  /* Topbar título con fecha */
+  .rd-topbar-title {
+    font-size: 13px; color: #6b7280; font-weight: 400;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .rd-topbar-title .b { color: #111827; font-weight: 600; }
+  .rd-topbar-title .sep { color: #d1d5db; }
 </style>
 {% endblock %}
 
@@ -121,6 +229,10 @@
         <span class="rd-logo-dot"></span>
         <span class="rd-logo-text">Radar</span>
       </div>
+      <span class="rd-topbar-title">
+        <span class="sep">·</span>
+        <span class="b" id="rd-fecha-hoy">–</span>
+      </span>
     </div>
     <div class="rd-topbar-right">
       <span class="rd-user"><i data-lucide="user-round"></i> {{ usuario }}</span>
@@ -128,108 +240,118 @@
   </header>
 
   <main class="rd-main">
-    <div class="rd-hero">
-      <h1>👋 ¡Hola!</h1>
-      <p class="rd-hero-sub">Este es tu Radar de Competencia. Aquí puedes ver qué publican tus competidores y encontrar ideas para tus propios videos.</p>
+
+    <!-- Stats en 1 fila -->
+    <section class="rd-stats-row" id="rd-stats">
+      <div class="st"><span class="n" data-key="categorias">–</span> Categorías</div>
+      <div class="st"><span class="n" data-key="competidores">–</span> Competidores</div>
+      <div class="st"><span class="n" data-key="cuentas">–</span> Cuentas</div>
+      <div class="st"><span class="n" data-key="publicaciones">–</span> Publicaciones</div>
+      <div class="st viral"><span class="n" data-key="virales_hoy">–</span> 🔥 Virales hoy</div>
+      <div class="st viral"><span class="n" data-key="virales">–</span> 🔥 Virales total</div>
+      <div class="st new"><span class="n" data-key="nuevos">–</span> ✨ Sin analizar</div>
+      <div class="st"><span class="n" data-key="guiones_semana">–</span> 📝 Guiones semana</div>
+    </section>
+
+    <!-- Grid principal 2 columnas -->
+    <div class="rd-grid">
+      <!-- Izquierda: Top virales -->
+      <div class="rd-card">
+        <h3>
+          🔥 Top 10 virales
+          <div class="spacer"></div>
+          <div class="tg" id="rd-top-range">
+            <button data-dias="7">Semana</button>
+            <button class="on" data-dias="30">Mes</button>
+          </div>
+        </h3>
+        <div class="rd-top-list" id="rd-top-list">
+          <div style="text-align:center;color:#9ca3af;padding:20px;font-size:12px;">Cargando…</div>
+        </div>
+      </div>
+
+      <!-- Derecha: 2 stacks (virales por comp + cuándo publican) -->
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="rd-card">
+          <h3>📊 Virales por competidor <span class="sub">últimos 30 días</span></h3>
+          <div class="rd-vpc" id="rd-vpc">
+            <div style="text-align:center;color:#9ca3af;padding:16px;font-size:12px;">Cargando…</div>
+          </div>
+          <div class="rd-vpc-legend">
+            <span><span class="dot" style="background:#dc2626;"></span>Virales (Dragón · Cetro · Hachón)</span>
+            <span><span class="dot" style="background:#f59e0b;"></span>Casi virales (tier 4-5)</span>
+          </div>
+        </div>
+
+        <div class="rd-card">
+          <h3>📆 Cuándo publican tus competidores <span class="sub">últimos 90 días</span></h3>
+          <div class="rd-dow-list" id="rd-dow">
+            <div style="text-align:center;color:#9ca3af;padding:16px;font-size:12px;">Cargando…</div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <section class="rd-stats" id="rd-stats">
-      <div class="rd-stat"><div class="rd-stat-num" data-key="categorias">–</div><div class="rd-stat-label">Categorías</div></div>
-      <div class="rd-stat"><div class="rd-stat-num" data-key="competidores">–</div><div class="rd-stat-label">Competidores</div></div>
-      <div class="rd-stat"><div class="rd-stat-num" data-key="cuentas">–</div><div class="rd-stat-label">Cuentas Sociales</div></div>
-      <div class="rd-stat"><div class="rd-stat-num" data-key="publicaciones">–</div><div class="rd-stat-label">Publicaciones</div></div>
-      <div class="rd-stat rd-stat-viral"><div class="rd-stat-num" data-key="virales_hoy">–</div><div class="rd-stat-label">🔥 Virales hoy</div></div>
-      <div class="rd-stat rd-stat-viral"><div class="rd-stat-num" data-key="virales">–</div><div class="rd-stat-label">🔥 Virales total</div></div>
-      <div class="rd-stat rd-stat-new"><div class="rd-stat-num" data-key="nuevos">–</div><div class="rd-stat-label">✨ Sin analizar</div></div>
-      <div class="rd-stat"><div class="rd-stat-num" data-key="guiones_semana">–</div><div class="rd-stat-label">📝 Guiones esta semana</div></div>
-    </section>
-
-    <section class="rd-charts" id="rd-charts">
-      <div class="rd-chart-card full">
-        <h3>📈 Timeline de virales por competidor <span style="font-weight:400;color:var(--text-2);font-size:11px;">(últimas 12 semanas)</span></h3>
-        <div class="rd-chart-wrap"><canvas id="chart-timeline"></canvas></div>
-      </div>
-      <div class="rd-chart-card">
-        <h3>🔥 Top 10 virales del mes</h3>
-        <div class="rd-top-list" id="rd-top-list">
-          <div style="text-align:center;color:var(--muted);padding:20px;font-size:12px;">Cargando…</div>
+    <!-- Acciones grid 4x2 -->
+    <section class="rd-actions-grid">
+      <a href="/radar/publicaciones" class="rd-action primary">
+        <span class="ico"><i data-lucide="flame"></i></span>
+        <div class="body">
+          <div class="t">Publicaciones virales</div>
+          <div class="s">Feed completo con filtros</div>
         </div>
-      </div>
-      <div class="rd-chart-card">
-        <h3>📆 Cuándo publican tus competidores <span style="font-weight:400;color:var(--text-2);font-size:11px;">(día × semana)</span></h3>
-        <div id="rd-heatmap-wrap">
-          <div style="text-align:center;color:var(--muted);padding:20px;font-size:12px;">Cargando…</div>
+      </a>
+      <a href="/radar/guiones" class="rd-action primary">
+        <span class="ico"><i data-lucide="pen-line"></i></span>
+        <div class="body">
+          <div class="t">📝 Mis guiones</div>
+          <div class="s">Crear y coordinar</div>
         </div>
-      </div>
+      </a>
+      <a href="/radar/comparativa" class="rd-action primary">
+        <span class="ico"><i data-lucide="calendar"></i></span>
+        <div class="body">
+          <div class="t">📅 Calendario</div>
+          <div class="s">Publicaciones por fecha</div>
+        </div>
+      </a>
+      <a href="/radar/guiones?vista=calendario" class="rd-action primary">
+        <span class="ico"><i data-lucide="calendar-clock"></i></span>
+        <div class="body">
+          <div class="t">🗓️ Agenda guiones</div>
+          <div class="s">Cuáles faltan publicar</div>
+        </div>
+      </a>
+      <a href="/radar/competidores" class="rd-action">
+        <span class="ico"><i data-lucide="users"></i></span>
+        <div class="body">
+          <div class="t">Competidores</div>
+          <div class="s">Marcas monitoreadas</div>
+        </div>
+      </a>
+      <a href="/radar/cuentas" class="rd-action">
+        <span class="ico"><i data-lucide="at-sign"></i></span>
+        <div class="body">
+          <div class="t">Cuentas sociales</div>
+          <div class="s">IG, TikTok, FB, YT</div>
+        </div>
+      </a>
+      <a href="/radar/categorias" class="rd-action">
+        <span class="ico"><i data-lucide="tag"></i></span>
+        <div class="body">
+          <div class="t">Categorías</div>
+          <div class="s">Cuero, calzado, etc.</div>
+        </div>
+      </a>
+      <a href="/radar/settings" class="rd-action">
+        <span class="ico"><i data-lucide="settings"></i></span>
+        <div class="body">
+          <div class="t">Configuración</div>
+          <div class="s">Umbrales de viralidad</div>
+        </div>
+      </a>
     </section>
 
-    <section class="rd-actions">
-      <h2>¿Qué quieres hacer hoy?</h2>
-      <div class="rd-action-list">
-        <a href="/radar/publicaciones" class="rd-action rd-action-primary">
-          <div class="rd-action-icon"><i data-lucide="flame"></i></div>
-          <div class="rd-action-body">
-            <div class="rd-action-title">Ver publicaciones virales</div>
-            <div class="rd-action-sub">Los posts que más engagement están consiguiendo</div>
-          </div>
-          <i data-lucide="arrow-right" class="rd-action-arrow"></i>
-        </a>
-
-        <a href="/radar/guiones" class="rd-action rd-action-primary">
-          <div class="rd-action-icon"><i data-lucide="pen-line"></i></div>
-          <div class="rd-action-body">
-            <div class="rd-action-title">📝 Mis guiones</div>
-            <div class="rd-action-sub">Crear guiones inspirados en virales y coordinar publicaciones</div>
-          </div>
-          <i data-lucide="arrow-right" class="rd-action-arrow"></i>
-        </a>
-
-        <a href="/radar/comparativa" class="rd-action">
-          <div class="rd-action-icon"><i data-lucide="calendar"></i></div>
-          <div class="rd-action-body">
-            <div class="rd-action-title">📅 Calendario</div>
-            <div class="rd-action-sub">Vista tipo Google Calendar de todas las publicaciones (día/semana/mes/año)</div>
-          </div>
-          <i data-lucide="arrow-right" class="rd-action-arrow"></i>
-        </a>
-
-        <a href="/radar/competidores" class="rd-action">
-          <div class="rd-action-icon"><i data-lucide="users"></i></div>
-          <div class="rd-action-body">
-            <div class="rd-action-title">Gestionar competidores</div>
-            <div class="rd-action-sub">Marcas que quieres monitorear</div>
-          </div>
-          <i data-lucide="arrow-right" class="rd-action-arrow"></i>
-        </a>
-
-        <a href="/radar/cuentas" class="rd-action">
-          <div class="rd-action-icon"><i data-lucide="at-sign"></i></div>
-          <div class="rd-action-body">
-            <div class="rd-action-title">Cuentas sociales</div>
-            <div class="rd-action-sub">Perfiles de IG, TikTok, FB, YouTube por competidor</div>
-          </div>
-          <i data-lucide="arrow-right" class="rd-action-arrow"></i>
-        </a>
-
-        <a href="/radar/categorias" class="rd-action">
-          <div class="rd-action-icon"><i data-lucide="tag"></i></div>
-          <div class="rd-action-body">
-            <div class="rd-action-title">Categorías</div>
-            <div class="rd-action-sub">Agrupa competidores por tipo (cuero, calzado, etc.)</div>
-          </div>
-          <i data-lucide="arrow-right" class="rd-action-arrow"></i>
-        </a>
-
-        <a href="/radar/settings" class="rd-action">
-          <div class="rd-action-icon"><i data-lucide="settings"></i></div>
-          <div class="rd-action-body">
-            <div class="rd-action-title">Configuración</div>
-            <div class="rd-action-sub">Ajusta cuándo un video se considera viral</div>
-          </div>
-          <i data-lucide="arrow-right" class="rd-action-arrow"></i>
-        </a>
-      </div>
-    </section>
   </main>
 </div>
 
@@ -238,6 +360,12 @@
   document.addEventListener('DOMContentLoaded', function() {
     if (window.lucide) lucide.createIcons();
     if (window.RadarDash) RadarDash.init();
+    // Fecha de hoy en la topbar
+    const hoy = new Date();
+    const dias = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+    const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    document.getElementById('rd-fecha-hoy').textContent =
+      `${dias[hoy.getDay()]} ${hoy.getDate()} ${meses[hoy.getMonth()]} ${hoy.getFullYear()}`;
   });
 </script>
 {% endif %}

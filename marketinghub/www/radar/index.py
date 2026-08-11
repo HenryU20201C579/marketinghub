@@ -177,6 +177,74 @@ def obtener_heatmap_semana(semanas=12):
 
 
 @frappe.whitelist()
+def obtener_virales_por_competidor(dias=30):
+	"""Por competidor: cuantos virales (tier 1-3) + casi virales (tier 4-5).
+	Ordenado por total desc."""
+	if not _has_role(VIEW_ROLES):
+		frappe.throw("Acceso denegado", frappe.PermissionError)
+	from datetime import date, timedelta
+	desde = date.today() - timedelta(days=int(dias))
+	rows = frappe.db.sql("""
+		SELECT competidor,
+		       SUM(CASE WHEN tier_orden BETWEEN 1 AND 3 THEN 1 ELSE 0 END) AS virales,
+		       SUM(CASE WHEN tier_orden BETWEEN 4 AND 5 THEN 1 ELSE 0 END) AS casi_virales
+		FROM `tabPublicacion Competencia`
+		WHERE fecha_publicacion >= %s
+		  AND competidor IS NOT NULL
+		  AND tier_orden IS NOT NULL
+		GROUP BY competidor
+		HAVING (virales + casi_virales) > 0
+		ORDER BY virales DESC, casi_virales DESC
+	""", (desde,), as_dict=True)
+	# Colores personalizados
+	import hashlib
+	PALETA = [
+		"#d50000","#e67c73","#f4511e","#f6bf26","#33b679","#0b8043",
+		"#039be5","#3f51b5","#7986cb","#8e24aa","#616161","#a79b8e",
+	]
+	comp_colors = {c.name: (c.color or PALETA[hashlib.md5(c.name.encode()).digest()[0] % 12])
+	               for c in frappe.db.get_all("Competidor", fields=["name", "color"])}
+	for r in rows:
+		r["virales"] = int(r.virales or 0)
+		r["casi_virales"] = int(r.casi_virales or 0)
+		r["total"] = r["virales"] + r["casi_virales"]
+		r["color"] = comp_colors.get(r.competidor, "#94a3b8")
+	return rows
+
+
+@frappe.whitelist()
+def obtener_publicaciones_por_dia_semana(dias=90):
+	"""Cuenta de posts por dia de la semana en los ultimos N dias.
+	Ordenado mayor a menor. Devuelve [{dow_idx, dow_nombre, count}]."""
+	if not _has_role(VIEW_ROLES):
+		frappe.throw("Acceso denegado", frappe.PermissionError)
+	from datetime import date, timedelta
+	desde = date.today() - timedelta(days=int(dias))
+	rows = frappe.db.sql("""
+		SELECT WEEKDAY(fecha_publicacion) AS dow, COUNT(*) AS c
+		FROM `tabPublicacion Competencia`
+		WHERE fecha_publicacion >= %s
+		GROUP BY WEEKDAY(fecha_publicacion)
+	""", (desde,), as_dict=True)
+	# WEEKDAY: 0=Lun ... 6=Dom
+	NOMBRES = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"]
+	counts = {int(r.dow): int(r.c) for r in rows}
+	total = sum(counts.values()) or 1
+	out = []
+	for i in range(7):
+		c = counts.get(i, 0)
+		out.append({
+			"dow": i,
+			"nombre": NOMBRES[i],
+			"count": c,
+			"pct": round(c / total * 100),
+		})
+	# Ordenar mayor a menor
+	out.sort(key=lambda x: -x["count"])
+	return out
+
+
+@frappe.whitelist()
 def obtener_contadores():
 	"""Retorna contadores para el dashboard."""
 	if not _has_role(VIEW_ROLES):
