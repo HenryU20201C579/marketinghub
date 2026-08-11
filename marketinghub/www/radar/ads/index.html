@@ -235,7 +235,7 @@
     <div class="rd-topbar-left">
       <a href="/radar" class="rd-back"><i data-lucide="arrow-left"></i> Volver</a>
       <div class="rd-topbar-title">
-        📢 <span>Ads Library</span>
+        <span>Ads Library</span>
         <span class="sub" id="rd-lastrun">–</span>
       </div>
     </div>
@@ -253,29 +253,29 @@
 
     <!-- Filtros -->
     <div class="filters">
-      <input class="search" id="f-search" placeholder="🔍 Buscar en copy…">
+      <input class="search" id="f-search" placeholder="Buscar en copy…">
       <select id="f-comp"><option value="">Todos los competidores</option></select>
       <select id="f-formato">
         <option value="">Formato…</option>
-        <option value="Video">🎥 Video</option>
-        <option value="Imagen">🖼 Imagen</option>
-        <option value="Carrusel">🎠 Carrusel</option>
+        <option value="Video">Video</option>
+        <option value="Imagen">Imagen</option>
+        <option value="Carrusel">Carrusel</option>
       </select>
       <select id="f-etiqueta">
         <option value="">Etiqueta…</option>
-        <option value="Ganador top">🔥🔥🔥 Ganador top</option>
-        <option value="Ganador">🔥🔥 Ganador</option>
-        <option value="Test scale">🔥🔥 Test scale</option>
-        <option value="Fresco">🔥 Fresco</option>
-        <option value="Nuevo">🆕 Nuevo</option>
-        <option value="Pausado">⛔ Pausado</option>
+        <option value="Ganador top">Ganador top (60d+)</option>
+        <option value="Ganador">Ganador (30-59d)</option>
+        <option value="Test scale">Test scale (14-29d)</option>
+        <option value="Fresco">Fresco (7-13d)</option>
+        <option value="Nuevo">Nuevo (&lt;7d)</option>
+        <option value="Pausado">Pausado</option>
       </select>
       <span class="chip" id="f-30d">30d+ activos</span>
       <span class="chip on" id="f-activos">Solo activos</span>
       <div class="spacer"></div>
       <span class="count" id="rd-count">–</span>
-      <button class="btn btn-p" id="btn-csv">⬇ CSV</button>
-      <button class="btn btn-o" id="btn-refresh">🔄 Actualizar</button>
+      <button class="btn btn-p" id="btn-csv">Descargar CSV</button>
+      <button class="btn btn-o" id="btn-refresh">Actualizar</button>
     </div>
 
     <!-- Tabla -->
@@ -284,16 +284,16 @@
         <table class="ads-tbl">
           <thead>
             <tr>
-              <th style="width:44px;"></th>
-              <th class="sort sort-desc" data-sort="dias_activo" style="width:60px;">Días</th>
+              <th class="sort sort-desc" data-sort="dias_activo" style="width:60px;" title="Cuántos días lleva corriendo el ad (más días = más rentable)">Días activo</th>
               <th>Estado</th>
               <th>Marca</th>
-              <th class="sort" data-sort="fecha_inicio">Inicio</th>
+              <th>Formato</th>
+              <th class="sort" data-sort="fecha_inicio" title="Fecha en que Meta publicó el ad por primera vez">Publicado</th>
               <th>Copy</th>
               <th>CTA</th>
               <th>Landing</th>
               <th>Plataformas</th>
-              <th></th>
+              <th style="width:120px;">Acciones</th>
             </tr>
           </thead>
           <tbody id="rd-tbody">

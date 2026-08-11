@@ -21,12 +21,12 @@
 		'Pausado':     'b-pausado',
 	};
 	const BADGE_LBL = {
-		'Nuevo':       '🆕 Nuevo',
-		'Fresco':      '🔥 Fresco',
-		'Test scale':  '🔥🔥 Test scale',
-		'Ganador':     '🔥🔥 Ganador',
-		'Ganador top': '🔥🔥🔥 Ganador top',
-		'Pausado':     '⛔ Pausado',
+		'Nuevo':       'Nuevo',
+		'Fresco':      'Fresco',
+		'Test scale':  'Test scale',
+		'Ganador':     'Ganador',
+		'Ganador top': 'Ganador top',
+		'Pausado':     'Pausado',
 	};
 
 	function _escape(s) {
@@ -58,10 +58,7 @@
 		return csv.split(',').map(p => p.trim().substring(0,3)).join('·');
 	}
 	function _formato_ico(f) {
-		if (f === 'Video')    return '🎥';
-		if (f === 'Imagen')   return '🖼';
-		if (f === 'Carrusel') return '🎠';
-		return '?';
+		return f || '—';
 	}
 
 	// ---------- Cargar data ----------
@@ -181,16 +178,14 @@
 			const cls = (a.dias_activo || 0) >= 30 && a.esta_activo ? 'long-runner' : (a.esta_activo ? '' : 'pausado');
 			const cls_badge = BADGE_CLS[a.etiqueta_ganador] || 'b-nuevo';
 			const lbl_badge = BADGE_LBL[a.etiqueta_ganador] || a.etiqueta_ganador || '';
-			const activo_dot = a.esta_activo ? '<span class="badge badge-active">●</span>' : '';
-			const thumbCls = a.formato === 'Imagen' ? 'img' : (a.formato === 'Carrusel' ? 'car' : '');
-			const thumbIco = a.formato === 'Imagen' ? '🖼' : (a.formato === 'Carrusel' ? '🎠' : '▶');
+			const activo_dot = a.esta_activo ? '<span class="badge badge-active">activo</span>' : '';
 			const copy = (a.copy_texto || '').replace(/\n/g, ' ').substring(0, 200);
 			return `
 				<tr class="${cls}" data-name="${_escape(a.name)}">
-					<td><span class="thumb ${thumbCls}" title="${_escape(a.formato || '')}" onclick="RadarAds.abrir('${_escape(a.name)}')">${thumbIco}</span></td>
-					<td><span class="dias">${a.dias_activo || 0}d</span></td>
+					<td><span class="dias">${a.dias_activo || 0} d</span></td>
 					<td><span class="badge ${cls_badge}">${lbl_badge}</span> ${activo_dot}</td>
 					<td><span class="comp-tag"><span class="dot" style="background:${_escape(a.color)};"></span>${_escape(a.competidor || '')}</span></td>
+					<td>${_escape(a.formato || '—')}</td>
 					<td><span class="fecha">${_fmtDDMMYY(a.fecha_inicio)}</span></td>
 					<td class="copy-cell" title="${_escape(a.copy_texto || '')}">${_escape(copy)}</td>
 					<td>${a.cta_type ? `<span class="cta-pill">${_escape(a.cta_type)}</span>` : ''}</td>
@@ -198,7 +193,7 @@
 					<td><span class="plats">${_escape(_abbrevPlats(a.plataformas))}</span></td>
 					<td class="row-actions">
 						<button onclick="RadarAds.abrir('${_escape(a.name)}')">Ver</button>
-						${CAN_EDIT ? `<button onclick="RadarAds.hacerGuion('${_escape(a.name)}')" title="Hacer guión de este ad">📝</button>` : ''}
+						${CAN_EDIT ? `<button onclick="RadarAds.hacerGuion('${_escape(a.name)}')" title="Crear guión inspirado en este ad">Guión</button>` : ''}
 					</td>
 				</tr>
 			`;
@@ -229,20 +224,20 @@
 						<div class="kv"><span class="k">Página FB</span><span class="v">${_escape(doc.page_name || '—')}</span></div>
 						<div class="kv"><span class="k">Activo desde</span><span class="v">${_fmtDDMMYY(doc.fecha_inicio)}</span></div>
 						<div class="kv"><span class="k">Días activo</span><span class="v"><b>${doc.dias_activo || 0}d</b></span></div>
-						<div class="kv"><span class="k">Estado</span><span class="v">${doc.esta_activo ? '🟢 Activo' : '⛔ Pausado' + (doc.fecha_pausado ? ' desde ' + _fmtDDMMYY(doc.fecha_pausado) : '')}</span></div>
+						<div class="kv"><span class="k">Estado</span><span class="v">${doc.esta_activo ? 'Activo' : 'Pausado' + (doc.fecha_pausado ? ' desde ' + _fmtDDMMYY(doc.fecha_pausado) : '')}</span></div>
 						<div class="kv"><span class="k">Etiqueta</span><span class="v">${BADGE_LBL[doc.etiqueta_ganador] || '—'}</span></div>
-						<div class="kv"><span class="k">Formato</span><span class="v">${_formato_ico(doc.formato)} ${_escape(doc.formato || '—')}</span></div>
+						<div class="kv"><span class="k">Formato</span><span class="v">${_escape(doc.formato || '—')}</span></div>
 						<div class="kv"><span class="k">CTA</span><span class="v">${_escape(doc.cta_type || '—')}</span></div>
 						<div class="kv"><span class="k">Variantes</span><span class="v">${doc.n_variantes || 1}</span></div>
 						<div class="kv"><span class="k">Plataformas</span><span class="v">${_escape((doc.plataformas || '').split(',').join(' · ') || '—')}</span></div>
-						${doc.landing_url ? `<div class="kv"><span class="k">Landing</span><span class="v"><a href="${_escape(doc.landing_url)}" target="_blank" style="color:#1f5eff;">Ver landing ↗</a></span></div>` : ''}
+						${doc.landing_url ? `<div class="kv"><span class="k">Landing</span><span class="v"><a href="${_escape(doc.landing_url)}" target="_blank" style="color:#1f5eff;">Ver landing</a></span></div>` : ''}
 						${doc.hashtags ? `<div class="kv"><span class="k">Hashtags</span><span class="v" style="font-size:11px;">${_escape(doc.hashtags)}</span></div>` : ''}
 
 						<div class="adm-actions">
-							${dlUrl ? `<a href="${_escape(dlUrl)}" target="_blank" download>⬇ Descargar</a>` : ''}
-							${doc.landing_url ? `<a href="${_escape(doc.landing_url)}" target="_blank">🔗 Landing</a>` : ''}
-							<a href="https://www.facebook.com/ads/library/?id=${_escape(doc.ad_archive_id)}" target="_blank">📢 Ver en Ad Library</a>
-							${CAN_EDIT ? `<button class="prim" onclick="RadarAds.hacerGuion('${_escape(doc.name)}')">📝 Hacer guión de este ad</button>` : ''}
+							${dlUrl ? `<a href="${_escape(dlUrl)}" target="_blank" download>Descargar</a>` : ''}
+							${doc.landing_url ? `<a href="${_escape(doc.landing_url)}" target="_blank">Ver landing</a>` : ''}
+							<a href="https://www.facebook.com/ads/library/?id=${_escape(doc.ad_archive_id)}" target="_blank">Ver en Ad Library</a>
+							${CAN_EDIT ? `<button class="prim" onclick="RadarAds.hacerGuion('${_escape(doc.name)}')">Hacer guión de este ad</button>` : ''}
 						</div>
 					</div>
 				</div>
@@ -264,11 +259,11 @@
 		if (!CAN_EDIT) { Radar.toast('Sin permisos', 'error'); return; }
 		const btn = document.getElementById('btn-refresh');
 		const orig = btn.textContent;
-		btn.disabled = true; btn.textContent = '⏳ Scrapeando…';
+		btn.disabled = true; btn.textContent = 'Actualizando…';
 		try {
 			const r = await Radar.api('marketinghub.api.radar_ads_scraper.ejecutar_scrape_ads_ahora');
 			const s = r.stats || {};
-			Radar.toast(`✅ ${s.insert || 0} nuevos · ${s.update || 0} actualizados · ${s.pausados || 0} pausados`, 'success');
+			Radar.toast(`${s.insert || 0} nuevos · ${s.update || 0} actualizados · ${s.pausados || 0} pausados`, 'success');
 			await cargar();
 		} catch (e) {
 			Radar.toast('Error: ' + e.message, 'error');
