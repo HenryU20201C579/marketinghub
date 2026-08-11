@@ -48,12 +48,12 @@
 		const hoy = _hoy();
 		const finSemana = new Date(hoy); finSemana.setDate(finSemana.getDate() + 6);
 		const grupos = {
-			'atrasado': { titulo: '🔴 Atrasados', items: [] },
-			'hoy':      { titulo: '📅 Hoy', items: [] },
-			'semana':   { titulo: '📅 Esta semana', items: [] },
-			'futuro':   { titulo: '📆 Más adelante', items: [] },
-			'sinFecha': { titulo: '💡 Sin fecha', items: [] },
-			'publicado':{ titulo: '✅ Publicados este mes', items: [] },
+			'atrasado': { titulo: 'Atrasados', items: [] },
+			'hoy':      { titulo: 'Hoy', items: [] },
+			'semana':   { titulo: 'Esta semana', items: [] },
+			'futuro':   { titulo: 'Más adelante', items: [] },
+			'sinFecha': { titulo: 'Sin fecha', items: [] },
+			'publicado':{ titulo: 'Publicados', items: [] },
 		};
 		const haceMes = new Date(hoy); haceMes.setDate(haceMes.getDate() - 30);
 		guiones.forEach(g => {
@@ -127,13 +127,13 @@
 		const hora = g.hora_publicacion ? ' · ' + g.hora_publicacion.slice(0,5) : '';
 		const plat = g.plataforma ? plataformaIco(g.plataforma) : '';
 		const ref = g.referencia_publicacion
-			? `<span class="ref">🔥 ${escapeHtml(g.ref_competidor || 'Ref')} ${_fmtVistas(g.ref_vistas)}</span>`
+			? `<span class="ref">ref. ${escapeHtml(g.ref_competidor || '')} ${_fmtVistas(g.ref_vistas)}</span>`
 			: '';
 		let ratio = '';
 		if (g.estado === 'Publicado' && g.mi_vistas) {
 			const rat = g.ratio_vs_referente || 0;
 			const cls = rat >= 1 ? 'ratio-win' : (rat >= 0.5 ? 'ratio-mid' : 'ratio-low');
-			ratio = ` · <span class="${cls}">${_fmtVistas(g.mi_vistas)} · ${rat.toFixed(1)}× ref${rat >= 1 ? ' 🎉' : ''}</span>`;
+			ratio = `<span class="sep">·</span><span class="${cls}">${_fmtVistas(g.mi_vistas)} · ${rat.toFixed(1)}×</span>`;
 		}
 		return `
 			<a class="gt-task ${done ? 'done' : ''}"
@@ -158,11 +158,11 @@
 	}
 
 	function plataformaIco(p) {
-		if (p === 'TikTok')    return '📱 TikTok';
-		if (p === 'Instagram') return '📷 IG';
-		if (p === 'Facebook')  return '📘 FB';
-		if (p === 'YouTube')   return '▶️ YT';
-		if (p === 'Ambas')     return '📱📷 Ambas';
+		if (p === 'TikTok')    return 'TikTok';
+		if (p === 'Instagram') return 'IG';
+		if (p === 'Facebook')  return 'FB';
+		if (p === 'YouTube')   return 'YT';
+		if (p === 'Ambas')     return 'IG + TikTok';
 		return escapeHtml(p);
 	}
 
@@ -251,15 +251,14 @@
 					valor: el.dataset.val || null,
 				};
 				const titles = {
-					'todos':  '📋 Todos los guiones',
-					'semana': '📅 Guiones de esta semana',
-					'mios':   '👤 Mis guiones',
-					'estado': el.dataset.val ? `${el.textContent.trim().split('\n')[0]}` : '📋 Todos',
+					'todos':  'Todos los guiones',
+					'semana': 'Esta semana',
+					'mios':   'Míos',
 				};
 				document.getElementById('gt-title').textContent =
 					VISTA_ACTUAL.tipo === 'estado'
-						? `Estado: ${VISTA_ACTUAL.valor}`
-						: (titles[VISTA_ACTUAL.tipo] || '📋 Todos');
+						? VISTA_ACTUAL.valor
+						: (titles[VISTA_ACTUAL.tipo] || 'Todos');
 				render();
 			});
 		});

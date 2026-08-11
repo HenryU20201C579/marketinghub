@@ -1,5 +1,5 @@
 /* ============================================
-   Radar de Competencia — Editor de Guion
+   Radar de Competencia — Editor de Guion (minimal)
    ============================================ */
 (function () {
 	'use strict';
@@ -40,14 +40,12 @@
 	}
 
 	function pintar() {
-		document.getElementById('ge-title').textContent = DOC.titulo || NAME;
-
-		// Referencia
+		// Referencia compacta arriba
 		pintarRef();
 
 		// Usuarios asignables
 		const selAsig = document.getElementById('f-asignado');
-		selAsig.innerHTML = '<option value="">— sin asignar —</option>';
+		selAsig.innerHTML = '<option value="">—</option>';
 		(DOC._usuarios || []).forEach(u => {
 			const opt = document.createElement('option');
 			opt.value = u.name;
@@ -55,7 +53,7 @@
 			selAsig.appendChild(opt);
 		});
 
-		// Rellenar campos por data-field
+		// Rellenar campos
 		document.querySelectorAll('[data-field]').forEach(el => {
 			const f = el.dataset.field;
 			const v = DOC[f];
@@ -67,6 +65,9 @@
 			el.disabled = !CAN_EDIT;
 		});
 
+		// Autoresize textareas del guión
+		document.querySelectorAll('.ge-sec textarea').forEach(autoresize);
+
 		// Checkboxes
 		document.querySelectorAll('[data-check]').forEach(el => {
 			const f = el.dataset.check;
@@ -75,7 +76,6 @@
 			el.parentElement.classList.toggle('done', !!DOC[f]);
 		});
 
-		// Estado activo
 		marcarEstado(DOC.estado);
 		actualizarProgreso();
 		actualizarRatio();
@@ -85,38 +85,38 @@
 	}
 
 	function pintarRef() {
-		const cont = document.getElementById('ge-ref-body');
+		const cont = document.getElementById('ge-ref-box');
 		if (!DOC._ref) {
-			cont.innerHTML = `
-				<div class="ref-empty">
-					Este guión no tiene referencia viral vinculada.<br>
-					<span style="font-size:11px;">Vincúlala desde <a href="/radar/publicaciones" style="color:var(--brand);">/radar/publicaciones</a> con el botón "Hacer guión".</span>
-				</div>
-			`;
+			cont.innerHTML = `<div class="ge-ref-empty">Sin referencia · <a href="/radar/publicaciones" style="color:#6b7280;">vincular desde publicaciones</a></div>`;
 			return;
 		}
 		const r = DOC._ref;
 		const fecha = r.fecha_publicacion
 			? r.fecha_publicacion.split('-').reverse().slice(0,2).join('/')
 			: '';
+		const partes = [];
+		if (r.competidor) partes.push(_escape(r.competidor));
+		if (r.plataforma) partes.push(_escape(r.plataforma));
+		if (r.vistas_actual) partes.push(_fmtNum(r.vistas_actual) + ' vistas');
+		if (fecha) partes.push(fecha);
+		const href = r.url_publicacion || '#';
+		const targetAttr = r.url_publicacion ? ' target="_blank" rel="noopener"' : '';
 		cont.innerHTML = `
-			<div class="ref-thumb">🎬</div>
-			<div class="ref-hook">${_escape(r.titulo_hook || '(sin título)')}</div>
-			<div class="ref-meta">🎵 ${_escape(r.competidor)} · ${_escape(r.plataforma)} · ${fecha}</div>
-			<div class="ref-metrics">
-				<div><div class="ref-metric-num">${_fmtNum(r.vistas_actual)}</div><div class="ref-metric-lbl">Vistas</div></div>
-				<div><div class="ref-metric-num">${(r.engagement_pct || 0).toFixed(1)}%</div><div class="ref-metric-lbl">Engagement</div></div>
-				<div><div class="ref-metric-num">${_fmtNum(r.likes_actual)}</div><div class="ref-metric-lbl">Likes</div></div>
-				<div><div class="ref-metric-num">${_fmtNum(r.comentarios_actual)}</div><div class="ref-metric-lbl">Coment</div></div>
-			</div>
-			${r.url_publicacion
-				? `<a href="${_escape(r.url_publicacion)}" target="_blank" rel="noopener" class="ref-link">↗ Ver post original</a>`
-				: ''}
-			${r.tier ? `<div style="margin-top:12px;padding:6px 10px;background:var(--bg-soft);border-radius:6px;font-size:12px;text-align:center;">🏆 Tier: <b>${_escape(r.tier)}</b></div>` : ''}
-			${r.elementos_a_copiar
-				? `<h4>🔥 Elementos a copiar</h4><div style="font-size:12.5px;color:var(--text-2);line-height:1.5;">${_escape(r.elementos_a_copiar)}</div>`
-				: ''}
+			<a class="ge-ref" href="${_escape(href)}"${targetAttr}>
+				<span class="r-ico">▶</span>
+				<div class="r-body">
+					<div class="r-hook">${_escape(r.titulo_hook || 'Sin título')}</div>
+					<div class="r-meta">${partes.join(' · ')}</div>
+				</div>
+				<span class="r-link">↗</span>
+			</a>
 		`;
+	}
+
+	function autoresize(ta) {
+		if (!ta) return;
+		ta.style.height = 'auto';
+		ta.style.height = (ta.scrollHeight + 2) + 'px';
 	}
 
 	// ---- Guardado con debounce ----
@@ -134,21 +134,18 @@
 			const res = await Radar.api('marketinghub.www.radar.guion.index.guardar', {
 				name: NAME, cambios: cambios,
 			});
-			// Actualizar DOC en memoria con lo enviado
 			Object.assign(DOC, cambios);
 			if (res && res.estado) { DOC.estado = res.estado; marcarEstado(res.estado); }
 			if (res && res.ratio_vs_referente != null) {
 				DOC.ratio_vs_referente = res.ratio_vs_referente; actualizarRatio();
 			}
 			actualizarProgreso();
-			// Reflejar cambios provocados por sync (ej: check_publicado → estado Publicado)
 			document.querySelectorAll('[data-check]').forEach(el => {
 				el.parentElement.classList.toggle('done', !!DOC[el.dataset.check]);
 			});
 			mostrarEstado('saved');
 		} catch (e) {
 			mostrarEstado('error', e.message);
-			// re-encolar para reintento manual
 			Object.assign(PENDING, cambios);
 		}
 	}
@@ -156,8 +153,8 @@
 	function mostrarEstado(estado, msg) {
 		const el = document.getElementById('ge-save-status');
 		el.classList.remove('saving','saved');
-		if (estado === 'saving') { el.classList.add('saving'); el.textContent = '· Guardando…'; }
-		else if (estado === 'saved') { el.classList.add('saved'); el.textContent = '✓ Guardado'; }
+		if (estado === 'saving') { el.classList.add('saving'); el.textContent = 'Guardando…'; }
+		else if (estado === 'saved') { el.classList.add('saved'); el.textContent = 'Guardado'; }
 		else if (estado === 'error') { el.textContent = '⚠ ' + (msg || 'Error'); }
 		else el.textContent = '·';
 	}
@@ -170,9 +167,10 @@
 				let v = el.value;
 				if (el.type === 'number') v = v === '' ? null : Number(v);
 				marcarPendiente(el.dataset.field, v);
-				if (el.dataset.field === 'titulo') {
-					document.getElementById('ge-title').textContent = v || NAME;
+				if (el.classList.contains('ge-title-input')) {
+					// nada, el input ya se ve
 				}
+				if (el.tagName === 'TEXTAREA') autoresize(el);
 			});
 		});
 		document.querySelectorAll('[data-check]').forEach(el => {
@@ -186,7 +184,7 @@
 	}
 
 	function wireEstadoPills() {
-		document.querySelectorAll('.estados-pills .pill').forEach(el => {
+		document.querySelectorAll('.ge-estados .p').forEach(el => {
 			el.addEventListener('click', function () {
 				if (!CAN_EDIT) return;
 				const est = el.dataset.estado;
@@ -197,10 +195,8 @@
 	}
 
 	function marcarEstado(estado) {
-		document.querySelectorAll('.estados-pills .pill').forEach(el => {
-			const on = el.dataset.estado === estado;
-			el.classList.toggle('on', on && estado !== 'Publicado');
-			el.classList.toggle('on-pub', on && estado === 'Publicado');
+		document.querySelectorAll('.ge-estados .p').forEach(el => {
+			el.classList.toggle('on', el.dataset.estado === estado);
 		});
 	}
 
@@ -209,20 +205,23 @@
 		const done = Array.from(checks).filter(c => c.checked).length;
 		const total = checks.length;
 		const pct = total ? Math.round(done / total * 100) : 0;
-		document.getElementById('ge-progress-fill').style.width = pct + '%';
-		document.getElementById('ge-progress-txt').textContent = `${done}/${total}`;
+		const fill = document.getElementById('ge-progress-fill');
+		const txt = document.getElementById('ge-progress-txt');
+		if (fill) fill.style.width = pct + '%';
+		if (txt) txt.textContent = `${done}/${total}`;
 	}
 
 	function actualizarRatio() {
-		const el = document.getElementById('ge-ratio');
+		const el = document.getElementById('ge-ratio-mini');
+		if (!el) return;
 		const r = DOC.ratio_vs_referente || 0;
-		if (!r) { el.textContent = '–'; el.className = 'ratio-badge'; return; }
-		let cls = 'ratio-low';
-		let emoji = '';
-		if (r >= 1) { cls = 'ratio-win'; emoji = ' 🎉'; }
-		else if (r >= 0.5) { cls = 'ratio-mid'; }
-		el.className = 'ratio-badge ' + cls;
-		el.textContent = r.toFixed(2) + '×' + emoji;
+		if (!r) { el.textContent = '–'; el.className = ''; return; }
+		let cls = 'low', emoji = '';
+		if (r >= 1) { cls = 'win'; emoji = ' 🎉'; }
+		else if (r >= 0.5) { cls = 'mid'; }
+		el.textContent = r.toFixed(2) + '× vs referente' + emoji;
+		el.style.color = cls === 'win' ? '#16a34a' : (cls === 'mid' ? '#d97706' : '#dc2626');
+		el.style.fontWeight = '600';
 	}
 
 	// ---- Namespace ----
@@ -231,8 +230,8 @@
 			CAN_EDIT = !!canEdit;
 			NAME = _getNameFromUrl();
 			if (!NAME) {
-				document.querySelector('.ge-layout').innerHTML =
-					'<div style="padding:40px;text-align:center;color:var(--muted);">Falta el parámetro <code>?name=</code> en la URL.</div>';
+				document.querySelector('.ge-wrap').innerHTML =
+					'<div style="padding:40px;text-align:center;color:#9ca3af;">Falta el parámetro <code>?name=</code> en la URL.</div>';
 				return;
 			}
 			cargar();

@@ -7,7 +7,7 @@
 {% block style %}
 {{ super() }}
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
 <link rel="stylesheet" href="/radar/radar.css">
 <style>
@@ -16,141 +16,200 @@
   .page-content-wrapper main.container { max-width: none !important; padding: 0 !important; margin: 0 !important; }
   .page_content { padding: 0 !important; }
 
-  .ge-layout {
-    display: grid; grid-template-columns: 320px 1fr 320px; gap: 14px;
-    padding: 14px; align-items: start;
-  }
-  .ge-col {
-    background: white; border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 16px;
-    box-shadow: var(--shadow-sm);
-  }
-  .ge-col h3 {
-    font-size: 12px; font-weight: 700; color: var(--text-2);
-    text-transform: uppercase; letter-spacing: .04em; margin-bottom: 12px;
-  }
-  .ge-col h4 {
-    font-size: 12px; font-weight: 700; margin: 16px 0 8px;
-    display: flex; align-items: center; gap: 6px; color: var(--text);
-  }
+  body { background: #fff; }
 
-  /* Topbar */
+  /* Topbar mínima */
   .ge-top {
-    background: white; border-bottom: 1px solid var(--border);
-    padding: 10px 20px; display: flex; align-items: center; gap: 12px;
+    background: #fff; border-bottom: 1px solid #eef1f5;
+    padding: 12px 32px; display: flex; align-items: center; gap: 16px;
     position: sticky; top: 0; z-index: 30;
   }
+  .ge-back {
+    display: inline-flex; align-items: center; gap: 4px;
+    color: #6b7280; font-size: 13px; text-decoration: none;
+  }
+  .ge-back:hover { color: #111827; text-decoration: none; }
+  .ge-back i { width: 14px; height: 14px; }
   .ge-top h1 {
-    font-size: 16px; font-weight: 700; margin: 0;
-    max-width: 60vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: 15px; font-weight: 600; margin: 0; color: #111827;
+    max-width: 55vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .ge-top .spacer { flex: 1; }
-  .ge-top .save-status { font-size: 12px; color: var(--muted); }
-  .ge-top .save-status.saving { color: var(--orange); }
-  .ge-top .save-status.saved { color: var(--green); }
+  .ge-top .save-status {
+    font-size: 12px; color: #9ca3af; min-width: 90px; text-align: right;
+  }
+  .ge-top .save-status.saving { color: #d97706; }
+  .ge-top .save-status.saved { color: #16a34a; }
+  .ge-top .user { font-size: 12px; color: #6b7280; }
 
-  /* Referencia (col izq) */
-  .ref-thumb {
-    width: 100%; aspect-ratio: 9/16; max-height: 260px;
-    background: linear-gradient(135deg,#334155,#64748b);
-    border-radius: 8px; margin-bottom: 10px;
-    display: flex; align-items: center; justify-content: center;
-    color: white; font-size: 40px;
+  /* Layout: sólo 2 columnas ahora, referencia inline arriba */
+  .ge-wrap {
+    max-width: 780px; margin: 0 auto; padding: 40px 48px 80px;
   }
-  .ref-hook { font-weight: 700; font-size: 14px; margin-bottom: 6px; line-height: 1.3; }
-  .ref-meta { font-size: 11.5px; color: var(--text-2); margin-bottom: 12px; }
-  .ref-metrics {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;
-    padding: 10px; background: var(--bg-soft); border-radius: 8px;
-  }
-  .ref-metric-num { font-size: 14px; font-weight: 700; }
-  .ref-metric-lbl { font-size: 10px; color: var(--text-2); text-transform: uppercase; }
-  .ref-link {
-    display: block; padding: 8px 10px; background: var(--brand-bg); color: var(--brand);
-    border-radius: 6px; text-decoration: none; text-align: center;
-    font-size: 12px; font-weight: 600;
-  }
-  .ref-link:hover { background: var(--brand); color: white; text-decoration: none; }
-  .ref-empty { padding: 40px 20px; text-align: center; color: var(--muted); font-size: 12.5px; font-style: italic; }
+  @media (max-width: 900px) { .ge-wrap { padding: 24px; } }
 
-  /* Form (col centro) */
-  .field { margin-bottom: 14px; }
-  .field label {
-    display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: var(--text-2);
+  /* Referencia arriba, compacta */
+  .ge-ref {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; background: #f9fafb; border-radius: 8px;
+    margin-bottom: 32px; text-decoration: none; color: inherit;
+    border: 1px solid #f1f3f5;
   }
-  .field input, .field textarea, .field select {
-    width: 100%; padding: 8px 10px; font-size: 13px;
-    border: 1px solid var(--border-strong); border-radius: 6px;
-    font-family: inherit; background: white; color: var(--text);
+  .ge-ref:hover { background: #f3f4f6; text-decoration: none; color: inherit; }
+  .ge-ref .r-ico {
+    width: 32px; height: 44px; background: #1f2937; color: #fff;
+    border-radius: 4px; display: inline-flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
   }
-  .field textarea { min-height: 60px; resize: vertical; }
-  .field .hint { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
-  .field .row { display: flex; gap: 8px; }
+  .ge-ref .r-body { flex: 1; min-width: 0; }
+  .ge-ref .r-hook {
+    font-size: 13px; font-weight: 500; color: #111827;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .ge-ref .r-meta {
+    font-size: 11.5px; color: #6b7280; margin-top: 2px;
+  }
+  .ge-ref .r-link { font-size: 11px; color: #6b7280; flex-shrink: 0; }
+  .ge-ref-empty {
+    padding: 8px 0; font-size: 12px; color: #9ca3af;
+    margin-bottom: 32px; border-bottom: 1px solid #f1f3f5; padding-bottom: 16px;
+  }
 
-  .sec-guion {
-    background: var(--bg-soft); border-left: 3px solid var(--brand);
-    padding: 10px 12px; margin-bottom: 10px; border-radius: 4px;
+  /* Título del guion como en Notion */
+  .ge-title-input {
+    width: 100%; border: none; outline: none;
+    font-size: 32px; font-weight: 700; color: #111827;
+    padding: 0; margin: 0 0 24px; font-family: inherit;
+    background: transparent;
   }
-  .sec-guion .sec-title {
+  .ge-title-input::placeholder { color: #d1d5db; }
+
+  /* Metadata inline (fecha, plataforma, asignado, duración) */
+  .ge-metabar {
+    display: flex; flex-wrap: wrap; gap: 4px 20px;
+    padding: 12px 0; margin-bottom: 32px;
+    border-top: 1px solid #f1f3f5;
+    border-bottom: 1px solid #f1f3f5;
+  }
+  .ge-meta {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: #374151;
+  }
+  .ge-meta label {
+    color: #9ca3af; font-size: 12px; margin: 0;
+    min-width: 78px;
+  }
+  .ge-meta input, .ge-meta select {
+    border: none; outline: none; padding: 4px 6px;
+    background: transparent; font-size: 13px; color: #111827;
+    font-family: inherit; border-radius: 4px;
+    cursor: pointer;
+  }
+  .ge-meta input:hover, .ge-meta select:hover,
+  .ge-meta input:focus, .ge-meta select:focus {
+    background: #f3f4f6;
+  }
+  .ge-meta input::placeholder { color: #d1d5db; }
+
+  /* Estado como pills sin adornos */
+  .ge-estados {
+    display: inline-flex; gap: 2px;
+    padding: 3px; background: #f3f4f6; border-radius: 6px;
+  }
+  .ge-estados .p {
+    padding: 4px 10px; font-size: 12px; font-weight: 500;
+    color: #6b7280; cursor: pointer; border-radius: 4px;
+    border: none; background: transparent;
+  }
+  .ge-estados .p:hover { color: #111827; }
+  .ge-estados .p.on { background: #fff; color: #111827; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+
+  /* Estructura AIDA — sin cajas, sólo tipografía */
+  .ge-sec { margin: 24px 0; }
+  .ge-sec-head {
+    display: flex; align-items: baseline; gap: 10px;
+    margin-bottom: 4px;
+  }
+  .ge-sec-head .name {
+    font-size: 12px; font-weight: 600; color: #374151;
+    text-transform: uppercase; letter-spacing: .05em;
+  }
+  .ge-sec-head .time {
+    font-size: 11px; color: #9ca3af; font-variant-numeric: tabular-nums;
+  }
+  .ge-sec textarea {
+    width: 100%; border: none; outline: none;
+    padding: 6px 0; font-size: 14.5px; line-height: 1.55;
+    color: #111827; font-family: inherit;
+    background: transparent; min-height: 36px; resize: none;
+    overflow: hidden;
+  }
+  .ge-sec textarea::placeholder { color: #d1d5db; }
+  .ge-sec:hover .ge-sec-head .name { color: #111827; }
+
+  /* Divisoria fina entre bloques */
+  .ge-divider {
+    border: none; border-top: 1px solid #f1f3f5;
+    margin: 32px 0 24px;
+  }
+
+  /* Checklist inline */
+  .ge-check-title {
+    font-size: 11px; font-weight: 600; color: #9ca3af;
+    text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px;
     display: flex; align-items: center; gap: 8px;
-    font-size: 12px; font-weight: 700; color: var(--brand);
-    text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px;
   }
-  .sec-guion .sec-time {
-    background: var(--brand); color: white; padding: 1px 6px;
-    border-radius: 3px; font-size: 10px;
+  .ge-check-title .progress-mini {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: #6b7280;
   }
-  .sec-guion textarea {
-    background: transparent; border: 1px dashed transparent; padding: 4px 6px;
-    font-size: 13px; width: 100%; min-height: 40px; resize: vertical;
-    color: var(--text); font-family: inherit;
+  .ge-check-title .bar { width: 60px; height: 4px; background: #f3f4f6; border-radius: 2px; overflow: hidden; }
+  .ge-check-title .bar > div { height: 100%; background: #10b981; transition: width .2s; }
+  .ge-checklist {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 24px;
+    margin-bottom: 32px;
   }
-  .sec-guion textarea:focus { outline: none; background: white; border-color: var(--brand-bg); }
+  .ge-checklist .item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13.5px; color: #374151;
+    padding: 3px 0; cursor: pointer;
+  }
+  .ge-checklist .item input {
+    margin: 0; width: 15px; height: 15px; cursor: pointer;
+    accent-color: #10b981;
+  }
+  .ge-checklist .item.done { color: #9ca3af; text-decoration: line-through; }
 
-  /* Checklist (col der) */
-  .checkitem {
-    display: flex; align-items: center; gap: 8px; padding: 5px 0;
-    font-size: 13px;
+  /* Resultado (colapsable) */
+  .ge-resultado-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    font-size: 11px; font-weight: 600; color: #9ca3af;
+    text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px;
   }
-  .checkitem input { margin: 0; width: 16px; height: 16px; cursor: pointer; }
-  .checkitem label { cursor: pointer; }
-  .checkitem.done label { text-decoration: line-through; color: var(--muted); }
-
-  .progress {
-    display: flex; align-items: center; gap: 8px; font-size: 11px;
-    margin: 6px 0 10px; color: var(--text-2);
+  .ge-resultado {
+    display: grid; grid-template-columns: 1fr 100px 100px; gap: 12px;
+    align-items: end;
   }
-  .progress-bar {
-    flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;
+  .ge-resultado .ratio {
+    font-size: 15px; font-weight: 600; color: #6b7280;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 4px 0;
   }
-  .progress-bar > div {
-    height: 100%; background: linear-gradient(90deg,#10b981,#22c55e); transition: width .2s;
+  .ge-resultado .ratio.win { color: #16a34a; }
+  .ge-resultado .ratio.mid { color: #d97706; }
+  .ge-resultado .ratio.low { color: #dc2626; }
+  .ge-resultado .ratio .lbl {
+    font-size: 10px; font-weight: 500; color: #9ca3af;
+    text-transform: uppercase; letter-spacing: .04em;
   }
-
-  .estados-pills { display: flex; gap: 4px; flex-wrap: wrap; }
-  .estados-pills .pill {
-    padding: 6px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 600;
-    border: 1px solid var(--border); cursor: pointer; background: white;
+  .ge-resultado input {
+    width: 100%; border: 1px solid #e5e7eb; outline: none;
+    padding: 6px 8px; font-size: 13px; border-radius: 4px;
+    font-family: inherit;
   }
-  .estados-pills .pill:hover { border-color: var(--brand-strong); }
-  .estados-pills .pill.on { background: var(--brand); color: white; border-color: var(--brand); }
-  .estados-pills .pill.on-pub { background: var(--green); border-color: var(--green); color: white; }
-
-  .resultado-metric {
-    display: flex; justify-content: space-between; padding: 5px 0;
-    border-bottom: 1px solid var(--border); font-size: 12px;
-  }
-  .resultado-metric b { color: var(--text); }
-  .ratio-badge {
-    display: inline-block; padding: 4px 10px; border-radius: 999px;
-    font-weight: 700; font-size: 13px;
-  }
-  .ratio-win { background: var(--green-bg); color: var(--green); }
-  .ratio-mid { background: var(--orange-bg); color: var(--orange); }
-  .ratio-low { background: var(--red-bg); color: var(--red); }
-
-  @media (max-width: 1200px) {
-    .ge-layout { grid-template-columns: 1fr; }
+  .ge-resultado input:focus { border-color: #9ca3af; }
+  .ge-resultado label {
+    display: block; font-size: 11px; color: #9ca3af; margin-bottom: 3px;
   }
 </style>
 {% endblock %}
@@ -166,139 +225,130 @@
 {% else %}
 <div class="rd-app">
   <header class="ge-top">
-    <a href="/radar/guiones" class="rd-back"><i data-lucide="arrow-left"></i> Guiones</a>
-    <span style="color:var(--border);">|</span>
-    <h1 id="ge-title">Cargando…</h1>
+    <a href="/radar/guiones" class="ge-back"><i data-lucide="arrow-left"></i> Guiones</a>
     <div class="spacer"></div>
     <span class="save-status" id="ge-save-status">·</span>
-    <span class="rd-user"><i data-lucide="user-round"></i> {{ usuario }}</span>
+    <span class="user">{{ usuario }}</span>
   </header>
 
-  <div class="ge-layout">
+  <div class="ge-wrap">
 
-    <!-- Referencia -->
-    <aside class="ge-col" id="ge-ref">
-      <h3>📌 Post de referencia</h3>
-      <div id="ge-ref-body">
-        <div class="ref-empty">Cargando…</div>
-      </div>
-    </aside>
+    <!-- Referencia arriba (compacta) -->
+    <div id="ge-ref-box"><div class="ge-ref-empty">Cargando…</div></div>
 
-    <!-- Formulario del guion -->
-    <section class="ge-col" id="ge-form">
-      <h3>✍️ Tu guión propio</h3>
-      <div class="field">
-        <label>Título interno</label>
-        <input type="text" id="f-titulo" data-field="titulo">
-      </div>
-      <div class="row" style="display:flex;gap:8px;">
-        <div class="field" style="flex:1;">
-          <label>Duración objetivo</label>
-          <input type="text" id="f-duracion" data-field="duracion_objetivo" placeholder="Ej: 20-25 segundos">
-        </div>
-        <div class="field" style="flex:1;">
-          <label>Plataforma</label>
-          <select id="f-plataforma" data-field="plataforma">
-            <option value="">— sin definir —</option>
-            <option value="Instagram">📷 Instagram</option>
-            <option value="TikTok">📱 TikTok</option>
-            <option value="Ambas">📱📷 Ambas</option>
-            <option value="Facebook">📘 Facebook</option>
-            <option value="YouTube">▶️ YouTube</option>
-          </select>
+    <!-- Título en línea, sin caja -->
+    <input type="text" id="f-titulo" data-field="titulo" class="ge-title-input"
+           placeholder="Sin título">
+
+    <!-- Metadata -->
+    <div class="ge-metabar">
+      <div class="ge-meta">
+        <label>Estado</label>
+        <div class="ge-estados" id="ge-estados">
+          <button class="p" data-estado="Idea">Idea</button>
+          <button class="p" data-estado="Guión">Guión</button>
+          <button class="p" data-estado="Grabar">Grabar</button>
+          <button class="p" data-estado="Editar">Editar</button>
+          <button class="p" data-estado="Publicado">Publicado</button>
         </div>
       </div>
-
-      <h4>🎬 Estructura del guión (AIDA)</h4>
-
-      <div class="sec-guion">
-        <div class="sec-title"><span>🎣 HOOK</span> <span class="sec-time">0:00 – 0:03</span></div>
-        <textarea data-field="hook" placeholder="Primeros 3 segundos. 60% de la gente decide seguir viendo aquí."></textarea>
-      </div>
-      <div class="sec-guion">
-        <div class="sec-title"><span>📍 SETUP</span> <span class="sec-time">0:03 – 0:08</span></div>
-        <textarea data-field="setup" placeholder="Contexto o problema que resuelves."></textarea>
-      </div>
-      <div class="sec-guion">
-        <div class="sec-title"><span>💎 PRODUCTO</span> <span class="sec-time">0:08 – 0:16</span></div>
-        <textarea data-field="producto" placeholder="Presentar la solución con foco en beneficios."></textarea>
-      </div>
-      <div class="sec-guion">
-        <div class="sec-title"><span>👀 PRUEBA</span> <span class="sec-time">0:16 – 0:20</span></div>
-        <textarea data-field="prueba" placeholder="Demo, testimonio, before/after."></textarea>
-      </div>
-      <div class="sec-guion">
-        <div class="sec-title"><span>🎯 CTA</span> <span class="sec-time">0:20 – 0:23</span></div>
-        <textarea data-field="cta" placeholder="Llamado a la acción claro."></textarea>
-      </div>
-
-      <div class="field">
-        <label>Notas de edición / música / props</label>
-        <textarea data-field="notas_edicion" rows="3"></textarea>
-      </div>
-    </section>
-
-    <!-- Producción + resultado -->
-    <aside class="ge-col" id="ge-prod">
-      <h3>🎯 Estado</h3>
-      <div class="estados-pills" id="ge-estados">
-        <span class="pill" data-estado="Idea">💡 Idea</span>
-        <span class="pill" data-estado="Guión">✍️ Guión</span>
-        <span class="pill" data-estado="Grabar">🎬 Grabar</span>
-        <span class="pill" data-estado="Editar">✂️ Editar</span>
-        <span class="pill" data-estado="Publicado">✅ Publicado</span>
-      </div>
-
-      <h4>📅 Publicación</h4>
-      <div class="field">
+      <div class="ge-meta">
         <label>Fecha</label>
         <input type="date" id="f-fecha" data-field="fecha_publicacion">
       </div>
-      <div class="field">
+      <div class="ge-meta">
         <label>Hora</label>
         <input type="time" id="f-hora" data-field="hora_publicacion">
       </div>
-      <div class="field">
-        <label>Asignado a</label>
-        <select id="f-asignado" data-field="asignado_a">
-          <option value="">— sin asignar —</option>
+      <div class="ge-meta">
+        <label>Plataforma</label>
+        <select id="f-plataforma" data-field="plataforma">
+          <option value="">—</option>
+          <option value="Instagram">Instagram</option>
+          <option value="TikTok">TikTok</option>
+          <option value="Ambas">Ambas</option>
+          <option value="Facebook">Facebook</option>
+          <option value="YouTube">YouTube</option>
         </select>
       </div>
-
-      <h4>✅ Checklist de producción</h4>
-      <div id="ge-checklist">
-        <div class="checkitem"><input type="checkbox" id="c-guion" data-check="check_guion"><label for="c-guion">Guión aprobado</label></div>
-        <div class="checkitem"><input type="checkbox" id="c-story" data-check="check_storyboard"><label for="c-story">Storyboard listo</label></div>
-        <div class="checkitem"><input type="checkbox" id="c-mat" data-check="check_materiales"><label for="c-mat">Materiales/props</label></div>
-        <div class="checkitem"><input type="checkbox" id="c-grab" data-check="check_grabado"><label for="c-grab">Grabación completa</label></div>
-        <div class="checkitem"><input type="checkbox" id="c-edit" data-check="check_editado"><label for="c-edit">Edición terminada</label></div>
-        <div class="checkitem"><input type="checkbox" id="c-pub" data-check="check_publicado"><label for="c-pub">Publicado</label></div>
+      <div class="ge-meta">
+        <label>Asignado</label>
+        <select id="f-asignado" data-field="asignado_a">
+          <option value="">—</option>
+        </select>
       </div>
-      <div class="progress">
-        <div class="progress-bar"><div id="ge-progress-fill" style="width:0%;"></div></div>
+      <div class="ge-meta">
+        <label>Duración</label>
+        <input type="text" id="f-duracion" data-field="duracion_objetivo" placeholder="20-25 seg" style="width:100px;">
+      </div>
+    </div>
+
+    <!-- Guión AIDA -->
+    <div class="ge-sec">
+      <div class="ge-sec-head"><span class="name">Hook</span><span class="time">0:00 – 0:03</span></div>
+      <textarea data-field="hook" placeholder="Primeros 3 segundos. Lo que decide si siguen viendo."></textarea>
+    </div>
+    <div class="ge-sec">
+      <div class="ge-sec-head"><span class="name">Setup</span><span class="time">0:03 – 0:08</span></div>
+      <textarea data-field="setup" placeholder="Contexto o problema."></textarea>
+    </div>
+    <div class="ge-sec">
+      <div class="ge-sec-head"><span class="name">Producto</span><span class="time">0:08 – 0:16</span></div>
+      <textarea data-field="producto" placeholder="La solución con foco en beneficios."></textarea>
+    </div>
+    <div class="ge-sec">
+      <div class="ge-sec-head"><span class="name">Prueba</span><span class="time">0:16 – 0:20</span></div>
+      <textarea data-field="prueba" placeholder="Demo, testimonio, before/after."></textarea>
+    </div>
+    <div class="ge-sec">
+      <div class="ge-sec-head"><span class="name">CTA</span><span class="time">0:20 – 0:23</span></div>
+      <textarea data-field="cta" placeholder="Llamado a la acción."></textarea>
+    </div>
+    <div class="ge-sec">
+      <div class="ge-sec-head"><span class="name">Notas de edición</span></div>
+      <textarea data-field="notas_edicion" placeholder="Música, transiciones, props…"></textarea>
+    </div>
+
+    <hr class="ge-divider">
+
+    <!-- Checklist -->
+    <div class="ge-check-title">
+      <span>Producción</span>
+      <span class="progress-mini">
         <span id="ge-progress-txt">0/6</span>
-      </div>
+        <span class="bar"><div id="ge-progress-fill" style="width:0%;"></div></span>
+      </span>
+    </div>
+    <div class="ge-checklist">
+      <label class="item"><input type="checkbox" data-check="check_guion"> Guión aprobado</label>
+      <label class="item"><input type="checkbox" data-check="check_storyboard"> Storyboard</label>
+      <label class="item"><input type="checkbox" data-check="check_materiales"> Materiales</label>
+      <label class="item"><input type="checkbox" data-check="check_grabado"> Grabado</label>
+      <label class="item"><input type="checkbox" data-check="check_editado"> Editado</label>
+      <label class="item"><input type="checkbox" data-check="check_publicado"> Publicado</label>
+    </div>
 
-      <h4>📊 Resultado</h4>
-      <div class="field">
+    <hr class="ge-divider">
+
+    <!-- Resultado (siempre visible pero discreto) -->
+    <div class="ge-resultado-head">
+      <span>Resultado</span>
+      <span id="ge-ratio-mini" style="text-transform:none;letter-spacing:0;font-weight:500;">–</span>
+    </div>
+    <div class="ge-resultado">
+      <div>
         <label>URL de mi publicación</label>
-        <input type="url" id="f-mi-url" data-field="mi_url_publicacion" placeholder="https://…">
+        <input type="url" data-field="mi_url_publicacion" placeholder="https://…">
       </div>
-      <div class="row" style="display:flex;gap:8px;">
-        <div class="field" style="flex:1;">
-          <label>Mis vistas</label>
-          <input type="number" id="f-mi-vistas" data-field="mi_vistas" min="0">
-        </div>
-        <div class="field" style="flex:1;">
-          <label>Mis likes</label>
-          <input type="number" id="f-mi-likes" data-field="mi_likes" min="0">
-        </div>
+      <div>
+        <label>Mis vistas</label>
+        <input type="number" data-field="mi_vistas" min="0">
       </div>
-      <div style="text-align:center;padding:8px 0;">
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;">Ratio vs referente</div>
-        <span id="ge-ratio" class="ratio-badge">–</span>
+      <div>
+        <label>Mis likes</label>
+        <input type="number" data-field="mi_likes" min="0">
       </div>
-    </aside>
+    </div>
 
   </div>
 </div>
