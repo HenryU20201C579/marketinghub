@@ -22,6 +22,16 @@
 	let CAN_EDIT = false;
 	let GUIONES = [];
 	let VISTA_ACTUAL = { tipo: 'todos', valor: null };
+	let MODO = 'lista';   // 'lista' | 'calendario'
+	let CAL_CURSOR = null; // Date del mes visible
+
+	const COLOR_ESTADO = {
+		'Idea':      '#94a3b8',
+		'Guión':     '#f59e0b',
+		'Grabar':    '#a855f7',
+		'Editar':    '#06b6d4',
+		'Publicado': '#10b981',
+	};
 
 	// ---- fechas helpers ----
 	function _hoy() { const d = new Date(); d.setHours(0,0,0,0); return d; }
@@ -75,11 +85,17 @@
 
 	// ---- Render ----
 	function render() {
-		const cont = document.getElementById('gt-lista');
-		if (!cont) return;
+		// Filtrar por vista actual del sidebar
+		let lista = filtrarPorVista(GUIONES);
+		if (MODO === 'calendario') {
+			renderCalendario(lista);
+		} else {
+			renderLista(lista);
+		}
+	}
 
-		// aplicar filtro (vista)
-		let lista = GUIONES.slice();
+	function filtrarPorVista(items) {
+		let lista = items.slice();
 		const hoy = _hoy();
 		if (VISTA_ACTUAL.tipo === 'semana') {
 			const fin = new Date(hoy); fin.setDate(fin.getDate() + 6);
@@ -92,7 +108,12 @@
 		} else if (VISTA_ACTUAL.tipo === 'estado' && VISTA_ACTUAL.valor) {
 			lista = lista.filter(g => g.estado === VISTA_ACTUAL.valor);
 		}
+		return lista;
+	}
 
+	function renderLista(lista) {
+		const cont = document.getElementById('gt-lista');
+		if (!cont) return;
 		if (!lista.length) {
 			cont.innerHTML = '<div class="gt-loading">Sin guiones para esta vista. Crea uno con el botón "+ Nuevo guión" o desde la lista de publicaciones virales.</div>';
 			return;
@@ -218,6 +239,194 @@
 		});
 	}
 
+	// ============ VISTA CALENDARIO ============
+	const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+	               'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+	function renderCalendario(lista) {
+		const grid = document.getElementById('gc-grid');
+		const monthLbl = document.getElementById('gc-month');
+		if (!grid || !monthLbl) return;
+
+		// Cursor por defecto: hoy
+		if (!CAL_CURSOR) CAL_CURSOR = _hoy();
+		const anio = CAL_CURSOR.getFullYear();
+		const mes = CAL_CURSOR.getMonth();
+		monthLbl.textContent = `${MESES[mes]} ${anio}`;
+
+		// Sin fecha (aparecen arriba con opción de arrastrar/asignar)
+		renderSinFecha(lista);
+
+		// Agrupar por fecha ISO YYYY-MM-DD
+		const porFecha = {};
+		lista.forEach(g => {
+			if (!g.fecha_publicacion) return;
+			(porFecha[g.fecha_publicacion] ||= []).push(g);
+		});
+
+		// Limpiar celdas anteriores (mantener los 7 headers)
+		while (grid.children.length > 7) grid.removeChild(grid.lastChild);
+
+		// Primer día visible = lunes anterior al 1 del mes
+		const primero = new Date(anio, mes, 1);
+		const dowPrim = (primero.getDay() + 6) % 7; // 0=Lun..6=Dom
+		const inicio = new Date(primero); inicio.setDate(inicio.getDate() - dowPrim);
+		const hoy = _hoy();
+
+		for (let i = 0; i < 42; i++) {
+			const d = new Date(inicio); d.setDate(inicio.getDate() + i);
+			const iso = _isoDate(d);
+			const otroMes = d.getMonth() !== mes;
+			const esHoy = d.getTime() === hoy.getTime();
+
+			const cell = document.createElement('div');
+			cell.className = 'gc-cell' + (otroMes ? ' other' : '') + (esHoy ? ' today' : '');
+			cell.dataset.iso = iso;
+			cell.innerHTML = `<span class="gc-daynum">${d.getDate()}</span>`;
+
+			const items = porFecha[iso] || [];
+			const max = 3;
+			items.slice(0, max).forEach(g => {
+				const color = COLOR_ESTADO[g.estado] || '#94a3b8';
+				const done = g.estado === 'Publicado';
+				const a = document.createElement('a');
+				a.href = '/radar/guion?name=' + encodeURIComponent(g.name);
+				a.className = 'gc-chip' + (done ? ' done' : '');
+				a.style.background = color;
+				a.innerHTML = `${done ? '<span class="ck">✓</span>' : ''}<span class="txt">${escapeHtml(g.titulo)}</span>`;
+				a.title = `${g.titulo} · ${g.estado}${g.hora_publicacion ? ' · ' + g.hora_publicacion.slice(0,5) : ''}`;
+				a.addEventListener('click', e => e.stopPropagation());
+				cell.appendChild(a);
+			});
+			if (items.length > max) {
+				const mo = document.createElement('span');
+				mo.className = 'gc-more';
+				mo.textContent = `+${items.length - max} más`;
+				mo.addEventListener('click', function (e) {
+					e.stopPropagation();
+					mostrarModalDia(iso, items);
+				});
+				cell.appendChild(mo);
+			}
+
+			// Click en la celda vacía → crear guion con esa fecha
+			cell.addEventListener('click', function () {
+				if (!CAN_EDIT) return;
+				abrirNuevoConFecha(iso);
+			});
+			grid.appendChild(cell);
+		}
+	}
+
+	function renderSinFecha(lista) {
+		const box = document.getElementById('gc-nofecha-box');
+		if (!box) return;
+		const sinFecha = lista.filter(g => !g.fecha_publicacion && g.estado !== 'Publicado');
+		if (!sinFecha.length) { box.classList.add('empty'); box.innerHTML = ''; return; }
+		box.classList.remove('empty');
+		const items = sinFecha.slice(0, 8).map(g => {
+			return `<a href="/radar/guion?name=${encodeURIComponent(g.name)}" title="${escapeHtml(g.titulo)}">${escapeHtml(g.titulo.slice(0,40))}${g.titulo.length > 40 ? '…' : ''}</a>`;
+		}).join('');
+		const restoNota = sinFecha.length > 8 ? ` <span style="color:#a16207;font-size:11px;">y ${sinFecha.length - 8} más</span>` : '';
+		box.innerHTML = `<span class="lbl">Sin fecha · ${sinFecha.length}</span>${items}${restoNota}`;
+	}
+
+	function mostrarModalDia(iso, items) {
+		const fp = _parseISO(iso);
+		const titulo = fp ? `${fp.getDate()} ${MESES[fp.getMonth()].toLowerCase()}` : iso;
+		const html = items.map(g => {
+			const color = COLOR_ESTADO[g.estado] || '#94a3b8';
+			return `<a href="/radar/guion?name=${encodeURIComponent(g.name)}"
+				style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;text-decoration:none;color:#111827;margin-bottom:4px;background:#f9fafb;">
+				<span style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;"></span>
+				<span style="flex:1;">${escapeHtml(g.titulo)}</span>
+				<span style="font-size:11px;color:#6b7280;">${escapeHtml(g.estado)}</span>
+			</a>`;
+		}).join('');
+		Radar.modal({
+			title: `Guiones del ${titulo}`,
+			bodyHtml: html,
+			confirmText: 'Cerrar',
+			cancelText: '',
+			onConfirm: () => true,
+		});
+	}
+
+	function abrirNuevoConFecha(iso) {
+		Radar.modal({
+			title: 'Nuevo guión',
+			bodyHtml: `
+				<div style="display:flex;flex-direction:column;gap:10px;">
+					<label style="font-size:12px;font-weight:600;">Título</label>
+					<input type="text" id="ng-titulo" class="rd-input"
+					       placeholder="Ej: Unboxing billetera Perseo — 15 seg" autofocus>
+					<div style="font-size:12px;color:#6b7280;">
+						Se planifica para <b>${escapeHtml(iso)}</b>. Podrás cambiar la fecha en el editor.
+					</div>
+				</div>
+			`,
+			confirmText: 'Crear',
+			onConfirm: async (root) => {
+				const titulo = (root.querySelector('#ng-titulo').value || '').trim();
+				if (!titulo) { Radar.toast('El título es obligatorio', 'error'); return false; }
+				const csrf = document.querySelector('meta[name="csrf_token"]')?.content
+				          || (window.frappe && frappe.csrf_token) || '';
+				const res = await fetch('/api/resource/Guion', {
+					method: 'POST', credentials: 'same-origin',
+					headers: {
+						'X-Frappe-CSRF-Token': csrf,
+						'Content-Type': 'application/json',
+						'X-Requested-With': 'XMLHttpRequest',
+					},
+					body: JSON.stringify({
+						titulo: titulo,
+						estado: 'Idea',
+						fecha_publicacion: iso,
+					}),
+				});
+				const data = await res.json();
+				if (!res.ok) throw new Error(data.exception || 'Error creando');
+				Radar.toast('Guión creado', 'success');
+				window.location.href = '/radar/guion?name=' + encodeURIComponent(data.data.name);
+				return true;
+			},
+		});
+	}
+
+	function _isoDate(d) {
+		return d.getFullYear() + '-' +
+		       String(d.getMonth()+1).padStart(2,'0') + '-' +
+		       String(d.getDate()).padStart(2,'0');
+	}
+
+	function wireCalendarioNav() {
+		document.getElementById('gc-prev')?.addEventListener('click', () => {
+			CAL_CURSOR = new Date(CAL_CURSOR.getFullYear(), CAL_CURSOR.getMonth() - 1, 1);
+			render();
+		});
+		document.getElementById('gc-next')?.addEventListener('click', () => {
+			CAL_CURSOR = new Date(CAL_CURSOR.getFullYear(), CAL_CURSOR.getMonth() + 1, 1);
+			render();
+		});
+		document.getElementById('gc-today')?.addEventListener('click', () => {
+			CAL_CURSOR = _hoy();
+			render();
+		});
+	}
+
+	function wireToggle() {
+		document.querySelectorAll('#gt-vista button').forEach(btn => {
+			btn.addEventListener('click', function () {
+				document.querySelectorAll('#gt-vista button').forEach(b => b.classList.remove('on'));
+				btn.classList.add('on');
+				MODO = btn.dataset.vistaTipo;
+				document.getElementById('gt-lista').style.display = (MODO === 'lista') ? '' : 'none';
+				document.getElementById('gt-cal').style.display   = (MODO === 'calendario') ? '' : 'none';
+				render();
+			});
+		});
+	}
+
 	// ---- Data loading ----
 	async function cargar() {
 		try {
@@ -318,6 +527,13 @@
 			window.RadarUser = document.querySelector('.rd-user')?.textContent.trim() || '';
 			wireSidebar();
 			wireNuevo();
+			wireToggle();
+			wireCalendarioNav();
+			// Si el URL trae ?vista=calendario, arranca en calendario
+			const p = new URLSearchParams(window.location.search);
+			if (p.get('vista') === 'calendario') {
+				document.querySelector('#gt-vista button[data-vista-tipo="calendario"]')?.click();
+			}
 			cargar();
 		},
 	};
