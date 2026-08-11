@@ -1,0 +1,235 @@
+{% extends "templates/web.html" %}
+
+{% block navbar %}{% endblock %}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block style %}
+{{ super() }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="/radar/radar.css">
+<style>
+  main.container.my-4,
+  body main.container,
+  .page-content-wrapper main.container {
+    max-width: none !important; padding: 0 !important; margin: 0 !important;
+  }
+  .page_content { padding: 0 !important; }
+
+  .gt-layout {
+    display: grid; grid-template-columns: 240px 1fr;
+    height: calc(100vh - 51px);
+  }
+  .gt-sb {
+    background: white; border-right: 1px solid var(--border);
+    padding: 16px 12px; overflow-y: auto;
+  }
+  .gt-sb h3 {
+    font-size: 10.5px; font-weight: 700; color: var(--text-2);
+    text-transform: uppercase; letter-spacing: .05em; margin: 12px 8px 4px;
+  }
+  .gt-fil {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px; border-radius: 6px; cursor: pointer;
+    font-size: 13px; color: var(--text);
+  }
+  .gt-fil:hover { background: var(--bg-soft); }
+  .gt-fil.on { background: var(--brand-bg); color: var(--brand); font-weight: 600; }
+  .gt-fil .ico { width: 18px; text-align: center; display: inline-flex; justify-content: center; }
+  .gt-fil .cnt {
+    margin-left: auto; background: #e5e9f0; color: var(--text-2);
+    padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
+  }
+  .gt-fil.on .cnt { background: var(--brand); color: white; }
+  .gt-fil .dot {
+    width: 8px; height: 8px; border-radius: 50%; margin: 0 5px;
+    display: inline-block; flex-shrink: 0;
+  }
+
+  .gt-main { overflow-y: auto; padding: 20px 32px 60px; background: white; }
+  .gt-top {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+  }
+  .gt-top h1 {
+    font-size: 20px; font-weight: 700; margin: 0;
+  }
+  .gt-top .spacer { flex: 1; }
+  .gt-btn {
+    padding: 8px 16px; background: var(--brand); color: white;
+    border: none; border-radius: 20px; font-weight: 600;
+    font-size: 13px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .gt-btn:hover { background: var(--brand-strong); }
+
+  .gt-group { margin-bottom: 20px; }
+  .gt-group-head {
+    display: flex; align-items: baseline; gap: 8px;
+    margin: 0 0 6px 6px;
+  }
+  .gt-group-title {
+    font-size: 11px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .05em;
+  }
+  .gt-group-cnt {
+    font-size: 11px; color: #cbd5e1; font-weight: 600;
+  }
+  .gt-empty {
+    font-size: 12.5px; color: var(--muted); padding: 8px 12px;
+    font-style: italic;
+  }
+
+  .gt-task {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 6px; cursor: pointer;
+    margin-bottom: 2px; position: relative;
+    text-decoration: none; color: inherit;
+  }
+  .gt-task:hover { background: var(--bg-soft); text-decoration: none; color: inherit; }
+  .gt-task .check {
+    width: 18px; height: 18px; border: 2px solid var(--border-strong);
+    border-radius: 50%; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; background: white;
+    font-size: 12px; color: transparent;
+  }
+  .gt-task .check:hover { border-color: var(--brand); }
+  .gt-task.done .check { background: var(--green); border-color: var(--green); color: white; }
+  .gt-task.done .body .t { text-decoration: line-through; color: var(--muted); }
+  .gt-task .stage-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .st-idea    { background: #94a3b8; }
+  .st-guion   { background: #f59e0b; }
+  .st-grabar  { background: #a855f7; }
+  .st-editar  { background: #06b6d4; }
+  .st-pub     { background: var(--green); }
+  .gt-task .body { flex: 1; min-width: 0; }
+  .gt-task .body .t {
+    font-size: 13.5px; font-weight: 500; color: var(--text);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .gt-task .body .meta {
+    font-size: 11.5px; color: var(--text-2); margin-top: 2px;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  .gt-task .body .meta .sep { color: #cbd5e1; }
+  .gt-task .body .meta .ref {
+    background: var(--orange-bg); color: #9a3412; padding: 1px 6px;
+    border-radius: 3px; font-size: 10.5px; font-weight: 600;
+  }
+  .gt-task .body .meta .ratio-win { color: var(--green); font-weight: 700; }
+  .gt-task .body .meta .ratio-mid { color: var(--orange); font-weight: 700; }
+  .gt-task .body .meta .ratio-low { color: var(--red); font-weight: 700; }
+  .gt-task .actions {
+    opacity: 0; transition: opacity .1s;
+    display: flex; gap: 4px;
+  }
+  .gt-task:hover .actions { opacity: 1; }
+  .gt-task .actions button {
+    background: transparent; border: none; padding: 4px;
+    border-radius: 4px; cursor: pointer; color: var(--text-2);
+  }
+  .gt-task .actions button:hover { background: var(--border); color: var(--red); }
+
+  .gt-loading { padding: 40px; text-align: center; color: var(--muted); }
+</style>
+{% endblock %}
+
+{% block page_content %}
+{% if no_access %}
+<div class="rd-na-screen">
+  <div class="rd-na-card">
+    <div class="rd-na-brand">
+      <span class="rd-na-dot"></span>
+      <span>Radar · Guiones · Acceso denegado</span>
+    </div>
+    <div class="rd-na-body">
+      No tienes permiso para ver los guiones. Se requiere alguno de los roles:
+      <ul class="rd-na-roles">
+        {% for r in required_roles %}<li><code>{{ r }}</code></li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="rd-app">
+  <header class="rd-topbar">
+    <div class="rd-topbar-left">
+      <a href="/radar" class="rd-back"><i data-lucide="arrow-left"></i> Radar</a>
+      <div class="rd-topbar-title">
+        <span class="rd-topbar-title-emoji">📝</span>
+        <span>Guiones</span>
+      </div>
+    </div>
+    <div class="rd-topbar-right">
+      <span class="rd-user"><i data-lucide="user-round"></i> {{ usuario }}</span>
+    </div>
+  </header>
+
+  <div class="gt-layout">
+
+    <!-- Sidebar filtros -->
+    <aside class="gt-sb" id="gt-sidebar">
+      <h3>Vistas</h3>
+      <div class="gt-fil on" data-vista="todos">
+        <span class="ico"><i data-lucide="clipboard-list" style="width:14px;height:14px;"></i></span>
+        Todos <span class="cnt" data-cnt="total">–</span>
+      </div>
+      <div class="gt-fil" data-vista="semana">
+        <span class="ico"><i data-lucide="calendar" style="width:14px;height:14px;"></i></span>
+        Esta semana <span class="cnt" data-cnt="esta_semana">–</span>
+      </div>
+      <div class="gt-fil" data-vista="mios">
+        <span class="ico"><i data-lucide="user-round" style="width:14px;height:14px;"></i></span>
+        Asignados a mí <span class="cnt" data-cnt="mios">–</span>
+      </div>
+
+      <h3>Por estado</h3>
+      <div class="gt-fil" data-vista="estado" data-val="Idea">
+        <span class="dot st-idea"></span> Idea <span class="cnt" data-cnt="Idea">–</span>
+      </div>
+      <div class="gt-fil" data-vista="estado" data-val="Guión">
+        <span class="dot st-guion"></span> Guión <span class="cnt" data-cnt="Guión">–</span>
+      </div>
+      <div class="gt-fil" data-vista="estado" data-val="Grabar">
+        <span class="dot st-grabar"></span> Por grabar <span class="cnt" data-cnt="Grabar">–</span>
+      </div>
+      <div class="gt-fil" data-vista="estado" data-val="Editar">
+        <span class="dot st-editar"></span> En edición <span class="cnt" data-cnt="Editar">–</span>
+      </div>
+      <div class="gt-fil" data-vista="estado" data-val="Publicado">
+        <span class="dot st-pub"></span> Publicado <span class="cnt" data-cnt="Publicado">–</span>
+      </div>
+    </aside>
+
+    <!-- Lista central -->
+    <main class="gt-main">
+      <div class="gt-top">
+        <h1 id="gt-title">📋 Todos los guiones</h1>
+        <div class="spacer"></div>
+        <button class="gt-btn" id="gt-nuevo">
+          <i data-lucide="plus" style="width:14px;height:14px;"></i> Nuevo guión
+        </button>
+      </div>
+
+      <div id="gt-lista">
+        <div class="gt-loading">Cargando guiones…</div>
+      </div>
+    </main>
+
+  </div>
+</div>
+
+<script src="/radar/radar.js"></script>
+<script src="/radar/guiones.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.lucide) lucide.createIcons();
+    if (window.RadarGuiones) RadarGuiones.init({{ can_edit | tojson }});
+  });
+</script>
+{% endif %}
+{% endblock %}

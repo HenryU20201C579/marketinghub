@@ -509,7 +509,10 @@
           <td class="rd-col-scrapeado" style="font-size:11px;color:var(--text-2);white-space:nowrap;">${fmtScrapeo(p.fecha_ultimo_scrapeo)}</td>
           <td><span class="rd-pill ${estCls}">${Radar.escapeHtml(p.estado || 'Nuevo')}</span></td>
           <td class="rd-actions">
-            ${CAN_EDIT ? `<button class="rd-btn-analizar" onclick="RadarPubs.analizar('${Radar.escapeHtml(p.name)}')" title="Analizar / editar estado"><i data-lucide="edit-3"></i><span>Analizar</span></button>` : ''}
+            ${CAN_EDIT ? `
+              <button class="rd-btn-analizar" onclick="RadarPubs.hacerGuion('${Radar.escapeHtml(p.name)}')" title="Crear guión inspirado en este video" style="background:var(--orange-bg);color:#9a3412;border-color:#fed7aa;margin-right:4px;"><i data-lucide="pen-line"></i><span>Guión</span></button>
+              <button class="rd-btn-analizar" onclick="RadarPubs.analizar('${Radar.escapeHtml(p.name)}')" title="Analizar / editar estado"><i data-lucide="edit-3"></i><span>Analizar</span></button>
+            ` : ''}
           </td>
         </tr>`;
     },
@@ -579,6 +582,40 @@
       document.body.appendChild(a); a.click();
       setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
       Radar.toast(`✓ ${items.length} publicaciones exportadas`, 'success');
+    },
+
+    async hacerGuion(name) {
+      const p = this.lista.find(x => x.name === name);
+      if (!p) return;
+      const hook = p.titulo_hook || name;
+      Radar.modal({
+        title: 'Crear guión inspirado',
+        confirmText: 'Crear y abrir editor',
+        bodyHtml: `
+          <p style="font-size:13px;line-height:1.5;color:var(--text-2);">
+            Se va a crear un guión nuevo tomando como referencia:
+          </p>
+          <div style="background:var(--orange-bg);padding:10px 12px;border-radius:8px;margin:10px 0;font-size:12.5px;">
+            <div style="font-weight:600;color:#9a3412;">${Radar.escapeHtml(hook)}</div>
+            <div style="color:#78350f;margin-top:2px;">🎵 ${Radar.escapeHtml(p.competidor || '')} · ${Radar.escapeHtml(p.plataforma || '')} · ${Radar.escapeHtml((p.vistas_actual || 0).toLocaleString('es-PE'))} vistas</div>
+          </div>
+          <p style="font-size:12px;color:var(--muted);">Podrás editar el título, la fecha de publicación y toda la estructura AIDA en el editor.</p>
+        `,
+        onConfirm: async () => {
+          try {
+            const res = await Radar.api(
+              'marketinghub.www.radar.guiones.index.crear_desde_publicacion',
+              { publicacion_name: name },
+            );
+            Radar.toast('Guión creado', 'success');
+            window.location.href = res.url;
+            return true;
+          } catch (e) {
+            Radar.toast(e.message || 'Error', 'error');
+            return false;
+          }
+        },
+      });
     },
 
     analizar(name) {

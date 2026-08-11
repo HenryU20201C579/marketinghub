@@ -1,0 +1,291 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-11 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "titulo",
+  "estado",
+  "cb_1",
+  "referencia_publicacion",
+  "competidor_ref",
+  "sb_publicacion",
+  "fecha_publicacion",
+  "hora_publicacion",
+  "plataforma",
+  "cb_2",
+  "asignado_a",
+  "duracion_objetivo",
+  "sb_guion",
+  "hook",
+  "setup",
+  "producto",
+  "prueba",
+  "cta",
+  "notas_edicion",
+  "sb_checklist",
+  "check_guion",
+  "check_storyboard",
+  "check_materiales",
+  "check_grabado",
+  "cb_3",
+  "check_editado",
+  "check_publicado",
+  "sb_resultado",
+  "mi_url_publicacion",
+  "mi_vistas",
+  "cb_4",
+  "mi_likes",
+  "ratio_vs_referente"
+ ],
+ "fields": [
+  {
+   "fieldname": "titulo",
+   "fieldtype": "Data",
+   "label": "Título del guión",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "label": "Estado",
+   "options": "Idea\nGuión\nGrabar\nEditar\nPublicado",
+   "default": "Idea",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "referencia_publicacion",
+   "fieldtype": "Link",
+   "label": "Referencia viral",
+   "options": "Publicacion Competencia",
+   "description": "Post viral de la competencia en que se inspira este guión.",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "competidor_ref",
+   "fieldtype": "Link",
+   "label": "Competidor referente",
+   "options": "Competidor",
+   "read_only": 1,
+   "description": "Autofill desde la referencia."
+  },
+  {
+   "fieldname": "sb_publicacion",
+   "fieldtype": "Section Break",
+   "label": "Publicación planificada"
+  },
+  {
+   "fieldname": "fecha_publicacion",
+   "fieldtype": "Date",
+   "label": "Fecha publicación",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "hora_publicacion",
+   "fieldtype": "Time",
+   "label": "Hora"
+  },
+  {
+   "fieldname": "plataforma",
+   "fieldtype": "Select",
+   "label": "Plataforma",
+   "options": "\nInstagram\nTikTok\nAmbas\nFacebook\nYouTube",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "cb_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "asignado_a",
+   "fieldtype": "Link",
+   "label": "Asignado a",
+   "options": "User",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "duracion_objetivo",
+   "fieldtype": "Data",
+   "label": "Duración objetivo",
+   "description": "Ej: 20-25 segundos"
+  },
+  {
+   "fieldname": "sb_guion",
+   "fieldtype": "Section Break",
+   "label": "Guión (estructura AIDA)"
+  },
+  {
+   "fieldname": "hook",
+   "fieldtype": "Small Text",
+   "label": "🎣 Hook (0-3s)",
+   "description": "Lo que dices/muestras primero. 60% de la gente decide seguir viendo aquí."
+  },
+  {
+   "fieldname": "setup",
+   "fieldtype": "Small Text",
+   "label": "📍 Setup (contexto/problema)"
+  },
+  {
+   "fieldname": "producto",
+   "fieldtype": "Small Text",
+   "label": "💎 Producto (la solución)"
+  },
+  {
+   "fieldname": "prueba",
+   "fieldtype": "Small Text",
+   "label": "👀 Prueba (demo, testimonio, before/after)"
+  },
+  {
+   "fieldname": "cta",
+   "fieldtype": "Small Text",
+   "label": "🎯 CTA (llamado a la acción)"
+  },
+  {
+   "fieldname": "notas_edicion",
+   "fieldtype": "Text Editor",
+   "label": "Notas de edición / música"
+  },
+  {
+   "fieldname": "sb_checklist",
+   "fieldtype": "Section Break",
+   "label": "Checklist de producción"
+  },
+  {
+   "fieldname": "check_guion",
+   "fieldtype": "Check",
+   "label": "Guión aprobado"
+  },
+  {
+   "fieldname": "check_storyboard",
+   "fieldtype": "Check",
+   "label": "Storyboard listo"
+  },
+  {
+   "fieldname": "check_materiales",
+   "fieldtype": "Check",
+   "label": "Materiales/props preparados"
+  },
+  {
+   "fieldname": "check_grabado",
+   "fieldtype": "Check",
+   "label": "Grabación completa"
+  },
+  {
+   "fieldname": "cb_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "check_editado",
+   "fieldtype": "Check",
+   "label": "Edición terminada"
+  },
+  {
+   "fieldname": "check_publicado",
+   "fieldtype": "Check",
+   "label": "Publicado"
+  },
+  {
+   "fieldname": "sb_resultado",
+   "fieldtype": "Section Break",
+   "label": "Resultado (cuando publiques)"
+  },
+  {
+   "fieldname": "mi_url_publicacion",
+   "fieldtype": "Data",
+   "label": "URL de mi publicación",
+   "options": "URL"
+  },
+  {
+   "fieldname": "mi_vistas",
+   "fieldtype": "Int",
+   "label": "Mis vistas"
+  },
+  {
+   "fieldname": "cb_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "mi_likes",
+   "fieldtype": "Int",
+   "label": "Mis likes"
+  },
+  {
+   "fieldname": "ratio_vs_referente",
+   "fieldtype": "Float",
+   "label": "Ratio vs referente",
+   "read_only": 1,
+   "precision": "2",
+   "description": "mis vistas / vistas del referente. 1.0 = igualaste; >1 = superaste."
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-11 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "MarketingHub",
+ "name": "Guion",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "Marketinghub-Radar-Administrar",
+   "create": 1,
+   "read": 1,
+   "write": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "Marketinghub-Radar-Analista",
+   "create": 1,
+   "read": 1,
+   "write": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "Marketinghub-Radar-Ver",
+   "read": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "System Manager",
+   "create": 1,
+   "read": 1,
+   "write": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "fecha_publicacion",
+ "sort_order": "ASC",
+ "states": [],
+ "autoname": "GUI-.YYYY.-.####",
+ "naming_rule": "Expression (old style)",
+ "title_field": "titulo",
+ "description": "Guión propio de video, tomando como referencia un post viral de la competencia. Se organiza como tarea con fecha de publicación planificada.",
+ "search_fields": "titulo,estado,competidor_ref,asignado_a"
+}

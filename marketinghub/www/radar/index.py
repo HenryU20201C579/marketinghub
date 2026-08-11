@@ -185,6 +185,7 @@ def obtener_contadores():
 	from datetime import date, timedelta
 	hoy = date.today()
 	hace_24h = hoy - timedelta(days=1)
+	fin_semana = hoy + timedelta(days=6)
 
 	return {
 		"categorias": frappe.db.count("Categoria Competencia"),
@@ -197,4 +198,8 @@ def obtener_contadores():
 			"fecha_publicacion": [">=", hace_24h],
 		}),
 		"nuevos": frappe.db.count("Publicacion Competencia", filters={"estado": "Nuevo"}),
+		"guiones_semana": frappe.db.count("Guion", filters={
+			"fecha_publicacion": ["between", [hoy, fin_semana]],
+			"estado": ["!=", "Publicado"],
+		}),
 	}
