@@ -149,16 +149,6 @@
     font-family: 'JetBrains Mono', monospace;
   }
   .fecha { color: #6b7280; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
-  .thumb {
-    width: 32px; height: 42px; border-radius: 3px;
-    background: linear-gradient(135deg, #1f2937, #4b5563);
-    display: inline-flex; align-items: center; justify-content: center;
-    color: #fff; font-size: 12px; cursor: pointer;
-    text-decoration: none;
-  }
-  .thumb.img { background: linear-gradient(135deg, #7c3aed, #a855f7); }
-  .thumb.car { background: linear-gradient(135deg, #059669, #34d399); }
-  .thumb:hover { transform: scale(1.05); }
   .row-actions {
     display: inline-flex; gap: 4px;
   }
@@ -306,8 +296,8 @@
   </div>
 </div>
 
-<script src="/radar/radar.js"></script>
-<script src="/radar/ads.js"></script>
+<script src="/radar/radar.js?v=2"></script>
+<script src="/radar/ads.js?v=2"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     if (window.lucide) lucide.createIcons();
