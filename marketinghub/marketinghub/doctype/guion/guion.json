@@ -12,12 +12,14 @@
   "competidor_ref",
   "sb_publicacion",
   "fecha_publicacion",
-  "hora_publicacion",
   "plataforma",
   "cb_2",
+  "hora_publicacion",
   "asignado_a",
   "duracion_objetivo",
   "sb_guion",
+  "guion_texto",
+  "sb_guion_avanzado",
   "hook",
   "setup",
   "producto",
@@ -25,17 +27,17 @@
   "cta",
   "notas_edicion",
   "sb_checklist",
+  "check_publicado",
+  "cb_3",
   "check_guion",
   "check_storyboard",
   "check_materiales",
   "check_grabado",
-  "cb_3",
   "check_editado",
-  "check_publicado",
   "sb_resultado",
-  "mi_url_publicacion",
   "mi_vistas",
   "cb_4",
+  "mi_url_publicacion",
   "mi_likes",
   "ratio_vs_referente"
  ],
@@ -123,12 +125,24 @@
   {
    "fieldname": "sb_guion",
    "fieldtype": "Section Break",
-   "label": "Guión (estructura AIDA)"
+   "label": "Guión"
+  },
+  {
+   "fieldname": "guion_texto",
+   "fieldtype": "Long Text",
+   "label": "Guión",
+   "description": "Escribe libremente. Puedes usar Hook / Setup / Producto / CTA como guía si querés estructura."
+  },
+  {
+   "fieldname": "sb_guion_avanzado",
+   "fieldtype": "Section Break",
+   "label": "Estructura AIDA (avanzado, opcional)",
+   "collapsible": 1
   },
   {
    "fieldname": "hook",
    "fieldtype": "Small Text",
-   "label": "🎣 Hook (0-3s)",
+   "label": "Hook (0-3s)",
    "description": "Lo que dices/muestras primero. 60% de la gente decide seguir viendo aquí."
   },
   {

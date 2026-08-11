@@ -20,37 +20,25 @@
 
   body { background: #fff; }
 
-  .gt-layout {
-    display: grid; grid-template-columns: 220px 1fr;
-    min-height: calc(100vh - 51px);
+  .gt-layout { min-height: calc(100vh - 51px); }
+
+  .gt-main { padding: 36px 48px 80px; background: #fff; max-width: 900px; margin: 0 auto; }
+  @media (max-width: 900px) { .gt-main { padding: 24px; } }
+
+  /* Filtros arriba en línea (reemplaza sidebar) */
+  .gt-filters {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 28px;
+    font-size: 13px; color: #6b7280;
   }
-  .gt-sb {
-    background: #fff; border-right: 1px solid #f1f3f5;
-    padding: 24px 12px; overflow-y: auto;
+  .gt-filters .fil {
+    padding: 4px 12px; border-radius: 6px; cursor: pointer; color: #6b7280;
   }
-  .gt-sb h3 {
-    font-size: 10.5px; font-weight: 600; color: #9ca3af;
-    text-transform: uppercase; letter-spacing: .05em; margin: 18px 10px 6px;
-  }
-  .gt-sb h3:first-child { margin-top: 0; }
-  .gt-fil {
-    display: flex; align-items: center; gap: 8px;
-    padding: 6px 10px; border-radius: 6px; cursor: pointer;
-    font-size: 13px; color: #374151;
-  }
-  .gt-fil:hover { background: #f3f4f6; }
-  .gt-fil.on { background: #f3f4f6; color: #111827; font-weight: 500; }
-  .gt-fil .ico { width: 14px; text-align: center; display: inline-flex; justify-content: center; color: #9ca3af; }
-  .gt-fil.on .ico { color: #111827; }
-  .gt-fil .cnt {
-    margin-left: auto; color: #9ca3af;
+  .gt-filters .fil:hover { color: #111827; }
+  .gt-filters .fil.on { color: #111827; font-weight: 500; }
+  .gt-filters .fil .cnt {
+    margin-left: 4px; color: #9ca3af;
     font-size: 12px; font-variant-numeric: tabular-nums;
   }
-  .gt-fil.on .cnt { color: #6b7280; }
-  .gt-fil .dot { display: none; }
-
-  .gt-main { padding: 36px 48px 80px; background: #fff; }
-  @media (max-width: 900px) { .gt-main { padding: 24px; } }
   .gt-top {
     display: flex; align-items: center; gap: 10px; margin-bottom: 28px;
   }
@@ -269,41 +257,10 @@
 
   <div class="gt-layout">
 
-    <!-- Sidebar filtros -->
-    <aside class="gt-sb" id="gt-sidebar">
-      <h3>Vistas</h3>
-      <div class="gt-fil on" data-vista="todos">
-        Todos <span class="cnt" data-cnt="total">–</span>
-      </div>
-      <div class="gt-fil" data-vista="semana">
-        Esta semana <span class="cnt" data-cnt="esta_semana">–</span>
-      </div>
-      <div class="gt-fil" data-vista="mios">
-        Míos <span class="cnt" data-cnt="mios">–</span>
-      </div>
-
-      <h3>Estado</h3>
-      <div class="gt-fil" data-vista="estado" data-val="Idea">
-        Idea <span class="cnt" data-cnt="Idea">–</span>
-      </div>
-      <div class="gt-fil" data-vista="estado" data-val="Guión">
-        Guión <span class="cnt" data-cnt="Guión">–</span>
-      </div>
-      <div class="gt-fil" data-vista="estado" data-val="Grabar">
-        Grabar <span class="cnt" data-cnt="Grabar">–</span>
-      </div>
-      <div class="gt-fil" data-vista="estado" data-val="Editar">
-        Editar <span class="cnt" data-cnt="Editar">–</span>
-      </div>
-      <div class="gt-fil" data-vista="estado" data-val="Publicado">
-        Publicado <span class="cnt" data-cnt="Publicado">–</span>
-      </div>
-    </aside>
-
     <!-- Lista / Calendario -->
     <main class="gt-main">
       <div class="gt-top">
-        <h1 id="gt-title">Todos los guiones</h1>
+        <h1 id="gt-title">Mis guiones</h1>
         <div class="spacer"></div>
         <div class="gt-toggle" id="gt-vista">
           <button class="on" data-vista-tipo="lista">
@@ -316,6 +273,14 @@
         <button class="gt-btn" id="gt-nuevo">
           <i data-lucide="plus" style="width:14px;height:14px;"></i> Nuevo
         </button>
+      </div>
+
+      <!-- Filtros horizontales -->
+      <div class="gt-filters">
+        <span class="fil on" data-vista="todos">Todos <span class="cnt" data-cnt="total">–</span></span>
+        <span class="fil" data-vista="pendientes">Pendientes</span>
+        <span class="fil" data-vista="publicados">Publicados <span class="cnt" data-cnt="Publicado">–</span></span>
+        <span class="fil" data-vista="semana">Esta semana <span class="cnt" data-cnt="esta_semana">–</span></span>
       </div>
 
       <!-- Vista lista -->

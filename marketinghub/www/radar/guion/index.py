@@ -72,6 +72,7 @@ def guardar(name, cambios):
 	editables = {
 		"titulo", "estado", "fecha_publicacion", "hora_publicacion",
 		"plataforma", "asignado_a", "duracion_objetivo",
+		"guion_texto",
 		"hook", "setup", "producto", "prueba", "cta", "notas_edicion",
 		"check_guion", "check_storyboard", "check_materiales",
 		"check_grabado", "check_editado", "check_publicado",

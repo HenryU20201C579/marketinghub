@@ -23,13 +23,17 @@ class Guion(Document):
 			self.competidor_ref = competidor
 
 	def _sync_estado_con_checks(self):
-		"""Si marca 'publicado', el estado pasa a Publicado. Si marca 'grabado' y sigue en Idea/Guion, pasa a Editar."""
-		if self.check_publicado:
+		"""Bidireccional: check_publicado ↔ estado='Publicado'."""
+		# check → estado
+		if self.check_publicado and self.estado != "Publicado":
 			self.estado = "Publicado"
 		elif self.check_editado and self.estado in ("Idea", "Guión", "Grabar"):
 			self.estado = "Editar"
 		elif self.check_grabado and self.estado in ("Idea", "Guión"):
 			self.estado = "Editar"
+		# estado → check (para la UI simple)
+		if self.estado == "Publicado":
+			self.check_publicado = 1
 
 	def _calc_ratio(self):
 		"""Ratio = mis_vistas / vistas_referente. 0 si falta alguno."""

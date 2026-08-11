@@ -103,6 +103,10 @@
 				const fp = _parseISO(g.fecha_publicacion);
 				return fp && fp >= hoy && fp <= fin;
 			});
+		} else if (VISTA_ACTUAL.tipo === 'pendientes') {
+			lista = lista.filter(g => g.estado !== 'Publicado');
+		} else if (VISTA_ACTUAL.tipo === 'publicados') {
+			lista = lista.filter(g => g.estado === 'Publicado');
 		} else if (VISTA_ACTUAL.tipo === 'mios' && window.RadarUser) {
 			lista = lista.filter(g => g.asignado_a === window.RadarUser);
 		} else if (VISTA_ACTUAL.tipo === 'estado' && VISTA_ACTUAL.valor) {
@@ -141,33 +145,26 @@
 	}
 
 	function renderTask(g) {
-		const clsEstado = STAGE_CLASS[g.estado] || 'st-idea';
 		const done = g.estado === 'Publicado';
 		const check = done ? '✓' : '';
 		const fpTxt = g.fecha_publicacion ? _fmtDDMM(_parseISO(g.fecha_publicacion)) : 'sin fecha';
-		const hora = g.hora_publicacion ? ' · ' + g.hora_publicacion.slice(0,5) : '';
 		const plat = g.plataforma ? plataformaIco(g.plataforma) : '';
-		const ref = g.referencia_publicacion
-			? `<span class="ref">ref. ${escapeHtml(g.ref_competidor || '')} ${_fmtVistas(g.ref_vistas)}</span>`
-			: '';
 		let ratio = '';
 		if (g.estado === 'Publicado' && g.mi_vistas) {
 			const rat = g.ratio_vs_referente || 0;
 			const cls = rat >= 1 ? 'ratio-win' : (rat >= 0.5 ? 'ratio-mid' : 'ratio-low');
-			ratio = `<span class="sep">·</span><span class="${cls}">${_fmtVistas(g.mi_vistas)} · ${rat.toFixed(1)}×</span>`;
+			ratio = `<span class="sep">·</span><span class="${cls}">${rat.toFixed(1)}×</span>`;
 		}
 		return `
 			<a class="gt-task ${done ? 'done' : ''}"
 			   data-name="${escapeHtml(g.name)}"
 			   href="/radar/guion?name=${encodeURIComponent(g.name)}">
 				<span class="check" data-check title="${done ? 'Publicado' : 'Marcar como publicado'}">${check}</span>
-				<span class="stage-dot ${clsEstado}" title="${escapeHtml(g.estado)}"></span>
 				<div class="body">
 					<div class="t">${escapeHtml(g.titulo)}</div>
 					<div class="meta">
-						${plat ? `<span>${plat}</span><span class="sep">·</span>` : ''}
-						<span>${fpTxt}${hora}</span>
-						${ref ? `<span class="sep">·</span>${ref}` : ''}
+						<span>${fpTxt}</span>
+						${plat ? `<span class="sep">·</span><span>${plat}</span>` : ''}
 						${ratio}
 					</div>
 				</div>
@@ -210,7 +207,7 @@
 						await Radar.api('marketinghub.www.radar.guiones.index.toggle_check', {
 							name: name, campo: 'check_publicado', valor: done ? 0 : 1,
 						});
-						Radar.toast(done ? 'Marcado como no publicado' : '✅ Publicado', 'success');
+						Radar.toast(done ? 'Marcado como pendiente' : 'Publicado', 'success');
 						await cargar();
 					} catch (err) {
 						Radar.toast(err.message || 'Error', 'error');
@@ -451,23 +448,14 @@
 	}
 
 	function wireSidebar() {
-		document.querySelectorAll('.gt-fil').forEach(el => {
+		document.querySelectorAll('.gt-filters .fil, .gt-fil').forEach(el => {
 			el.addEventListener('click', function () {
-				document.querySelectorAll('.gt-fil').forEach(x => x.classList.remove('on'));
+				document.querySelectorAll('.gt-filters .fil, .gt-fil').forEach(x => x.classList.remove('on'));
 				el.classList.add('on');
 				VISTA_ACTUAL = {
 					tipo: el.dataset.vista,
 					valor: el.dataset.val || null,
 				};
-				const titles = {
-					'todos':  'Todos los guiones',
-					'semana': 'Esta semana',
-					'mios':   'Míos',
-				};
-				document.getElementById('gt-title').textContent =
-					VISTA_ACTUAL.tipo === 'estado'
-						? VISTA_ACTUAL.valor
-						: (titles[VISTA_ACTUAL.tipo] || 'Todos');
 				render();
 			});
 		});

@@ -7,7 +7,7 @@
 {% block style %}
 {{ super() }}
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
 <link rel="stylesheet" href="/radar/radar.css">
 <style>
@@ -16,200 +16,145 @@
   .page-content-wrapper main.container { max-width: none !important; padding: 0 !important; margin: 0 !important; }
   .page_content { padding: 0 !important; }
 
-  :root {
-    --l-line: #eef0f2;
-    --l-line-strong: #e5e7eb;
-    --l-muted: #8590a2;
-    --l-text: #0d0e12;
-    --l-sub: #4b5563;
-    --l-accent: #5e6ad2;
-  }
-  body { background: #fafbfc; color: var(--l-text); font-size: 14px; font-family: 'Inter', sans-serif; }
-  .mono { font-family: 'JetBrains Mono', monospace; }
+  body { background: #fff; color: #111827; }
 
   /* Topbar */
   .ge-top {
     display: flex; align-items: center; gap: 16px;
-    padding: 10px 24px; background: #fff;
-    border-bottom: 1px solid var(--l-line);
+    padding: 12px 24px; background: #fff;
+    border-bottom: 1px solid #eef1f5;
     position: sticky; top: 0; z-index: 30;
   }
-  .ge-top .back {
-    color: var(--l-muted); font-size: 12.5px; text-decoration: none;
+  .ge-back {
+    color: #6b7280; font-size: 13px; text-decoration: none;
     display: inline-flex; align-items: center; gap: 4px;
   }
-  .ge-top .back:hover { color: var(--l-text); text-decoration: none; }
-  .ge-top .back i { width: 14px; height: 14px; }
+  .ge-back:hover { color: #111827; text-decoration: none; }
+  .ge-back i { width: 14px; height: 14px; }
   .ge-top .spacer { flex: 1; }
   .ge-top .save-status {
-    font-size: 11.5px; color: var(--l-muted); min-width: 80px; text-align: right;
+    font-size: 12px; color: #9ca3af; min-width: 90px; text-align: right;
   }
   .ge-top .save-status.saving { color: #d97706; }
-  .ge-top .save-status.saved { color: #16a34a; }
-  .ge-top .user { color: var(--l-muted); font-size: 12px; }
+  .ge-top .save-status.saved  { color: #16a34a; }
+  .ge-top .user { color: #6b7280; font-size: 12px; }
 
-  /* Layout: guion + sidebar */
-  .ge-layout {
-    display: grid; grid-template-columns: 1fr 300px;
-    min-height: calc(100vh - 41px);
+  /* 1 columna centrada */
+  .ge-wrap {
+    max-width: 640px; margin: 0 auto; padding: 32px 24px 80px;
   }
-  @media (max-width: 1000px) { .ge-layout { grid-template-columns: 1fr; } }
 
-  /* Columna guión */
-  .ge-main { padding: 40px 60px 80px; max-width: 820px; }
-  @media (max-width: 700px) { .ge-main { padding: 28px 24px; } }
-
+  /* Referencia — línea compacta */
   .ge-ref {
     display: flex; align-items: center; gap: 8px;
-    font-size: 12.5px; color: var(--l-muted); margin-bottom: 32px;
-    text-decoration: none;
+    font-size: 12.5px; color: #6b7280; margin-bottom: 20px;
+    padding: 8px 12px; background: #fff8ec; border-radius: 6px;
+    border: 1px solid #fde7b6;
   }
-  .ge-ref:hover { color: var(--l-sub); text-decoration: none; }
-  .ge-ref .dot { width: 6px; height: 6px; background: var(--l-muted); border-radius: 50%; flex-shrink: 0; }
-  .ge-ref b { color: var(--l-sub); font-weight: 500; }
-  .ge-ref .lk {
-    color: var(--l-accent); text-decoration: none; margin-left: auto;
-    padding: 3px 8px; border-radius: 4px;
+  .ge-ref .lbl { color: #92400e; font-weight: 600; }
+  .ge-ref .link {
+    margin-left: auto; color: #92400e; text-decoration: none; font-weight: 500;
+    padding: 2px 8px; border-radius: 4px;
   }
-  .ge-ref .lk:hover { background: #eef0ff; }
+  .ge-ref .link:hover { background: #fef3c7; }
   .ge-ref-empty {
-    font-size: 12px; color: var(--l-muted); margin-bottom: 32px;
-    padding-bottom: 12px; border-bottom: 1px dashed var(--l-line);
+    font-size: 12px; color: #9ca3af; margin-bottom: 20px;
+    padding-bottom: 8px; border-bottom: 1px dashed #eef1f5;
   }
-  .ge-ref-empty a { color: var(--l-accent); }
+  .ge-ref-empty a { color: #6b7280; }
 
-  /* Titulo */
-  .ge-title-input {
+  /* Título grande */
+  .ge-title {
     width: 100%; border: none; outline: none;
-    font-size: 26px; font-weight: 600; color: var(--l-text);
-    letter-spacing: -0.01em; margin: 0 0 32px;
+    font-size: 28px; font-weight: 700; color: #111827;
+    margin: 0 0 20px; padding: 0;
     font-family: inherit; background: transparent;
-    padding: 0;
   }
-  .ge-title-input::placeholder { color: #c9ced6; }
+  .ge-title::placeholder { color: #d1d5db; }
 
-  /* AIDA con línea vertical fina */
-  .ge-sec {
-    position: relative; padding-left: 24px; margin: 20px 0;
+  /* Fila fecha + plataforma */
+  .ge-meta-row {
+    display: flex; gap: 12px; margin-bottom: 24px; align-items: center;
+    padding-bottom: 16px; border-bottom: 1px solid #eef1f5;
   }
-  .ge-sec::before {
-    content: ''; position: absolute; left: 0; top: 6px; bottom: 6px;
-    width: 1px; background: var(--l-line);
-    transition: background .15s;
+  .ge-meta-row label {
+    font-size: 12px; color: #6b7280; margin-right: 6px;
   }
-  .ge-sec:hover::before,
-  .ge-sec:focus-within::before { background: var(--l-accent); }
-  .ge-sec .hd {
-    display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+  .ge-meta-row .ge-input {
+    padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 6px;
+    font-size: 14px; color: #111827; font-family: inherit;
+    background: #fff; cursor: pointer;
   }
-  .ge-sec .hd .n { font-size: 12px; font-weight: 600; color: var(--l-sub); }
-  .ge-sec .hd .t {
-    font-size: 11px; color: var(--l-muted);
-    font-family: 'JetBrains Mono', monospace;
-  }
-  .ge-sec textarea {
-    width: 100%; border: none; outline: none;
-    padding: 0; font-size: 14px; line-height: 1.6;
-    color: var(--l-text); font-family: inherit;
-    background: transparent; min-height: 24px; resize: none; overflow: hidden;
-  }
-  .ge-sec textarea::placeholder { color: #c9ced6; }
+  .ge-meta-row .ge-input:focus { outline: 2px solid #1f5eff33; border-color: #1f5eff; }
 
-  /* Sidebar */
-  .ge-side {
-    border-left: 1px solid var(--l-line); background: #fff;
-    padding: 24px 20px; overflow-y: auto;
-  }
-  .ge-side h3 {
-    font-size: 11px; font-weight: 600; color: var(--l-muted);
-    text-transform: uppercase; letter-spacing: .06em;
-    margin: 20px 0 10px;
-  }
-  .ge-side h3:first-child { margin-top: 0; }
-
-  /* Estado (segmented) */
-  .status-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
-  }
-  .status-grid .p {
-    padding: 5px 8px; font-size: 11.5px; font-weight: 500;
-    background: #f3f4f6; color: var(--l-muted);
-    border-radius: 4px; text-align: center; cursor: pointer;
-    border: none; font-family: inherit;
-  }
-  .status-grid .p:hover { background: #e5e7eb; color: var(--l-text); }
-  .status-grid .p.on { background: var(--l-accent); color: #fff; }
-
-  /* Props (fecha/hora/plataforma/etc) */
-  .prop {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 6px 0; font-size: 12.5px;
-  }
-  .prop .k { color: var(--l-muted); }
-  .prop .v {
-    color: var(--l-text); font-weight: 500;
-    padding: 3px 6px; margin: -3px -6px; border-radius: 4px;
-  }
-  .prop input, .prop select {
-    border: none; outline: none; background: transparent;
-    color: var(--l-text); font-weight: 500; font-size: 12.5px;
-    font-family: inherit; padding: 3px 6px; text-align: right;
-    border-radius: 4px; cursor: pointer;
-    max-width: 160px;
-  }
-  .prop input:hover, .prop select:hover,
-  .prop input:focus, .prop select:focus {
-    background: #f3f4f6;
-  }
-  .prop input.mono { font-family: 'JetBrains Mono', monospace; }
-  .prop input::placeholder { color: #c9ced6; }
-
-  /* Checklist */
-  .cl { display: flex; flex-direction: column; gap: 2px; }
-  .cl .it {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 12.5px; padding: 4px 0; color: var(--l-sub);
-    cursor: pointer;
-  }
-  .cl .it input {
-    margin: 0; width: 14px; height: 14px; cursor: pointer;
-    accent-color: #10b981;
-  }
-  .cl .it.done { color: var(--l-muted); text-decoration: line-through; }
-  .cl-progress {
-    font-size: 11px; color: var(--l-muted); margin-top: 8px;
-    font-family: 'JetBrains Mono', monospace;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .cl-progress .bar {
-    flex: 1; height: 3px; background: #f3f4f6; border-radius: 2px; overflow: hidden;
-  }
-  .cl-progress .bar > div {
-    height: 100%; background: #10b981; transition: width .2s;
-  }
-
-  /* Resultado inputs */
-  .r-input {
-    width: 100%; border: 1px solid var(--l-line); background: #fafbfc;
-    padding: 6px 8px; font-size: 12px; border-radius: 4px;
-    font-family: inherit; color: var(--l-text); margin-top: 4px;
+  /* Textarea del guión — grande y limpio */
+  .ge-guion {
+    width: 100%; border: 1px solid #e5e7eb; border-radius: 8px;
+    padding: 14px 16px; font-size: 15px; line-height: 1.65;
+    color: #111827; font-family: inherit;
+    background: #fff; min-height: 280px; resize: vertical;
     outline: none;
   }
-  .r-input:focus { border-color: var(--l-accent); background: #fff; }
-  .r-input::placeholder { color: #c9ced6; }
-  .r-label { font-size: 11px; color: var(--l-muted); }
-  .r-row { display: flex; gap: 8px; margin-top: 8px; }
-  .r-row > div { flex: 1; }
-  .ratio-line {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 6px 0; font-size: 12.5px; margin-top: 10px;
-    border-top: 1px solid var(--l-line);
+  .ge-guion:focus { border-color: #1f5eff; box-shadow: 0 0 0 3px #1f5eff22; }
+  .ge-guion::placeholder { color: #9ca3af; white-space: pre-line; }
+
+  /* Estado toggle */
+  .ge-estado-row {
+    display: flex; align-items: center; gap: 12px;
+    margin: 24px 0 20px;
   }
-  .ratio-line .k { color: var(--l-muted); }
-  .ratio-line .v { font-family: 'JetBrains Mono', monospace; font-weight: 500; }
-  .ratio-line .v.win { color: #16a34a; }
-  .ratio-line .v.mid { color: #d97706; }
-  .ratio-line .v.low { color: #dc2626; }
+  .ge-estado-row label { font-size: 13px; color: #6b7280; }
+  .ge-toggle {
+    display: inline-flex; padding: 3px; background: #f3f4f6; border-radius: 6px;
+  }
+  .ge-toggle button {
+    padding: 6px 16px; font-size: 13px; font-weight: 500; color: #6b7280;
+    background: transparent; border: none; border-radius: 4px;
+    cursor: pointer; font-family: inherit;
+  }
+  .ge-toggle button:hover { color: #111827; }
+  .ge-toggle button.on { background: #fff; color: #111827; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .ge-toggle button.on-pub { background: #10b981; color: #fff; }
+
+  /* Resultado (aparece solo si publicado) */
+  .ge-resultado {
+    padding: 14px 16px; background: #f9fafb; border-radius: 8px;
+    display: none;
+  }
+  .ge-resultado.show { display: block; }
+  .ge-resultado h4 {
+    font-size: 11px; font-weight: 600; color: #6b7280;
+    text-transform: uppercase; letter-spacing: .04em; margin: 0 0 10px;
+  }
+  .ge-resultado .row { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+  .ge-resultado label { color: #6b7280; font-size: 13px; }
+  .ge-resultado input {
+    padding: 6px 10px; border: 1px solid #e5e7eb; border-radius: 6px;
+    font-size: 14px; width: 120px; font-family: inherit;
+  }
+  .ge-resultado .ratio {
+    font-weight: 600; padding: 4px 12px; border-radius: 999px;
+    background: #fff; border: 1px solid #e5e7eb; font-size: 13px;
+  }
+  .ge-resultado .ratio.win { background: #dcfce7; color: #16a34a; border-color: #86efac; }
+  .ge-resultado .ratio.mid { background: #fed7aa; color: #c2410c; border-color: #fdba74; }
+  .ge-resultado .ratio.low { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+
+  /* Acciones abajo */
+  .ge-actions {
+    display: flex; gap: 8px; margin-top: 28px;
+    padding-top: 16px; border-top: 1px solid #eef1f5;
+  }
+  .ge-btn {
+    padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 500;
+    cursor: pointer; font-family: inherit;
+    border: 1px solid #e5e7eb; background: #fff; color: #374151;
+  }
+  .ge-btn:hover { border-color: #cbd5e1; background: #f9fafb; }
+  .ge-btn.danger { color: #dc2626; border-color: #fecaca; }
+  .ge-btn.danger:hover { background: #fef2f2; }
+  .ge-btn.link { border: none; color: #6b7280; padding: 8px 4px; background: transparent; }
+  .ge-btn.link:hover { color: #111827; background: transparent; }
 </style>
 {% endblock %}
 
@@ -224,117 +169,71 @@
 {% else %}
 <div class="rd-app">
   <header class="ge-top">
-    <a href="/radar/guiones" class="back"><i data-lucide="arrow-left"></i> Guiones</a>
+    <a href="/radar/guiones" class="ge-back"><i data-lucide="arrow-left"></i> Guiones</a>
     <div class="spacer"></div>
     <span class="save-status" id="ge-save-status">·</span>
     <span class="user">{{ usuario }}</span>
   </header>
 
-  <div class="ge-layout">
+  <div class="ge-wrap">
 
-    <!-- Guión centro -->
-    <main class="ge-main">
-      <div id="ge-ref-box"><div class="ge-ref-empty">Cargando…</div></div>
+    <!-- Referencia viral (si existe) -->
+    <div id="ge-ref-box"><div class="ge-ref-empty">Cargando…</div></div>
 
-      <input type="text" id="f-titulo" data-field="titulo" class="ge-title-input" placeholder="Sin título">
+    <!-- Título -->
+    <input type="text" id="f-titulo" data-field="titulo" class="ge-title" placeholder="Sin título">
 
-      <div class="ge-sec">
-        <div class="hd"><span class="n">Hook</span><span class="t">0:00 – 0:03</span></div>
-        <textarea data-field="hook" placeholder="Primeros 3 segundos. Lo que decide si siguen viendo."></textarea>
-      </div>
-      <div class="ge-sec">
-        <div class="hd"><span class="n">Setup</span><span class="t">0:03 – 0:08</span></div>
-        <textarea data-field="setup" placeholder="Contexto o problema."></textarea>
-      </div>
-      <div class="ge-sec">
-        <div class="hd"><span class="n">Producto</span><span class="t">0:08 – 0:16</span></div>
-        <textarea data-field="producto" placeholder="La solución con foco en beneficios."></textarea>
-      </div>
-      <div class="ge-sec">
-        <div class="hd"><span class="n">Prueba</span><span class="t">0:16 – 0:20</span></div>
-        <textarea data-field="prueba" placeholder="Demo, testimonio, before/after."></textarea>
-      </div>
-      <div class="ge-sec">
-        <div class="hd"><span class="n">CTA</span><span class="t">0:20 – 0:23</span></div>
-        <textarea data-field="cta" placeholder="Llamado a la acción."></textarea>
-      </div>
-      <div class="ge-sec">
-        <div class="hd"><span class="n">Notas de edición</span></div>
-        <textarea data-field="notas_edicion" placeholder="Música, transiciones, props…"></textarea>
-      </div>
-    </main>
+    <!-- Fecha + Plataforma en una línea -->
+    <div class="ge-meta-row">
+      <label>Publicar el</label>
+      <input type="date" id="f-fecha" data-field="fecha_publicacion" class="ge-input">
 
-    <!-- Sidebar derecho -->
-    <aside class="ge-side">
-      <h3>Estado</h3>
-      <div class="status-grid" id="ge-estados">
-        <button class="p" data-estado="Idea">Idea</button>
-        <button class="p" data-estado="Guión">Guión</button>
-        <button class="p" data-estado="Grabar">Grabar</button>
-        <button class="p" data-estado="Editar">Editar</button>
-        <button class="p" data-estado="Publicado" style="grid-column: span 2;">Publicado</button>
-      </div>
+      <label style="margin-left:12px;">en</label>
+      <select id="f-plataforma" data-field="plataforma" class="ge-input">
+        <option value="">— sin definir —</option>
+        <option value="Instagram">Instagram</option>
+        <option value="TikTok">TikTok</option>
+        <option value="Ambas">Ambas</option>
+        <option value="Facebook">Facebook</option>
+        <option value="YouTube">YouTube</option>
+      </select>
+    </div>
 
-      <h3>Publicación</h3>
-      <div class="prop"><span class="k">Fecha</span><input type="date" id="f-fecha" data-field="fecha_publicacion" class="mono"></div>
-      <div class="prop"><span class="k">Hora</span><input type="time" id="f-hora" data-field="hora_publicacion" class="mono"></div>
-      <div class="prop">
-        <span class="k">Plataforma</span>
-        <select id="f-plataforma" data-field="plataforma">
-          <option value="">—</option>
-          <option value="Instagram">Instagram</option>
-          <option value="TikTok">TikTok</option>
-          <option value="Ambas">Ambas</option>
-          <option value="Facebook">Facebook</option>
-          <option value="YouTube">YouTube</option>
-        </select>
-      </div>
-      <div class="prop"><span class="k">Duración</span><input type="text" id="f-duracion" data-field="duracion_objetivo" placeholder="20-25 seg" style="width:110px;"></div>
-      <div class="prop">
-        <span class="k">Asignado</span>
-        <select id="f-asignado" data-field="asignado_a">
-          <option value="">—</option>
-        </select>
-      </div>
+    <!-- Guión — un solo textarea grande -->
+    <textarea id="f-guion" data-field="guion_texto" class="ge-guion"
+      placeholder="Escribe tu guión aquí…&#10;&#10;Guías rápidas (opcional):&#10;• Hook (0-3s): lo que dices/muestras primero&#10;• Setup: problema o contexto&#10;• Producto: la solución&#10;• Prueba: demo, testimonio, before/after&#10;• CTA: qué querés que hagan"></textarea>
 
-      <h3>Producción</h3>
-      <div class="cl">
-        <label class="it"><input type="checkbox" data-check="check_guion"> Guión aprobado</label>
-        <label class="it"><input type="checkbox" data-check="check_storyboard"> Storyboard</label>
-        <label class="it"><input type="checkbox" data-check="check_materiales"> Materiales</label>
-        <label class="it"><input type="checkbox" data-check="check_grabado"> Grabado</label>
-        <label class="it"><input type="checkbox" data-check="check_editado"> Editado</label>
-        <label class="it"><input type="checkbox" data-check="check_publicado"> Publicado</label>
+    <!-- Estado toggle -->
+    <div class="ge-estado-row">
+      <label>Estado:</label>
+      <div class="ge-toggle" id="ge-estado-toggle">
+        <button data-estado="Pendiente">Pendiente</button>
+        <button data-estado="Publicado">Publicado</button>
       </div>
-      <div class="cl-progress">
-        <span id="ge-progress-txt">0/6</span>
-        <span class="bar"><div id="ge-progress-fill" style="width:0%;"></div></span>
-      </div>
+    </div>
 
-      <h3>Resultado</h3>
-      <div class="r-label">URL</div>
-      <input class="r-input" type="url" data-field="mi_url_publicacion" placeholder="https://…">
-      <div class="r-row">
-        <div>
-          <div class="r-label">Vistas</div>
-          <input class="r-input mono" type="number" data-field="mi_vistas" min="0">
-        </div>
-        <div>
-          <div class="r-label">Likes</div>
-          <input class="r-input mono" type="number" data-field="mi_likes" min="0">
-        </div>
+    <!-- Resultado (solo si publicado) -->
+    <div class="ge-resultado" id="ge-resultado">
+      <h4>Resultado</h4>
+      <div class="row">
+        <label>Mis vistas:</label>
+        <input type="number" id="f-vistas" data-field="mi_vistas" min="0" placeholder="0">
+        <span class="ratio" id="ge-ratio">–</span>
       </div>
-      <div class="ratio-line">
-        <span class="k">Ratio vs ref</span>
-        <span class="v" id="ge-ratio">—</span>
-      </div>
-    </aside>
+    </div>
+
+    <!-- Acciones -->
+    <div class="ge-actions">
+      <button class="ge-btn danger" id="ge-del">Eliminar</button>
+      <div style="flex:1;"></div>
+      <button class="ge-btn link" id="ge-avanzado">+ Mostrar campos avanzados</button>
+    </div>
 
   </div>
 </div>
 
 <script src="/radar/radar.js"></script>
-<script src="/radar/guion.js"></script>
+<script src="/radar/guion.v2.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     if (window.lucide) lucide.createIcons();
