@@ -87,7 +87,7 @@
 	function pintarRef() {
 		const cont = document.getElementById('ge-ref-box');
 		if (!DOC._ref) {
-			cont.innerHTML = `<div class="ge-ref-empty">Sin referencia · <a href="/radar/publicaciones" style="color:#6b7280;">vincular desde publicaciones</a></div>`;
+			cont.innerHTML = `<div class="ge-ref-empty">Sin referencia · <a href="/radar/publicaciones">vincular desde publicaciones</a></div>`;
 			return;
 		}
 		const r = DOC._ref;
@@ -97,19 +97,19 @@
 		const partes = [];
 		if (r.competidor) partes.push(_escape(r.competidor));
 		if (r.plataforma) partes.push(_escape(r.plataforma));
-		if (r.vistas_actual) partes.push(_fmtNum(r.vistas_actual) + ' vistas');
-		if (fecha) partes.push(fecha);
-		const href = r.url_publicacion || '#';
-		const targetAttr = r.url_publicacion ? ' target="_blank" rel="noopener"' : '';
+		if (r.vistas_actual) partes.push('<span class="mono">' + _fmtNum(r.vistas_actual) + '</span>');
+		if (fecha) partes.push('<span class="mono">' + fecha + '</span>');
+		const linkHtml = r.url_publicacion
+			? `<a class="lk" href="${_escape(r.url_publicacion)}" target="_blank" rel="noopener">↗ ver</a>`
+			: '';
 		cont.innerHTML = `
-			<a class="ge-ref" href="${_escape(href)}"${targetAttr}>
-				<span class="r-ico">▶</span>
-				<div class="r-body">
-					<div class="r-hook">${_escape(r.titulo_hook || 'Sin título')}</div>
-					<div class="r-meta">${partes.join(' · ')}</div>
-				</div>
-				<span class="r-link">↗</span>
-			</a>
+			<div class="ge-ref">
+				<span class="dot"></span>
+				<span>Referencia:</span>
+				<b>${_escape(r.titulo_hook || 'Sin título')}</b>
+				<span>· ${partes.join(' · ')}</span>
+				${linkHtml}
+			</div>
 		`;
 	}
 
@@ -184,7 +184,7 @@
 	}
 
 	function wireEstadoPills() {
-		document.querySelectorAll('.ge-estados .p').forEach(el => {
+		document.querySelectorAll('#ge-estados .p, .ge-estados .p').forEach(el => {
 			el.addEventListener('click', function () {
 				if (!CAN_EDIT) return;
 				const est = el.dataset.estado;
@@ -195,7 +195,7 @@
 	}
 
 	function marcarEstado(estado) {
-		document.querySelectorAll('.ge-estados .p').forEach(el => {
+		document.querySelectorAll('#ge-estados .p, .ge-estados .p').forEach(el => {
 			el.classList.toggle('on', el.dataset.estado === estado);
 		});
 	}
@@ -212,16 +212,16 @@
 	}
 
 	function actualizarRatio() {
-		const el = document.getElementById('ge-ratio-mini');
+		const el = document.getElementById('ge-ratio');
 		if (!el) return;
 		const r = DOC.ratio_vs_referente || 0;
-		if (!r) { el.textContent = '–'; el.className = ''; return; }
-		let cls = 'low', emoji = '';
-		if (r >= 1) { cls = 'win'; emoji = ' 🎉'; }
-		else if (r >= 0.5) { cls = 'mid'; }
-		el.textContent = r.toFixed(2) + '× vs referente' + emoji;
-		el.style.color = cls === 'win' ? '#16a34a' : (cls === 'mid' ? '#d97706' : '#dc2626');
-		el.style.fontWeight = '600';
+		el.classList.remove('win','mid','low');
+		if (!r) { el.textContent = '—'; return; }
+		let cls = 'low';
+		if (r >= 1) cls = 'win';
+		else if (r >= 0.5) cls = 'mid';
+		el.classList.add(cls);
+		el.textContent = r.toFixed(2) + '×' + (r >= 1 ? ' 🎉' : '');
 	}
 
 	// ---- Namespace ----
@@ -230,7 +230,8 @@
 			CAN_EDIT = !!canEdit;
 			NAME = _getNameFromUrl();
 			if (!NAME) {
-				document.querySelector('.ge-wrap').innerHTML =
+				const box = document.querySelector('.ge-layout') || document.querySelector('.ge-wrap');
+				if (box) box.innerHTML =
 					'<div style="padding:40px;text-align:center;color:#9ca3af;">Falta el parámetro <code>?name=</code> en la URL.</div>';
 				return;
 			}
