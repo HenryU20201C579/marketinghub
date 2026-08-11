@@ -1,0 +1,319 @@
+{% extends "templates/web.html" %}
+
+{% block navbar %}{% endblock %}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block style %}
+{{ super() }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="stylesheet" href="/radar/radar.css">
+<style>
+  main.container.my-4,
+  body main.container,
+  .page-content-wrapper main.container {
+    max-width: none !important; padding: 0 !important; margin: 0 !important;
+  }
+  .page_content { padding: 0 !important; }
+  body { background: #fafbfc; }
+
+  /* Topbar */
+  .rd-topbar { padding: 10px 20px; }
+  .rd-topbar-title {
+    font-size: 15px; font-weight: 600; color: #111827;
+    display: flex; align-items: center; gap: 8px;
+    padding-left: 12px; margin-left: 4px;
+    border-left: 1px solid #eef1f5;
+  }
+  .rd-topbar-title .sub { font-size: 11.5px; color: #6b7280; font-weight: 400; }
+
+  .wrap { padding: 12px 20px 20px; }
+
+  /* Presión publicitaria */
+  .pressure { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .pressure .card {
+    flex: 1 1 220px; min-width: 200px;
+    background: #fff; border: 1px solid #eef1f5; border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .pressure h4 {
+    font-size: 11px; font-weight: 600; color: #6b7280;
+    text-transform: uppercase; letter-spacing: .04em;
+    margin: 0 0 6px; display: flex; align-items: center; gap: 6px;
+  }
+  .pressure .n {
+    font-size: 22px; font-weight: 700; color: #111827;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .pressure .sub { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .pressure .dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+
+  /* Filtros */
+  .filters {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    background: #fff; border: 1px solid #eef1f5; border-radius: 8px;
+    padding: 8px 10px; margin-bottom: 10px;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .filters .search {
+    padding: 5px 10px; border: 1px solid #e5e7eb; border-radius: 5px;
+    font-size: 12px; width: 220px; font-family: inherit;
+  }
+  .filters select {
+    padding: 5px 10px; border: 1px solid #e5e7eb; border-radius: 5px;
+    font-size: 12px; background: #fff; color: #374151; font-family: inherit;
+    cursor: pointer;
+  }
+  .filters .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 10px; border: 1px solid #e5e7eb; border-radius: 5px;
+    font-size: 12px; color: #374151; cursor: pointer; background: #fff;
+    font-family: inherit;
+  }
+  .filters .chip.on { background: #ecf3ff; color: #1f5eff; border-color: #bfdbfe; }
+  .filters .spacer { flex: 1; }
+  .filters .count { font-size: 11px; color: #6b7280; }
+  .filters .btn {
+    padding: 5px 12px; border: none; border-radius: 5px;
+    font-size: 12px; font-weight: 500; cursor: pointer;
+    font-family: inherit;
+  }
+  .filters .btn-p { background: #1f5eff; color: #fff; }
+  .filters .btn-p:hover { background: #1849cc; }
+  .filters .btn-o { background: #f59e0b; color: #fff; }
+  .filters .btn-o:hover { background: #d97706; }
+
+  /* Tabla */
+  .tbl-wrap {
+    background: #fff; border: 1px solid #eef1f5; border-radius: 8px;
+    overflow: hidden;
+  }
+  .tbl-scroll { overflow-x: auto; }
+  table.ads-tbl { width: 100%; border-collapse: collapse; }
+  .ads-tbl th {
+    background: #f9fafb; padding: 8px 10px; text-align: left;
+    font-size: 11px; font-weight: 600; color: #6b7280;
+    text-transform: uppercase; letter-spacing: .04em;
+    border-bottom: 1px solid #eef1f5; white-space: nowrap;
+  }
+  .ads-tbl th.sort { cursor: pointer; }
+  .ads-tbl th.sort:hover { color: #111827; }
+  .ads-tbl th.sort-desc::after { content: ' ↓'; color: #1f5eff; }
+  .ads-tbl th.sort-asc::after  { content: ' ↑'; color: #1f5eff; }
+  .ads-tbl td {
+    padding: 8px 10px; border-bottom: 1px solid #f3f4f6;
+    font-size: 12.5px; color: #111827; vertical-align: middle;
+  }
+  .ads-tbl tr:hover td { background: #fafbfc; }
+  .ads-tbl tr.long-runner td { background: #fef3c710; }
+  .ads-tbl tr.long-runner:hover td { background: #fef3c740; }
+  .ads-tbl tr.pausado td { color: #9ca3af; }
+
+  .dias { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 2px 6px; border-radius: 3px; font-size: 10.5px; font-weight: 600;
+    white-space: nowrap;
+  }
+  .b-nuevo    { background: #dcfce7; color: #166534; }
+  .b-fresco   { background: #dbeafe; color: #1e40af; }
+  .b-test     { background: #fed7aa; color: #7c2d12; }
+  .b-ganador  { background: #fef3c7; color: #92400e; }
+  .b-top      { background: #fde68a; color: #78350f; }
+  .b-pausado  { background: #f3f4f6; color: #6b7280; }
+  .badge-active { background: #dcfce7; color: #16a34a; padding: 1px 5px; font-size: 9px; }
+
+  .comp-tag { display: inline-flex; align-items: center; gap: 5px; }
+  .comp-tag .dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+  .fmt { font-size: 15px; }
+  .copy-cell {
+    max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .cta-pill {
+    background: #f0f7ff; color: #1f5eff; padding: 2px 6px;
+    border-radius: 3px; font-size: 10px; font-weight: 600;
+    font-family: 'JetBrains Mono', monospace; white-space: nowrap;
+  }
+  .landing {
+    color: #1f5eff; text-decoration: none; font-size: 11.5px;
+    max-width: 140px; display: inline-block;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    vertical-align: middle;
+  }
+  .landing:hover { text-decoration: underline; }
+  .plats {
+    font-size: 10px; color: #9ca3af;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .fecha { color: #6b7280; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+  .thumb {
+    width: 32px; height: 42px; border-radius: 3px;
+    background: linear-gradient(135deg, #1f2937, #4b5563);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 12px; cursor: pointer;
+    text-decoration: none;
+  }
+  .thumb.img { background: linear-gradient(135deg, #7c3aed, #a855f7); }
+  .thumb.car { background: linear-gradient(135deg, #059669, #34d399); }
+  .thumb:hover { transform: scale(1.05); }
+  .row-actions {
+    display: inline-flex; gap: 4px;
+  }
+  .row-actions button {
+    background: transparent; border: 1px solid #e5e7eb;
+    padding: 3px 7px; border-radius: 4px; font-size: 11px;
+    cursor: pointer; color: #374151; font-family: inherit;
+  }
+  .row-actions button:hover { border-color: #1f5eff; color: #1f5eff; }
+
+  .empty {
+    padding: 60px 30px; text-align: center; color: #9ca3af; font-size: 13px;
+  }
+  .empty b { color: #374151; }
+
+  /* Modal detalle del ad */
+  .rd-modal { max-width: 780px !important; width: 90vw; }
+  .rd-modal-body { padding: 0 !important; }
+  .adm-body { display: grid; grid-template-columns: 280px 1fr; }
+  .adm-media {
+    background: #0f172a; padding: 20px; display: flex; align-items: center;
+    justify-content: center; min-height: 400px;
+  }
+  .adm-media video { width: 100%; max-height: 460px; border-radius: 4px; background: #000; }
+  .adm-media img { width: 100%; max-height: 460px; border-radius: 4px; }
+  .adm-media .noplay { color: #94a3b8; font-size: 12px; text-align: center; }
+  .adm-info { padding: 20px 24px; overflow-y: auto; max-height: 60vh; }
+  .adm-info h4 {
+    font-size: 11px; font-weight: 600; color: #6b7280;
+    text-transform: uppercase; letter-spacing: .04em;
+    margin: 14px 0 6px;
+  }
+  .adm-info h4:first-child { margin-top: 0; }
+  .adm-info .kv {
+    display: flex; justify-content: space-between;
+    padding: 4px 0; font-size: 12.5px;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .adm-info .kv .k { color: #6b7280; }
+  .adm-info .kv .v { color: #111827; font-weight: 500; }
+  .adm-info .copy-full {
+    background: #f9fafb; padding: 10px 12px; border-radius: 6px;
+    font-size: 13px; line-height: 1.5; color: #111827;
+    white-space: pre-wrap; word-break: break-word;
+    max-height: 200px; overflow-y: auto;
+  }
+  .adm-actions {
+    display: flex; gap: 8px; margin-top: 16px; padding-top: 12px;
+    border-top: 1px solid #eef1f5;
+  }
+  .adm-actions a, .adm-actions button {
+    padding: 6px 12px; border: 1px solid #e5e7eb; border-radius: 5px;
+    font-size: 12px; font-weight: 500; cursor: pointer; text-decoration: none;
+    color: #374151; background: #fff; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .adm-actions a:hover, .adm-actions button:hover { border-color: #1f5eff; color: #1f5eff; }
+  .adm-actions .prim { background: #f59e0b; color: #fff; border-color: #f59e0b; }
+  .adm-actions .prim:hover { background: #d97706; border-color: #d97706; color: #fff; }
+</style>
+{% endblock %}
+
+{% block page_content %}
+{% if no_access %}
+<div class="rd-na-screen">
+  <div class="rd-na-card">
+    <div class="rd-na-brand"><span class="rd-na-dot"></span><span>Radar · Ads Library · Acceso denegado</span></div>
+    <div class="rd-na-body">Sin permisos.</div>
+  </div>
+</div>
+{% else %}
+<div class="rd-app">
+  <header class="rd-topbar">
+    <div class="rd-topbar-left">
+      <a href="/radar" class="rd-back"><i data-lucide="arrow-left"></i> Volver</a>
+      <div class="rd-topbar-title">
+        📢 <span>Ads Library</span>
+        <span class="sub" id="rd-lastrun">–</span>
+      </div>
+    </div>
+    <div class="rd-topbar-right">
+      <span class="rd-user"><i data-lucide="user-round"></i> {{ usuario }}</span>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <!-- Presión publicitaria -->
+    <section class="pressure" id="rd-pressure">
+      <div class="card"><h4>Cargando presión publicitaria…</h4></div>
+    </section>
+
+    <!-- Filtros -->
+    <div class="filters">
+      <input class="search" id="f-search" placeholder="🔍 Buscar en copy…">
+      <select id="f-comp"><option value="">Todos los competidores</option></select>
+      <select id="f-formato">
+        <option value="">Formato…</option>
+        <option value="Video">🎥 Video</option>
+        <option value="Imagen">🖼 Imagen</option>
+        <option value="Carrusel">🎠 Carrusel</option>
+      </select>
+      <select id="f-etiqueta">
+        <option value="">Etiqueta…</option>
+        <option value="Ganador top">🔥🔥🔥 Ganador top</option>
+        <option value="Ganador">🔥🔥 Ganador</option>
+        <option value="Test scale">🔥🔥 Test scale</option>
+        <option value="Fresco">🔥 Fresco</option>
+        <option value="Nuevo">🆕 Nuevo</option>
+        <option value="Pausado">⛔ Pausado</option>
+      </select>
+      <span class="chip" id="f-30d">30d+ activos</span>
+      <span class="chip on" id="f-activos">Solo activos</span>
+      <div class="spacer"></div>
+      <span class="count" id="rd-count">–</span>
+      <button class="btn btn-p" id="btn-csv">⬇ CSV</button>
+      <button class="btn btn-o" id="btn-refresh">🔄 Actualizar</button>
+    </div>
+
+    <!-- Tabla -->
+    <div class="tbl-wrap">
+      <div class="tbl-scroll">
+        <table class="ads-tbl">
+          <thead>
+            <tr>
+              <th style="width:44px;"></th>
+              <th class="sort sort-desc" data-sort="dias_activo" style="width:60px;">Días</th>
+              <th>Estado</th>
+              <th>Marca</th>
+              <th style="width:44px;">Fmto</th>
+              <th class="sort" data-sort="fecha_inicio">Inicio</th>
+              <th>Copy</th>
+              <th>CTA</th>
+              <th>Landing</th>
+              <th>Plataformas</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="rd-tbody">
+            <tr><td colspan="11" class="empty">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="/radar/radar.js"></script>
+<script src="/radar/ads.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.lucide) lucide.createIcons();
+    if (window.RadarAds) RadarAds.init({{ can_edit | tojson }});
+  });
+</script>
+{% endif %}
+{% endblock %}

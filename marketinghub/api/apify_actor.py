@@ -8,6 +8,7 @@ import urllib.request
 APIFY_BASE = "https://api.apify.com/v2/acts"
 INSTAGRAM_ACTOR = "apify~instagram-scraper"
 TIKTOK_ACTOR = "clockworks~tiktok-scraper"
+FB_ADS_ACTOR = "apify~facebook-ads-scraper"
 
 
 class ApifyError(RuntimeError):
@@ -54,3 +55,23 @@ def scrape_tiktok(token: str, handles: list, results_per_profile: int = 20):
 		"shouldDownloadSubtitles": False,
 	}
 	return _post_run_sync(TIKTOK_ACTOR, token, payload, timeout_s=360)
+
+
+def scrape_facebook_ads(token: str, query: str, country: str = "PE", count: int = 50):
+	"""Trae ads de Meta Ad Library filtrando por keyword + país.
+
+	`query` es el nombre de marca (ej: 'apolusso'). El actor busca coincidencias
+	en Ad Library. `count` limita cuántos ads devolver."""
+	if not query:
+		return []
+	# URL de Ad Library con search por keyword. active_status=all trae activos + pausados.
+	ads_url = (
+		"https://www.facebook.com/ads/library/"
+		f"?active_status=all&ad_type=all&country={country}"
+		f"&q={query}&search_type=keyword_unordered"
+	)
+	payload = {
+		"startUrls": [{"url": ads_url}],
+		"count": int(count),
+	}
+	return _post_run_sync(FB_ADS_ACTOR, token, payload, timeout_s=300)

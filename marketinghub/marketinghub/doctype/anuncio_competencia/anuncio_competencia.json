@@ -1,0 +1,264 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-11 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "ad_archive_id",
+  "competidor",
+  "page_id",
+  "page_name",
+  "cb_1",
+  "pais",
+  "fecha_inicio",
+  "fecha_ultimo_visto",
+  "dias_activo",
+  "esta_activo",
+  "fecha_pausado",
+  "etiqueta_ganador",
+  "sb_contenido",
+  "formato",
+  "copy_texto",
+  "hashtags",
+  "cta_type",
+  "cb_2",
+  "landing_url",
+  "plataformas",
+  "n_variantes",
+  "categoria_ad",
+  "sb_media",
+  "video_hd_url",
+  "video_sd_url",
+  "imagen_preview_url",
+  "sb_raw",
+  "snapshot_json",
+  "sb_notas",
+  "notas"
+ ],
+ "fields": [
+  {
+   "fieldname": "ad_archive_id",
+   "fieldtype": "Data",
+   "label": "Ad Archive ID",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "competidor",
+   "fieldtype": "Link",
+   "label": "Competidor",
+   "options": "Competidor",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "page_id",
+   "fieldtype": "Data",
+   "label": "Page ID (FB)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "page_name",
+   "fieldtype": "Data",
+   "label": "Página Facebook",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cb_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pais",
+   "fieldtype": "Data",
+   "label": "País",
+   "default": "PE",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "fecha_inicio",
+   "fieldtype": "Date",
+   "label": "Activo desde",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "fecha_ultimo_visto",
+   "fieldtype": "Datetime",
+   "label": "Último visto",
+   "read_only": 1,
+   "description": "Momento en que el scraper lo confirmó como activo por última vez."
+  },
+  {
+   "fieldname": "dias_activo",
+   "fieldtype": "Int",
+   "label": "Días activo",
+   "read_only": 1,
+   "in_list_view": 1,
+   "description": "Diferencia entre fecha_inicio y fecha_ultimo_visto (o hoy)."
+  },
+  {
+   "fieldname": "esta_activo",
+   "fieldtype": "Check",
+   "label": "¿Activo hoy?",
+   "default": "1",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "fecha_pausado",
+   "fieldtype": "Date",
+   "label": "Pausado el",
+   "read_only": 1,
+   "description": "Fecha en que dejó de aparecer en el scrape."
+  },
+  {
+   "fieldname": "etiqueta_ganador",
+   "fieldtype": "Select",
+   "label": "Etiqueta",
+   "options": "\nNuevo\nFresco\nTest scale\nGanador\nGanador top\nPausado",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Nuevo <7d · Fresco 7-13d · Test scale 14-29d · Ganador 30-59d · Ganador top 60d+"
+  },
+  {
+   "fieldname": "sb_contenido",
+   "fieldtype": "Section Break",
+   "label": "Creativo"
+  },
+  {
+   "fieldname": "formato",
+   "fieldtype": "Select",
+   "label": "Formato",
+   "options": "\nVideo\nImagen\nCarrusel",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "copy_texto",
+   "fieldtype": "Long Text",
+   "label": "Copy del anuncio"
+  },
+  {
+   "fieldname": "hashtags",
+   "fieldtype": "Small Text",
+   "label": "Hashtags"
+  },
+  {
+   "fieldname": "cta_type",
+   "fieldtype": "Data",
+   "label": "CTA",
+   "description": "SHOP_NOW, LEARN_MORE, ORDER_NOW, etc."
+  },
+  {
+   "fieldname": "cb_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "landing_url",
+   "fieldtype": "Data",
+   "label": "Landing URL",
+   "options": "URL"
+  },
+  {
+   "fieldname": "plataformas",
+   "fieldtype": "Small Text",
+   "label": "Plataformas",
+   "description": "CSV: FACEBOOK, INSTAGRAM, AUDIENCE_NETWORK, MESSENGER, THREADS, WHATSAPP"
+  },
+  {
+   "fieldname": "n_variantes",
+   "fieldtype": "Int",
+   "label": "Variantes agrupadas",
+   "default": "1",
+   "description": "collationCount desde Apify — cuántos ads casi idénticos rota."
+  },
+  {
+   "fieldname": "categoria_ad",
+   "fieldtype": "Data",
+   "label": "Categoría del ad"
+  },
+  {
+   "fieldname": "sb_media",
+   "fieldtype": "Section Break",
+   "label": "Media"
+  },
+  {
+   "fieldname": "video_hd_url",
+   "fieldtype": "Small Text",
+   "label": "Video HD URL"
+  },
+  {
+   "fieldname": "video_sd_url",
+   "fieldtype": "Small Text",
+   "label": "Video SD URL"
+  },
+  {
+   "fieldname": "imagen_preview_url",
+   "fieldtype": "Small Text",
+   "label": "Imagen preview URL"
+  },
+  {
+   "fieldname": "sb_raw",
+   "fieldtype": "Section Break",
+   "label": "Raw",
+   "collapsible": 1,
+   "collapsible_depends_on": "eval:1"
+  },
+  {
+   "fieldname": "snapshot_json",
+   "fieldtype": "Long Text",
+   "label": "Snapshot JSON",
+   "description": "Todo el JSON de Apify por si necesitamos más campos después."
+  },
+  {
+   "fieldname": "sb_notas",
+   "fieldtype": "Section Break",
+   "label": "Notas"
+  },
+  {
+   "fieldname": "notas",
+   "fieldtype": "Text Editor",
+   "label": "Notas / análisis"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-11 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "MarketingHub",
+ "name": "Anuncio Competencia",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "Marketinghub-Radar-Administrar",
+   "create": 1, "read": 1, "write": 1, "delete": 1,
+   "email": 1, "export": 1, "print": 1, "report": 1, "share": 1
+  },
+  {
+   "role": "Marketinghub-Radar-Analista",
+   "create": 1, "read": 1, "write": 1,
+   "email": 1, "export": 1, "print": 1, "report": 1, "share": 1
+  },
+  {
+   "role": "Marketinghub-Radar-Ver",
+   "read": 1, "report": 1, "export": 1
+  },
+  {
+   "role": "System Manager",
+   "create": 1, "read": 1, "write": 1, "delete": 1,
+   "email": 1, "export": 1, "print": 1, "report": 1, "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "dias_activo",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "field:ad_archive_id",
+ "title_field": "copy_texto",
+ "description": "Anuncio de la competencia publicado en Meta Ad Library (Facebook, Instagram, etc.). Sirve para ver qué ads pagados les funcionan y replicar la fórmula.",
+ "search_fields": "copy_texto,page_name,competidor,cta_type"
+}
