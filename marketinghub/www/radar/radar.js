@@ -134,6 +134,13 @@
 					const key = el.dataset.key;
 					el.textContent = (c[key] ?? 0).toLocaleString('es-PE');
 				});
+				// Badge de guiones en el sidebar (solo si > 0)
+				const badge = document.getElementById('rd-badge-guiones');
+				if (badge) {
+					const n = c.guiones_semana || 0;
+					if (n > 0) { badge.textContent = n; badge.style.display = ''; }
+					else       { badge.style.display = 'none'; }
+				}
 			} catch (e) {
 				console.error(e);
 				toast('No se pudieron cargar los contadores: ' + e.message, 'error');
@@ -195,13 +202,14 @@
 			try {
 				const rows = await apiCall('marketinghub.www.radar.index.obtener_virales_por_competidor', {dias: 30});
 				if (!rows.length) {
-					cont.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:16px;font-size:12px;">Sin virales en el último mes.</div>';
+					cont.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:16px;font-size:12px;">Sin publicaciones en el último mes.</div>';
 					return;
 				}
 				const maxTotal = Math.max(...rows.map(r => r.total)) || 1;
 				cont.innerHTML = rows.map(r => {
-					const pctV = (r.virales / maxTotal) * 100;
+					const pctV = (r.virales      / maxTotal) * 100;
 					const pctC = (r.casi_virales / maxTotal) * 100;
+					const pctB = (r.bajo         / maxTotal) * 100;
 					return `
 						<div class="row">
 							<div class="name">
@@ -209,13 +217,14 @@
 								<span title="${escapeHtml(r.competidor)}">${escapeHtml(r.competidor)}</span>
 							</div>
 							<div class="bar">
-								${r.virales      ? `<div class="seg seg-v" style="width:${pctV}%;" title="${r.virales} virales">${r.virales >= 2 ? r.virales : ''}</div>` : ''}
+								${r.virales      ? `<div class="seg seg-v" style="width:${pctV}%;" title="${r.virales} virales">${r.virales      >= 2 ? r.virales      : ''}</div>` : ''}
 								${r.casi_virales ? `<div class="seg seg-c" style="width:${pctC}%;" title="${r.casi_virales} casi virales">${r.casi_virales >= 2 ? r.casi_virales : ''}</div>` : ''}
+								${r.bajo         ? `<div class="seg seg-b" style="width:${pctB}%;" title="${r.bajo} bajo">${r.bajo         >= 2 ? r.bajo         : ''}</div>` : ''}
 							</div>
-							<div class="cnt">${r.total}</div>
+							<div class="cnt" title="virales / casi / bajo">${r.virales}·${r.casi_virales}·${r.bajo}</div>
 						</div>`;
 				}).join('');
-			} catch(e) { console.error('vpc:', e); cont.innerHTML = ''; }
+			} catch(e) { console.error('vpc:', e); cont.innerHTML = '<div style="text-align:center;color:#dc2626;padding:16px;font-size:12px;">Error: ' + escapeHtml(e.message) + '</div>'; }
 		},
 
 		async _renderDiasSemana() {
@@ -223,11 +232,11 @@
 			if (!cont) return;
 			try {
 				const rows = await apiCall('marketinghub.www.radar.index.obtener_publicaciones_por_dia_semana', {dias: 90});
-				const maxC = Math.max(...rows.map(r => r.count)) || 1;
 				if (!rows.some(r => r.count)) {
 					cont.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:16px;font-size:12px;">Sin datos suficientes.</div>';
 					return;
 				}
+				const maxC = Math.max(...rows.map(r => r.count)) || 1;
 				cont.innerHTML = rows.map(r => {
 					const pct = Math.round((r.count / maxC) * 100);
 					return `
@@ -237,7 +246,7 @@
 							<div class="c">${r.count}</div>
 						</div>`;
 				}).join('');
-			} catch(e) { console.error('dow:', e); }
+			} catch(e) { console.error('dow:', e); cont.innerHTML = '<div style="text-align:center;color:#dc2626;padding:16px;font-size:12px;">Error: ' + escapeHtml(e.message) + '</div>'; }
 		},
 	};
 })();

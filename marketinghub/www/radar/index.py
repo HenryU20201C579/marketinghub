@@ -178,7 +178,10 @@ def obtener_heatmap_semana(semanas=12):
 
 @frappe.whitelist()
 def obtener_virales_por_competidor(dias=30):
-	"""Por competidor: cuantos virales (tier 1-3) + casi virales (tier 4-5).
+	"""Por competidor: distribucion de tiers en los ultimos N dias.
+	- viral       = tier 1-5 (Dragon, Cetro, Hachon)
+	- casi_viral  = tier 6-7 (Hachas)
+	- bajo        = tier 8-10 (Masos, Pollito)
 	Ordenado por total desc."""
 	if not _has_role(VIEW_ROLES):
 		frappe.throw("Acceso denegado", frappe.PermissionError)
@@ -186,15 +189,14 @@ def obtener_virales_por_competidor(dias=30):
 	desde = date.today() - timedelta(days=int(dias))
 	rows = frappe.db.sql("""
 		SELECT competidor,
-		       SUM(CASE WHEN tier_orden BETWEEN 1 AND 3 THEN 1 ELSE 0 END) AS virales,
-		       SUM(CASE WHEN tier_orden BETWEEN 4 AND 5 THEN 1 ELSE 0 END) AS casi_virales
+		       SUM(CASE WHEN tier_orden BETWEEN 1 AND 5  THEN 1 ELSE 0 END) AS virales,
+		       SUM(CASE WHEN tier_orden BETWEEN 6 AND 7  THEN 1 ELSE 0 END) AS casi_virales,
+		       SUM(CASE WHEN tier_orden BETWEEN 8 AND 10 THEN 1 ELSE 0 END) AS bajo
 		FROM `tabPublicacion Competencia`
 		WHERE fecha_publicacion >= %s
 		  AND competidor IS NOT NULL
-		  AND tier_orden IS NOT NULL
 		GROUP BY competidor
-		HAVING (virales + casi_virales) > 0
-		ORDER BY virales DESC, casi_virales DESC
+		ORDER BY virales DESC, casi_virales DESC, bajo DESC
 	""", (desde,), as_dict=True)
 	# Colores personalizados
 	import hashlib
@@ -207,7 +209,8 @@ def obtener_virales_por_competidor(dias=30):
 	for r in rows:
 		r["virales"] = int(r.virales or 0)
 		r["casi_virales"] = int(r.casi_virales or 0)
-		r["total"] = r["virales"] + r["casi_virales"]
+		r["bajo"] = int(r.bajo or 0)
+		r["total"] = r["virales"] + r["casi_virales"] + r["bajo"]
 		r["color"] = comp_colors.get(r.competidor, "#94a3b8")
 	return rows
 
