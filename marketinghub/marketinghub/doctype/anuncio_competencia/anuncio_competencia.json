@@ -9,9 +9,11 @@
   "competidor",
   "page_id",
   "page_name",
+  "page_like_count",
   "cb_1",
   "pais",
   "fecha_inicio",
+  "fecha_fin",
   "fecha_ultimo_visto",
   "dias_activo",
   "esta_activo",
@@ -22,6 +24,7 @@
   "copy_texto",
   "hashtags",
   "cta_type",
+  "cta_text",
   "cb_2",
   "landing_url",
   "plataformas",
@@ -31,6 +34,7 @@
   "video_hd_url",
   "video_sd_url",
   "imagen_preview_url",
+  "extras_media_json",
   "sb_raw",
   "snapshot_json",
   "sb_notas",
@@ -67,6 +71,13 @@
    "read_only": 1
   },
   {
+   "fieldname": "page_like_count",
+   "fieldtype": "Int",
+   "label": "Seguidores página FB",
+   "read_only": 1,
+   "description": "Cantidad de likes que tiene la página FB del competidor."
+  },
+  {
    "fieldname": "cb_1",
    "fieldtype": "Column Break"
   },
@@ -83,6 +94,13 @@
    "label": "Activo desde",
    "in_list_view": 1,
    "in_standard_filter": 1
+  },
+  {
+   "fieldname": "fecha_fin",
+   "fieldtype": "Date",
+   "label": "Fin (según Meta)",
+   "read_only": 1,
+   "description": "Fecha en que Meta considera terminado el ad (campo endDate del scraper)."
   },
   {
    "fieldname": "fecha_ultimo_visto",
@@ -150,8 +168,14 @@
   {
    "fieldname": "cta_type",
    "fieldtype": "Data",
-   "label": "CTA",
+   "label": "CTA (tipo)",
    "description": "SHOP_NOW, LEARN_MORE, ORDER_NOW, etc."
+  },
+  {
+   "fieldname": "cta_text",
+   "fieldtype": "Data",
+   "label": "CTA (texto visible)",
+   "description": "Texto legible del botón como lo ve el usuario ('Shop now', 'Learn more', 'Order now'…)."
   },
   {
    "fieldname": "cb_2",
@@ -200,6 +224,12 @@
    "fieldname": "imagen_preview_url",
    "fieldtype": "Small Text",
    "label": "Imagen preview URL"
+  },
+  {
+   "fieldname": "extras_media_json",
+   "fieldtype": "Long Text",
+   "label": "Extras media (JSON)",
+   "description": "Videos e imágenes adicionales del ad, útil para carruseles. Estructura: {videos: [url,…], images: [url,…]}."
   },
   {
    "fieldname": "sb_raw",

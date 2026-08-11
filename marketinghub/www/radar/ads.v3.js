@@ -60,6 +60,35 @@
 	function _formato_ico(f) {
 		return f || '—';
 	}
+	function _fmtLikes(n) {
+		n = n || 0;
+		if (n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
+		if (n >= 1000)    return (n/1000).toFixed(1).replace(/\.0$/,'') + 'k';
+		return n.toLocaleString('es-PE');
+	}
+	function _renderExtras(json) {
+		if (!json) return '';
+		let data;
+		try { data = JSON.parse(json); } catch { return ''; }
+		const vids = (data.videos || []).slice(0, 10);
+		const imgs = (data.images || []).slice(0, 10);
+		if (!vids.length && !imgs.length) return '';
+		let html = '<h4>Slides adicionales</h4><div style="display:flex;flex-wrap:wrap;gap:6px;">';
+		vids.forEach(u => {
+			html += `<a href="${_escape(u)}" target="_blank" title="Video adicional"
+				style="display:inline-flex;align-items:center;justify-content:center;
+				width:60px;height:60px;background:#1f2937;color:#fff;
+				border-radius:4px;text-decoration:none;font-size:11px;">Video</a>`;
+		});
+		imgs.forEach(u => {
+			html += `<a href="${_escape(u)}" target="_blank" title="Imagen adicional"
+				style="display:inline-block;width:60px;height:60px;
+				background-image:url('${_escape(u)}');background-size:cover;background-position:center;
+				border-radius:4px;"></a>`;
+		});
+		html += '</div>';
+		return html;
+	}
 
 	// ---------- Cargar data ----------
 	async function cargar() {
@@ -221,17 +250,19 @@
 
 						<h4>Metadatos</h4>
 						<div class="kv"><span class="k">Marca</span><span class="v">${_escape(doc.competidor || '—')}</span></div>
-						<div class="kv"><span class="k">Página FB</span><span class="v">${_escape(doc.page_name || '—')}</span></div>
+						<div class="kv"><span class="k">Página FB</span><span class="v">${_escape(doc.page_name || '—')}${doc.page_like_count ? ` <span style="color:#6b7280;font-weight:400;">(${_fmtLikes(doc.page_like_count)} likes)</span>` : ''}</span></div>
 						<div class="kv"><span class="k">Activo desde</span><span class="v">${_fmtDDMMYY(doc.fecha_inicio)}</span></div>
+						${doc.fecha_fin ? `<div class="kv"><span class="k">Fin (según Meta)</span><span class="v">${_fmtDDMMYY(doc.fecha_fin)}</span></div>` : ''}
 						<div class="kv"><span class="k">Días activo</span><span class="v"><b>${doc.dias_activo || 0}d</b></span></div>
 						<div class="kv"><span class="k">Estado</span><span class="v">${doc.esta_activo ? 'Activo' : 'Pausado' + (doc.fecha_pausado ? ' desde ' + _fmtDDMMYY(doc.fecha_pausado) : '')}</span></div>
 						<div class="kv"><span class="k">Etiqueta</span><span class="v">${BADGE_LBL[doc.etiqueta_ganador] || '—'}</span></div>
 						<div class="kv"><span class="k">Formato</span><span class="v">${_escape(doc.formato || '—')}</span></div>
-						<div class="kv"><span class="k">CTA</span><span class="v">${_escape(doc.cta_type || '—')}</span></div>
+						<div class="kv"><span class="k">CTA (botón)</span><span class="v">${_escape(doc.cta_text || doc.cta_type || '—')}${doc.cta_text && doc.cta_type ? ` <span style="color:#9ca3af;font-size:10.5px;">[${_escape(doc.cta_type)}]</span>` : ''}</span></div>
 						<div class="kv"><span class="k">Variantes</span><span class="v">${doc.n_variantes || 1}</span></div>
 						<div class="kv"><span class="k">Plataformas</span><span class="v">${_escape((doc.plataformas || '').split(',').join(' · ') || '—')}</span></div>
 						${doc.landing_url ? `<div class="kv"><span class="k">Landing</span><span class="v"><a href="${_escape(doc.landing_url)}" target="_blank" style="color:#1f5eff;">Ver landing</a></span></div>` : ''}
 						${doc.hashtags ? `<div class="kv"><span class="k">Hashtags</span><span class="v" style="font-size:11px;">${_escape(doc.hashtags)}</span></div>` : ''}
+						${_renderExtras(doc.extras_media_json)}
 
 						<div class="adm-actions">
 							${dlUrl ? `<a href="${_escape(dlUrl)}" target="_blank" download>Descargar</a>` : ''}

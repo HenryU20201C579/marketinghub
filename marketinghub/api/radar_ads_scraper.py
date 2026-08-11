@@ -44,7 +44,7 @@ def _map_fb_ad(item, competidor):
 	body = snap.get("body") or {}
 	copy_texto = body.get("text") if isinstance(body, dict) else str(body or "")
 
-	# Media
+	# Media principal (primer video / imagen)
 	videos = snap.get("videos") or []
 	images = snap.get("images") or []
 	cards = snap.get("cards") or []
@@ -57,6 +57,33 @@ def _map_fb_ad(item, competidor):
 	if not imagen_prev and images:
 		imagen_prev = (images[0] or {}).get("originalImageUrl") or (images[0] or {}).get("original_image_url")
 
+	# Extras (para carruseles con múltiples slides)
+	extras = {"videos": [], "images": []}
+	# Videos adicionales (a partir del segundo)
+	for v in videos[1:]:
+		url = (v or {}).get("videoHdUrl") or (v or {}).get("videoSdUrl")
+		if url:
+			extras["videos"].append(url)
+	for v in (snap.get("extraVideos") or []):
+		url = (v or {}).get("videoHdUrl") or (v or {}).get("videoSdUrl") or (v if isinstance(v, str) else None)
+		if url:
+			extras["videos"].append(url)
+	# Imágenes adicionales
+	for img in images[1:]:
+		url = (img or {}).get("originalImageUrl") or (img or {}).get("resizedImageUrl")
+		if url:
+			extras["images"].append(url)
+	for img in (snap.get("extraImages") or []):
+		url = (img or {}).get("originalImageUrl") or (img or {}).get("resizedImageUrl") or (img if isinstance(img, str) else None)
+		if url:
+			extras["images"].append(url)
+	# Cards de carrusel
+	for card in cards:
+		url = (card or {}).get("originalImageUrl") or (card or {}).get("resizedImageUrl")
+		if url:
+			extras["images"].append(url)
+	extras_json = json.dumps(extras, ensure_ascii=False) if (extras["videos"] or extras["images"]) else None
+
 	# Formato
 	if videos:
 		formato = "Video"
@@ -67,7 +94,7 @@ def _map_fb_ad(item, competidor):
 	else:
 		formato = None
 
-	# Hashtags (extraer de copy)
+	# Hashtags
 	hashtags = None
 	if copy_texto:
 		tags = [w for w in copy_texto.split() if w.startswith("#")]
@@ -87,13 +114,16 @@ def _map_fb_ad(item, competidor):
 		"competidor": competidor,
 		"page_id": str(item.get("pageId") or ""),
 		"page_name": item.get("pageName") or (snap.get("pageName") or ""),
+		"page_like_count": int(snap.get("pageLikeCount") or 0),
 		"pais": "PE",
 		"fecha_inicio": _fmt_ts(item.get("startDate") or item.get("startDateFormatted")),
+		"fecha_fin": _fmt_ts(item.get("endDate") or item.get("endDateFormatted")),
 		"esta_activo": 1 if item.get("isActive") else 0,
 		"formato": formato,
 		"copy_texto": copy_texto,
 		"hashtags": hashtags,
 		"cta_type": snap.get("ctaType") or snap.get("cta_type"),
+		"cta_text": snap.get("ctaText") or snap.get("cta_text"),
 		"landing_url": snap.get("linkUrl") or snap.get("link_url"),
 		"plataformas": plataformas,
 		"n_variantes": int(item.get("collationCount") or 1),
@@ -101,6 +131,7 @@ def _map_fb_ad(item, competidor):
 		"video_hd_url": video_hd,
 		"video_sd_url": video_sd,
 		"imagen_preview_url": imagen_prev,
+		"extras_media_json": extras_json,
 		"snapshot_json": json.dumps(item, ensure_ascii=False)[:60000],
 	}
 
