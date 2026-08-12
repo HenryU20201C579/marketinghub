@@ -1,987 +1,227 @@
-{% extends "templates/web.html" %}
-
-{% block navbar %}{% endblock %}
-{% block header %}{% endblock %}
-{% block footer %}{% endblock %}
-
-{% block style %}
-{{ super() }}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendario</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest"></script>
-<link rel="stylesheet" href="/radar/radar.css">
-<style>
-  main.container.my-4 { max-width: none !important; padding: 0 !important; }
-  .page_content { padding: 0 !important; }
-  html, body { height: 100%; overflow: hidden; }
-  .rd-app.rd-cal { display: flex; flex-direction: column; height: 100vh; }
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/radar/comparativa/calendario.css?v=cal1">
+</head>
+<body class="cal">
 
-  /* ============ TOPBAR ============ */
-  .cal-topbar {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 16px; background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-  .cal-topbar .cal-icon-btn {
-    width: 40px; height: 40px; border-radius: 50%;
-    background: transparent; border: none; cursor: pointer;
-    display: inline-flex; align-items: center; justify-content: center;
-    color: var(--text-2);
-  }
-  .cal-topbar .cal-icon-btn:hover { background: var(--bg-soft); color: var(--text); }
-  .cal-topbar .cal-title {
-    font-size: 20px; font-weight: 500; color: var(--text);
-    margin-left: 4px; min-width: 220px;
-  }
-  .cal-topbar .cal-btn-today {
-    padding: 8px 20px; font-size: 13px; font-weight: 600;
-    border: 1px solid var(--border-strong); border-radius: 20px;
-    background: transparent; cursor: pointer; color: var(--text);
-    font-family: inherit; margin-left: 4px;
-  }
-  .cal-topbar .cal-btn-today:hover { background: var(--bg-soft); }
-  .cal-topbar .cal-brand {
-    display: flex; align-items: center; gap: 8px;
-    font-weight: 600; color: var(--text); font-size: 15px;
-    padding-left: 8px;
-  }
-  .cal-topbar .cal-brand-emoji { font-size: 22px; }
-  .cal-topbar .cal-spacer { flex: 1; }
-  .cal-topbar .cal-count {
-    font-size: 12px; color: var(--text-2); font-weight: 500;
-    padding: 4px 10px; background: var(--bg-soft); border-radius: 12px;
-  }
-
-  /* Selector de vista tipo GCal (dropdown) */
-  .cal-view-select {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 8px 16px; border: 1px solid var(--border-strong);
-    border-radius: 6px; background: white; font-size: 13px;
-    font-weight: 500; color: var(--text); cursor: pointer;
-    font-family: inherit; min-width: 130px; justify-content: space-between;
-  }
-  .cal-view-select:hover { background: var(--bg-soft); }
-  .cal-view-menu {
-    position: absolute; top: 100%; right: 0; margin-top: 4px;
-    background: white; border: 1px solid var(--border);
-    border-radius: 8px; box-shadow: var(--shadow-lg);
-    min-width: 200px; padding: 6px; z-index: 100;
-    display: none;
-  }
-  .cal-view-menu.open { display: block; }
-  .cal-view-menu button {
-    display: flex; align-items: center; justify-content: space-between;
-    width: 100%; padding: 8px 12px; background: transparent;
-    border: none; cursor: pointer; font-family: inherit;
-    font-size: 13px; color: var(--text); border-radius: 6px; text-align: left;
-  }
-  .cal-view-menu button:hover { background: var(--bg-soft); }
-  .cal-view-menu button.active { background: var(--brand-bg); color: var(--brand); font-weight: 600; }
-  .cal-view-menu .cal-shortcut { color: var(--muted); font-size: 11px; font-family: monospace; }
-
-  .cal-view-wrap { position: relative; }
-
-  /* ============ BODY (sidebar + main) ============ */
-  .cal-body { display: flex; flex: 1; overflow: hidden; }
-
-  /* ============ SIDEBAR ============ */
-  .cal-sidebar {
-    width: 260px; flex-shrink: 0;
-    background: var(--surface); border-right: 1px solid var(--border);
-    padding: 12px 12px 20px; overflow-y: auto;
-    transition: width .2s, padding .2s;
-  }
-  .cal-sidebar.collapsed { width: 0; padding: 0; border-right: none; overflow: hidden; }
-
-  .cal-sidebar h4 {
-    font-size: 11px; font-weight: 700; color: var(--text-2);
-    text-transform: uppercase; letter-spacing: .05em;
-    margin: 16px 0 8px; padding: 0 4px;
-  }
-
-  /* Mini calendario del sidebar */
-  .mini-cal-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 4px 4px 8px;
-  }
-  .mini-cal-title { font-size: 14px; font-weight: 600; color: var(--text); }
-  .mini-cal-nav {
-    background: transparent; border: none; cursor: pointer;
-    width: 28px; height: 28px; border-radius: 50%;
-    display: inline-flex; align-items: center; justify-content: center;
-    color: var(--text-2);
-  }
-  .mini-cal-nav:hover { background: var(--bg-soft); color: var(--text); }
-  .mini-cal-grid {
-    display: grid; grid-template-columns: repeat(7, 1fr);
-    gap: 2px; font-size: 11px; text-align: center;
-  }
-  .mini-cal-grid .dow {
-    color: var(--muted); font-weight: 600; padding: 4px 0;
-    font-size: 10px;
-  }
-  .mini-cal-grid .day {
-    aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; color: var(--text);
-    font-weight: 500; position: relative;
-    border-radius: 0;
-  }
-  .mini-cal-grid .day span {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 26px; height: 26px; border-radius: 50%;
-  }
-  .mini-cal-grid .day:hover span { background: var(--bg-soft); }
-  .mini-cal-grid .day.other { color: var(--muted); }
-  .mini-cal-grid .day.today span {
-    background: var(--brand); color: white; font-weight: 700;
-  }
-  .mini-cal-grid .day.today:hover span { background: var(--brand-strong); }
-  .mini-cal-grid .day.selected:not(.today) span {
-    background: var(--brand-bg);
-    color: var(--brand); font-weight: 700;
-  }
-  .mini-cal-grid .day.has-events::after {
-    content: ''; position: absolute; bottom: 1px; left: 50%;
-    transform: translateX(-50%);
-    width: 4px; height: 4px; border-radius: 50%;
-    background: var(--brand);
-  }
-  .mini-cal-grid .day.today.has-events::after { background: white; }
-
-  /* Filtros del sidebar */
-  .cal-sidebar .cal-sb-filter {
-    width: 100%; padding: 6px 28px 6px 10px;
-    font-size: 12px; line-height: 1.4;
-    border: 1px solid var(--border-strong); border-radius: 6px;
-    background: white; margin-bottom: 6px;
-    font-family: inherit; color: var(--text);
-    appearance: auto; -webkit-appearance: auto;
-    height: auto; min-height: 32px;
-    box-sizing: border-box;
-    display: block;
-  }
-  .cal-sidebar .cal-sb-filter option { color: var(--text); background: white; }
-
-  /* Lista de competidores (con checkbox y color) */
-  .cal-sidebar .cal-comp-list { display: flex; flex-direction: column; gap: 2px; }
-  .cal-comp-item {
-    display: flex; align-items: center; gap: 8px; padding: 5px 6px;
-    border-radius: 4px; font-size: 12px;
-    position: relative;
-  }
-  .cal-comp-item:hover { background: var(--bg-soft); }
-  .cal-comp-color {
-    width: 16px; height: 16px; border-radius: 3px;
-    flex-shrink: 0; border: 2px solid transparent;
-    box-sizing: border-box; cursor: pointer;
-    transition: transform .1s;
-  }
-  .cal-comp-color:hover { transform: scale(1.15); }
-  .cal-comp-item .cal-comp-name {
-    flex: 1; color: var(--text); cursor: pointer;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .cal-comp-item.off .cal-comp-color { background: transparent !important; border-color: var(--_c); }
-  .cal-comp-item.off .cal-comp-name { color: var(--muted); text-decoration: line-through; }
-
-  /* Popup de paleta de colores */
-  .cal-color-popup {
-    position: absolute; z-index: 100;
-    background: white; border: 1px solid var(--border);
-    border-radius: 8px; box-shadow: var(--shadow-lg);
-    padding: 8px; width: 168px;
-  }
-  .cal-color-popup .cal-color-grid {
-    display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
-  }
-  .cal-color-popup .cal-color-swatch {
-    width: 20px; height: 20px; border-radius: 4px;
-    cursor: pointer; border: 2px solid transparent;
-    transition: transform .1s;
-  }
-  .cal-color-popup .cal-color-swatch:hover { transform: scale(1.15); }
-  .cal-color-popup .cal-color-swatch.selected {
-    border-color: var(--text);
-    box-shadow: 0 0 0 2px white inset;
-  }
-  .cal-color-popup .cal-color-custom {
-    display: flex; align-items: center; gap: 6px;
-    margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);
-    font-size: 11px; color: var(--text-2);
-  }
-  .cal-color-popup .cal-color-custom input[type=color] {
-    width: 24px; height: 24px; border: 1px solid var(--border-strong);
-    border-radius: 4px; padding: 0; cursor: pointer;
-  }
-  .cal-color-popup .cal-color-reset {
-    background: transparent; border: 1px solid var(--border-strong);
-    color: var(--text-2); font-size: 10px; padding: 2px 6px;
-    border-radius: 4px; cursor: pointer; margin-left: auto;
-    font-family: inherit;
-  }
-  .cal-color-popup .cal-color-reset:hover { background: var(--bg-soft); color: var(--text); }
-
-  /* ============ MAIN CALENDAR AREA ============ */
-  .cal-main-area {
-    flex: 1; overflow-y: auto; display: flex; flex-direction: column;
-    background: var(--bg);
-  }
-
-  /* ============ VISTA MES ============ */
-  .cal-month {
-    display: grid; grid-template-columns: repeat(7, 1fr);
-    background: var(--border); gap: 1px;
-    flex: 1;
-  }
-  .cal-month .dow {
-    background: var(--surface); padding: 6px 8px; text-align: center;
-    font-size: 10.5px; font-weight: 600; color: var(--text-2);
-    text-transform: uppercase; letter-spacing: .04em;
-  }
-  .cal-month .day {
-    background: white; min-height: 100px; padding: 4px;
-    cursor: pointer; position: relative;
-    display: flex; flex-direction: column; gap: 2px;
-  }
-  .cal-month .day:hover { background: #f8fafc; }
-  .cal-month .day.other-month { background: #fcfcfd; }
-  .cal-month .day.other-month .day-num { color: var(--muted); }
-  .cal-month .day.today .day-num {
-    background: var(--brand); color: white; border-radius: 50%;
-    width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center;
-    font-size: 12px;
-  }
-  .cal-month .day-num {
-    font-size: 12px; font-weight: 500; color: var(--text);
-    padding: 2px 6px; align-self: flex-start; margin-bottom: 2px;
-  }
-  .cal-month .day.weekend .day-num { color: var(--text-2); }
-
-  /* Chip de post */
-  .cal-chip {
-    background: var(--_c, #94a3b8); color: white;
-    font-size: 10.5px; font-weight: 500;
-    padding: 3px 6px; border-radius: 3px;
-    display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    cursor: pointer; line-height: 1.3;
-  }
-  .cal-chip:hover { filter: brightness(0.92); }
-  .cal-chip.viral { outline: 2px solid #dc2626; outline-offset: -2px; }
-  .cal-chip-plat {
-    display: inline-block; margin-right: 3px; opacity: 0.9; font-weight: 700;
-  }
-  .cal-more {
-    font-size: 10.5px; color: var(--text-2); font-weight: 500;
-    padding: 2px 6px; cursor: pointer;
-  }
-  .cal-more:hover { color: var(--brand); }
-
-  /* ============ VISTA SEMANA ============ */
-  .cal-week {
-    display: grid; grid-template-columns: repeat(7, 1fr);
-    background: var(--border); gap: 1px;
-    flex: 1; min-height: 500px;
-  }
-  .cal-week .day-header {
-    background: var(--surface); padding: 8px 6px; text-align: center;
-    border-bottom: 1px solid var(--border);
-  }
-  .cal-week .day-header .dow {
-    font-size: 11px; text-transform: uppercase; color: var(--text-2);
-    font-weight: 600; letter-spacing: .04em;
-  }
-  .cal-week .day-header .num {
-    font-size: 24px; font-weight: 400; color: var(--text); margin-top: 4px;
-  }
-  .cal-week .day-header.today .num {
-    background: var(--brand); color: white; border-radius: 50%;
-    width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
-  }
-  .cal-week .day-content {
-    background: white; padding: 6px; min-height: 400px;
-    display: flex; flex-direction: column; gap: 4px;
-  }
-  .cal-week .day-content .cal-chip { padding: 5px 8px; font-size: 12px; }
-
-  /* ============ VISTA DIA ============ */
-  .cal-day-list { padding: 20px; max-width: 900px; margin: 0 auto; }
-  .cal-day-list .day-title { font-size: 22px; font-weight: 400; margin-bottom: 16px; color: var(--text); }
-  .cal-day-item {
-    display: flex; gap: 14px; padding: 14px;
-    background: white; border: 1px solid var(--border);
-    border-radius: var(--radius); margin-bottom: 10px;
-    box-shadow: var(--shadow-sm);
-  }
-  .cal-day-item.viral { border: 2px solid var(--red); }
-  .cal-day-color { width: 6px; border-radius: 3px; background: var(--_c, #94a3b8); }
-  .cal-day-body { flex: 1; }
-  .cal-day-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
-  .cal-day-meta { font-size: 12px; color: var(--text-2); margin-bottom: 8px; }
-  .cal-day-metrics { display: flex; gap: 16px; font-size: 12px; color: var(--text-2); }
-  .cal-day-metrics b { color: var(--text); }
-
-  /* ============ VISTA AÑO ============ */
-  .cal-year {
-    display: grid; grid-template-columns: repeat(4, 1fr);
-    gap: 16px; padding: 20px;
-  }
-  @media (max-width: 1400px) { .cal-year { grid-template-columns: repeat(3, 1fr); } }
-  @media (max-width: 1000px) { .cal-year { grid-template-columns: repeat(2, 1fr); } }
-  .cal-year-month {
-    background: white; border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 12px;
-  }
-  .cal-year-month h4 {
-    font-size: 13px; font-weight: 600; color: var(--text);
-    margin-bottom: 8px; text-align: center;
-  }
-  .cal-year-grid {
-    display: grid; grid-template-columns: repeat(7, 1fr);
-    gap: 2px; font-size: 10px;
-  }
-  .cal-year-grid .dow { color: var(--muted); text-align: center; font-weight: 600; padding: 2px 0; }
-  .cal-year-grid .cell {
-    aspect-ratio: 1; border-radius: 3px;
-    background: #f1f5f9; color: var(--text-2);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; font-weight: 500; font-size: 10px;
-  }
-  .cal-year-grid .cell:hover { outline: 2px solid var(--brand); z-index: 2; position: relative; }
-  .cal-year-grid .cell.empty { visibility: hidden; }
-  .cal-year-grid .cell.h1 { background: #dbeafe; color: #1e40af; }
-  .cal-year-grid .cell.h2 { background: #93c5fd; color: #1e3a8a; }
-  .cal-year-grid .cell.h3 { background: #3b82f6; color: white; }
-  .cal-year-grid .cell.h4 { background: #1e40af; color: white; font-weight: 700; }
-
-  .cal-empty { padding: 80px 20px; text-align: center; color: var(--text-2); flex: 1; }
-
-  /* Rango custom en sidebar */
-  .cal-custom-range { display: none; flex-direction: column; gap: 6px; padding: 0 4px; }
-  .cal-custom-range.show { display: flex; }
-  .cal-custom-range input[type=date] {
-    padding: 6px 8px; font-size: 12px;
-    border: 1px solid var(--border-strong); border-radius: 5px;
-  }
-  .cal-custom-range label { font-size: 11px; color: var(--text-2); font-weight: 600; }
-</style>
-{% endblock %}
-
-{% block page_content %}
 {% if no_access %}
-<div class="rd-na-screen"><div class="rd-na-card">
-  <div class="rd-na-brand"><span class="rd-na-dot"></span><span>Radar · Acceso denegado</span></div>
-  <div class="rd-na-body">No tienes permiso.
-    <ul class="rd-na-roles">{% for r in required_roles %}<li><code>{{ r }}</code></li>{% endfor %}</ul>
+<div class="cal-app" style="display:block">
+  <div class="cal-hint" style="max-width:460px;margin:80px auto">
+    <span class="cal-hint__title">Calendario · Acceso denegado</span>
+    Se requiere uno de estos roles: {{ required_roles|join(", ") }}.
   </div>
-</div></div>
+</div>
 {% else %}
-<div class="rd-app rd-cal">
-  <!-- ============ TOPBAR ============ -->
-  <header class="cal-topbar">
-    <a href="/radar" class="rd-back" style="margin-right:4px;" title="Volver al dashboard">
-      <i data-lucide="arrow-left"></i> Volver
-    </a>
-    <button class="cal-icon-btn" onclick="CalRadar.toggleSidebar()" title="Ocultar/mostrar sidebar">
-      <i data-lucide="menu"></i>
-    </button>
-    <div class="cal-brand">
-      <span class="cal-brand-emoji">📅</span>
-      <span>Calendario</span>
-    </div>
-    <button class="cal-btn-today" onclick="CalRadar.hoy()" title="Ir a hoy (T)">Hoy</button>
-    <button class="cal-icon-btn" onclick="CalRadar.prev()" title="Anterior (←)">
-      <i data-lucide="chevron-left"></i>
-    </button>
-    <button class="cal-icon-btn" onclick="CalRadar.next()" title="Siguiente (→)">
-      <i data-lucide="chevron-right"></i>
-    </button>
-    <div class="cal-title" id="cal-title">—</div>
-    <div class="cal-spacer"></div>
-    <span class="cal-count" id="cal-count">—</span>
-    <div class="cal-view-wrap">
-      <button class="cal-view-select" onclick="CalRadar.toggleViewMenu(event)">
-        <span id="cal-view-label">Semana</span>
-        <i data-lucide="chevron-down" style="width:14px;height:14px;"></i>
-      </button>
-      <div class="cal-view-menu" id="cal-view-menu">
-        <button data-view="dia">Día <span class="cal-shortcut">D</span></button>
-        <button data-view="semana" class="active">Semana <span class="cal-shortcut">S</span></button>
-        <button data-view="mes">Mes <span class="cal-shortcut">M</span></button>
-        <button data-view="anio">Año <span class="cal-shortcut">A</span></button>
-        <button data-view="custom">Personalizado <span class="cal-shortcut">P</span></button>
+
+<div class="cal-app">
+
+  <!-- ============ BARRA SUPERIOR ============ -->
+  <header class="cal-top">
+    <div class="cal-top__left">
+      <a class="cal-back" href="/radar"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>Volver</a>
+      <span class="cal-div"></span>
+      <div class="cal-title-group">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15v13.5h-15z M8.5 3.5v4 M15.5 3.5v4 M4.5 11h15"/></svg>
+        <span class="cal-title">Calendario</span>
       </div>
+      <span class="cal-div"></span>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="cal-navgroup">
+          <button class="cal-navgroup__btn cal-navgroup__btn--arrow" type="button" data-href="{{ url_prev|e }}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <button class="cal-navgroup__btn cal-navgroup__btn--today" type="button" data-href="{{ url_hoy|e }}">Hoy</button>
+          <button class="cal-navgroup__btn cal-navgroup__btn--arrow" type="button" data-href="{{ url_next|e }}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
+        </div>
+        <span class="cal-month">{{ mes_label }}</span>
+      </div>
+    </div>
+
+    <div class="cal-top__right">
+      <span class="cal-count">{{ total_label }}</span>
+      <div class="cal-seg">
+        <button class="cal-seg__item{% if vista == 'dia' %} is-on{% endif %}" type="button" data-href="{{ url_vista.dia|e }}">Día</button>
+        <button class="cal-seg__item{% if vista == 'semana' %} is-on{% endif %}" type="button" data-href="{{ url_vista.semana|e }}">Semana</button>
+        <button class="cal-seg__item{% if vista == 'mes' %} is-on{% endif %}" type="button" data-href="{{ url_vista.mes|e }}">Mes</button>
+      </div>
+      <button class="cal-iconbtn" id="theme-toggle" title="Cambiar tema" type="button"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg></button>
     </div>
   </header>
 
   <div class="cal-body">
+
     <!-- ============ SIDEBAR ============ -->
-    <aside class="cal-sidebar" id="cal-sidebar">
-      <!-- Mini calendario -->
-      <div class="mini-cal-header">
-        <div class="mini-cal-title" id="mini-cal-title">—</div>
-        <div>
-          <button class="mini-cal-nav" onclick="CalRadar.miniPrev()"><i data-lucide="chevron-left" style="width:16px;height:16px;"></i></button>
-          <button class="mini-cal-nav" onclick="CalRadar.miniNext()"><i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>
+    <aside class="cal-side">
+
+      <div class="cal-block cal-block--mini">
+        <div class="cal-minihead">
+          <span class="cal-side__title">{{ mini_label }}</span>
+          <span class="cal-mininav">
+            <button class="cal-mininav__btn" type="button" data-href="{{ url_prev|e }}"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+            <button class="cal-mininav__btn" type="button" data-href="{{ url_next|e }}"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
+          </span>
+        </div>
+        <div class="cal-mini">
+        {% for w in iniciales %}<div class="cal-mini__wd">{{ w }}</div>
+        {% endfor %}
+        {% for d in mini %}<div class="cal-mini__day" data-href="{{ d.url|e }}">
+          <span class="cal-mini__n{{ d.cls }}">{{ d.n }}</span>
+          <span class="cal-mini__dot{% if d.dot %} cal-mini__dot--on{% endif %}"></span>
+        </div>
+        {% endfor %}
         </div>
       </div>
-      <div class="mini-cal-grid" id="mini-cal-grid"></div>
 
-      <!-- Rango custom (solo visible en vista Personalizado) -->
-      <div class="cal-custom-range" id="cal-custom-range">
-        <h4>Rango personalizado</h4>
-        <label>Desde</label>
-        <input type="date" id="cal-f-desde">
-        <label>Hasta</label>
-        <input type="date" id="cal-f-hasta">
+      <div class="cal-block">
+        <div class="cal-side__label">Filtros</div>
+        <div class="cal-select{% if f_plataforma %} is-active{% endif %}">
+          <span class="cal-select__icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 3.5 8l8.5 4.5L20.5 8z M3.5 12.5 12 17l8.5-4.5 M3.5 16.5 12 21l8.5-4.5"/></svg></span>
+          <select name="plataforma">
+            <option value="">Todas las plataformas</option>
+            {% for p in plataformas %}<option value="{{ p|e }}"{% if f_plataforma == p %} selected{% endif %}>{{ p|e }}</option>
+            {% endfor %}
+          </select>
+          <span class="cal-select__caret"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg></span>
+        </div>
+        <div class="cal-select{% if f_tier %} is-active{% endif %}">
+          <span class="cal-select__icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 14.6 9l6 .9-4.3 4.2 1 6-5.3-2.8-5.3 2.8 1-6L3.4 9.9l6-.9z"/></svg></span>
+          <select name="tier">
+            <option value="">Todos los tiers</option>
+            {% for t in tiers %}<option value="{{ t|e }}"{% if f_tier == t %} selected{% endif %}>{{ t|e }}</option>
+            {% endfor %}
+          </select>
+          <span class="cal-select__caret"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg></span>
+        </div>
       </div>
 
-      <!-- Filtros -->
-      <h4>Filtros</h4>
-      <select id="cal-f-plat" class="cal-sb-filter">
-        <option value="">Todas las plataformas</option>
-        <option value="Instagram">Instagram</option>
-        <option value="TikTok">TikTok</option>
-        <option value="Facebook">Facebook</option>
-        <option value="YouTube">YouTube</option>
-      </select>
-      <select id="cal-f-tier" class="cal-sb-filter">
-        <option value="">Todos los tiers</option>
-      </select>
+      <div class="cal-block">
+        <div class="cal-side__label">Competidores</div>
+        {% for c in competidores %}
+        <div class="cal-brand{% if c.sufijo %} cal-brand{{ c.sufijo }}{% endif %}{% if c.on %} is-on{% endif %}" data-href="{{ c.url|e }}">
+          <span class="cal-brand__name"><span class="cal-brand__sw"></span>{{ c.nombre|e }}</span>
+          <span class="cal-brand__count">{{ c.total }}</span>
+        </div>
+        {% endfor %}
+      </div>
 
-      <!-- Competidores -->
-      <h4>Competidores</h4>
-      <div class="cal-comp-list" id="cal-comp-list"></div>
-
-      <!-- Info -->
-      <div style="margin-top: 20px; padding: 8px; background: var(--bg-soft); border-radius: 6px; font-size: 11px; color: var(--text-2); line-height: 1.5;">
-        💡 <b>Atajos:</b> <code>T</code> hoy, <code>D/S/M/A</code> vistas, <code>← →</code> navegar
-        <br>Posts anclados excluidos.
+      <div class="cal-hint">
+        <span class="cal-hint__title"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 17.5h5 M10 20.5h4 M12 3.5a5.5 5.5 0 0 1 3.2 10c-.5.4-.7.9-.7 1.5h-5c0-.6-.2-1.1-.7-1.5A5.5 5.5 0 0 1 12 3.5z"/></svg>Atajos</span>
+        <strong>T</strong> hoy · <strong>D/S/M</strong> vistas · <strong>← →</strong> navegar<br>
+        Click en un día para ver sus publicaciones.
       </div>
     </aside>
 
-    <!-- ============ MAIN CALENDAR ============ -->
-    <div class="cal-main-area" id="cal-main">
-      <div class="cal-empty">Cargando…</div>
+    <!-- ============ REJILLA DEL MES ============ -->
+    <div class="cal-grid">
+      <div class="cal-grid__headwrap" id="grid-head">
+        <div class="cal-grid__head">
+        {% for w in weekdays %}<div class="cal-grid__wd{% if loop.first or loop.last %} cal-grid__wd--we{% endif %}">{{ w }}</div>
+        {% endfor %}
+        </div>
+      </div>
+      <div class="cal-grid__scroll" id="grid-scroll">
+        <div class="cal-grid__body">
+        {% for c in celdas %}<div class="cal-cell{% if c.fuera %} cal-cell--out{% endif %}" data-href="{{ c.url|e }}">
+          <div class="cal-cell__head">
+            <span class="cal-cell__n{% if c.hoy %} cal-cell__n--today{% endif %}">{{ c.n }}</span>
+            <span class="cal-cell__badge"{% if c.total %} title="{{ c.total }} publicaciones"{% endif %}>{% if c.total %}{{ c.total }}{% endif %}</span>
+          </div>
+          {% for p in c.chips %}<div class="cal-chip{% if p.sufijo %} cal-chip{{ p.sufijo }}{% endif %}" title="{{ p.titulo|e }}">
+            <span class="cal-chip__net">{{ p.red|e }}</span>
+            <span class="cal-chip__title">{{ p.titulo|e }}</span>
+          </div>
+          {% endfor %}
+          {% if c.mas %}<span class="cal-more">+{{ c.mas }} más</span>{% endif %}
+        </div>
+        {% endfor %}
+        </div>
+      </div>
     </div>
+
+    <!-- ============ PANEL DEL DÍA ============ -->
+    <aside class="cal-day">
+      <div class="cal-day__head">
+        <span style="display:flex; flex-direction:column; gap:2px; min-width:0;">
+          <span class="cal-day__title">{{ dia_titulo }}</span>
+          <span class="cal-day__sub">{{ dia_sub }}</span>
+        </span>
+        <span class="cal-day__close" data-href="{{ url_hoy|e }}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12 M18 6L6 18"/></svg></span>
+      </div>
+      <div class="cal-day__body">
+        {% for p in dia_posts %}
+        <div class="cal-post{% if p.sufijo %} cal-post{{ p.sufijo }}{% endif %}"{% if p.url %} data-href="{{ p.url|e }}" data-blank="1"{% endif %}>
+          <span class="cal-post__title">{{ p.titulo|e }}</span>
+          <span class="cal-post__foot">
+            <span class="cal-post__meta">{{ p.competidor|e }} · {{ p.plataforma|e }}</span>
+            <span class="cal-tier{{ p.tier_cls }}">{{ p.tier|e }}</span>
+          </span>
+        </div>
+        {% else %}
+        <div class="cal-day__empty">Sin publicaciones este día.</div>
+        {% endfor %}
+      </div>
+    </aside>
   </div>
 </div>
 
-<script src="/radar/radar.js"></script>
 <script>
-  const MESES_LARGO = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const MESES_CORTO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const DOW_CORTO   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-  const DOW_1L      = ['D','L','M','X','J','V','S'];
-  const VIEW_LABELS = { dia: 'Día', semana: 'Semana', mes: 'Mes', anio: 'Año', custom: 'Personalizado' };
+  (function () {
+    // tema (persistido)
+    var body = document.body;
+    function setTema(t) { body.dataset.theme = t === 'dark' ? 'dark' : ''; }
+    try { setTema(localStorage.getItem('cal-theme') || ''); } catch (e) {}
+    document.getElementById('theme-toggle').addEventListener('click', function () {
+      var t = body.dataset.theme === 'dark' ? '' : 'dark';
+      setTema(t);
+      try { localStorage.setItem('cal-theme', t); } catch (e) {}
+    });
 
-  // Helpers
-  function toISO(d) { return d.toISOString().slice(0,10); }
-  function fromISO(s) { return new Date(s + 'T00:00:00'); }
-  function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate()+n); return x; }
-  function startOfWeek(d) { const x = new Date(d); x.setDate(x.getDate() - x.getDay()); return x; }
-  function startOfMonth(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
-  function endOfMonth(d) { return new Date(d.getFullYear(), d.getMonth()+1, 0); }
-  function isSameDay(a, b) { return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
-  function platChar(p) { return ({Instagram:'I', TikTok:'T', Facebook:'F', YouTube:'Y'})[p] || '?'; }
-  function fmtNum(n) {
-    n = n || 0;
-    if (n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'')+'M';
-    if (n >= 1000) return (n/1000).toFixed(1).replace(/\.0$/,'')+'k';
-    return n.toLocaleString('es-PE');
-  }
+    // la cabecera de días acompaña el scroll horizontal de la rejilla
+    var scroll = document.getElementById('grid-scroll');
+    var head = document.getElementById('grid-head');
+    if (scroll && head) scroll.addEventListener('scroll', function () { head.scrollLeft = scroll.scrollLeft; });
 
-  window.CalRadar = {
-    vista: 'semana',
-    anclaFecha: new Date(),
-    miniFecha: new Date(),   // fecha del mini-calendario (puede diferir de anclaFecha)
-    posts: [],
-    competidores: [],
-    tiers: [],
-    paleta: [],
-    filtros: { plataforma: '', tier_orden_max: '' },
-    competidoresOff: new Set(),
-    diasConEventos: new Set(),  // para marcar el mini-cal
-
-    async init() {
-      try {
-        const s = JSON.parse(localStorage.getItem('cal-radar-v2') || '{}');
-        if (s.vista) this.vista = s.vista;
-        if (s.fecha) this.anclaFecha = fromISO(s.fecha);
-      } catch(e) {}
-      this.miniFecha = new Date(this.anclaFecha);
-      this._marcarViewButton();
-      this._updateViewLabel();
-
-      this.competidores = await Radar.api('marketinghub.www.radar.comparativa.index.obtener_competidores');
-      this.tiers = await Radar.api('marketinghub.www.radar.comparativa.index.obtener_tiers');
-      this.paleta = await Radar.api('marketinghub.www.radar.comparativa.index.obtener_paleta');
-
-      const tSel = document.getElementById('cal-f-tier');
-      tSel.innerHTML = '<option value="">Todos los tiers</option>' +
-        this.tiers.map(t => `<option value="${t.orden}">${Radar.escapeHtml(t.nombre)} o mejor</option>`).join('');
-
-      this._renderCompList();
-      this._renderMiniCal();
-      await this.cargar();
-    },
-
-    _guardarEstado() {
-      try {
-        localStorage.setItem('cal-radar-v2', JSON.stringify({
-          vista: this.vista, fecha: toISO(this.anclaFecha),
-        }));
-      } catch(e) {}
-    },
-
-    _rangoDeVista() {
-      const d = this.anclaFecha;
-      if (this.vista === 'dia')   return { desde: toISO(d), hasta: toISO(d) };
-      if (this.vista === 'semana') { const ini = startOfWeek(d); return { desde: toISO(ini), hasta: toISO(addDays(ini, 6)) }; }
-      if (this.vista === 'mes') {
-        const gridIni = startOfWeek(startOfMonth(d));
-        return { desde: toISO(gridIni), hasta: toISO(addDays(gridIni, 41)) };
-      }
-      if (this.vista === 'anio') return { desde: `${d.getFullYear()}-01-01`, hasta: `${d.getFullYear()}-12-31` };
-      if (this.vista === 'custom') {
-        const desde = document.getElementById('cal-f-desde').value || toISO(d);
-        const hasta = document.getElementById('cal-f-hasta').value || toISO(addDays(d, 30));
-        return { desde, hasta };
-      }
-    },
-
-    async cargar() {
-      const r = this._rangoDeVista();
-      const params = { desde: r.desde, hasta: r.hasta, ...this.filtros };
-      if (this.vista === 'anio') {
-        try {
-          this._conteos = await Radar.api('marketinghub.www.radar.comparativa.index.obtener_conteos_por_dia', {
-            anio: this.anclaFecha.getFullYear(),
-            plataforma: this.filtros.plataforma || '',
-          });
-        } catch(e) { this._conteos = {}; }
-        document.getElementById('cal-count').textContent =
-          `${Object.values(this._conteos).reduce((a,b)=>a+b,0)} posts en ${this.anclaFecha.getFullYear()}`;
-        this.diasConEventos = new Set(Object.keys(this._conteos).filter(k => this._conteos[k] > 0));
-      } else {
-        try {
-          this.posts = await Radar.api('marketinghub.www.radar.comparativa.index.obtener_eventos', params);
-        } catch(e) {
-          document.getElementById('cal-main').innerHTML = `<div class="cal-empty"><b>Error:</b> ${Radar.escapeHtml(e.message)}</div>`;
-          return;
-        }
-        this.posts = this.posts.filter(p => !this.competidoresOff.has(p.competidor));
-        document.getElementById('cal-count').textContent =
-          `${this.posts.length} publicacion${this.posts.length===1?'':'es'}`;
-        this.diasConEventos = new Set(this.posts.map(p => p.fecha_publicacion));
-      }
-      this._render();
-      this._renderMiniCal();
-    },
-
-    _render() {
-      this._actualizarTitulo();
-      this._toggleCustomRange();
-      if (this.vista === 'dia')    return this._renderDia();
-      if (this.vista === 'semana') return this._renderSemana();
-      if (this.vista === 'mes')    return this._renderMes();
-      if (this.vista === 'anio')   return this._renderAnio();
-      if (this.vista === 'custom') return this._renderCustom();
-    },
-
-    _actualizarTitulo() {
-      const d = this.anclaFecha;
-      let t;
-      if (this.vista === 'dia')     t = `${d.getDate()} ${MESES_LARGO[d.getMonth()]} ${d.getFullYear()}`;
-      else if (this.vista === 'semana') { const ini = startOfWeek(d), fin = addDays(ini, 6);
-        t = ini.getMonth() === fin.getMonth()
-          ? `${MESES_LARGO[ini.getMonth()]} ${ini.getFullYear()}`
-          : `${MESES_CORTO[ini.getMonth()]} – ${MESES_CORTO[fin.getMonth()]} ${fin.getFullYear()}`;
-      }
-      else if (this.vista === 'mes')    t = `${MESES_LARGO[d.getMonth()]} ${d.getFullYear()}`;
-      else if (this.vista === 'anio')   t = `${d.getFullYear()}`;
-      else if (this.vista === 'custom') { const r = this._rangoDeVista(); t = `${r.desde} — ${r.hasta}`; }
-      document.getElementById('cal-title').textContent = t;
-    },
-
-    _toggleCustomRange() {
-      document.getElementById('cal-custom-range').classList.toggle('show', this.vista === 'custom');
-    },
-
-    _renderMiniCal() {
-      const d = this.miniFecha;
-      document.getElementById('mini-cal-title').textContent =
-        `${MESES_CORTO[d.getMonth()]} ${d.getFullYear()}`;
-      const grid = document.getElementById('mini-cal-grid');
-      const today = new Date();
-      const primer = startOfMonth(d);
-      const gridIni = startOfWeek(primer);
-      let html = '';
-      for (let i = 0; i < 7; i++) html += `<div class="dow">${DOW_1L[i]}</div>`;
-      for (let i = 0; i < 42; i++) {
-        const day = addDays(gridIni, i);
-        const iso = toISO(day);
-        const cls = [
-          day.getMonth() !== d.getMonth() ? 'other' : '',
-          isSameDay(day, today) ? 'today' : '',
-          isSameDay(day, this.anclaFecha) && this.vista !== 'anio' ? 'selected' : '',
-          this.diasConEventos.has(iso) ? 'has-events' : '',
-        ].filter(Boolean).join(' ');
-        html += `<div class="day ${cls}" onclick="CalRadar.saltarADia('${iso}')"><span>${day.getDate()}</span></div>`;
-        if (i >= 27 && day.getMonth() !== d.getMonth() && (i+1) % 7 === 0) break;
-      }
-      grid.innerHTML = html;
-    },
-
-    _renderCompList() {
-      const c = document.getElementById('cal-comp-list');
-      c.innerHTML = this.competidores.map(x => `
-        <div class="cal-comp-item ${this.competidoresOff.has(x.nombre) ? 'off' : ''}"
-             style="--_c: ${x.color};" data-comp="${Radar.escapeHtml(x.nombre)}">
-          <div class="cal-comp-color" style="background:${x.color};"
-               onclick="event.stopPropagation();CalRadar.abrirColorPicker(event,'${Radar.escapeHtml(x.nombre)}')"
-               title="Cambiar color"></div>
-          <span class="cal-comp-name"
-                onclick="CalRadar.toggleComp('${Radar.escapeHtml(x.nombre)}')"
-                title="Ocultar/mostrar en el calendario">${Radar.escapeHtml(x.nombre)}</span>
-        </div>`).join('');
-    },
-
-    toggleComp(nombre) {
-      if (this.competidoresOff.has(nombre)) this.competidoresOff.delete(nombre);
-      else this.competidoresOff.add(nombre);
-      this._renderCompList();
-      this.cargar();
-    },
-
-    // ============ COLOR PICKER ============
-    abrirColorPicker(e, nombre) {
-      this._cerrarColorPicker();
-      const comp = this.competidores.find(c => c.nombre === nombre);
-      if (!comp) return;
-
-      const popup = document.createElement('div');
-      popup.className = 'cal-color-popup';
-      popup.id = 'cal-color-popup';
-      popup.innerHTML = `
-        <div class="cal-color-grid">
-          ${this.paleta.map(p => `
-            <div class="cal-color-swatch ${comp.color.toLowerCase() === p.color.toLowerCase() ? 'selected' : ''}"
-                 style="background:${p.color};"
-                 title="${Radar.escapeHtml(p.nombre)}"
-                 onclick="CalRadar.guardarColor('${Radar.escapeHtml(nombre)}', '${p.color}')"></div>
-          `).join('')}
-        </div>
-        <div class="cal-color-custom">
-          <input type="color" value="${comp.color}"
-                 onchange="CalRadar.guardarColor('${Radar.escapeHtml(nombre)}', this.value)"
-                 title="Elegir color custom">
-          <span>Custom</span>
-          <button class="cal-color-reset"
-                  onclick="CalRadar.guardarColor('${Radar.escapeHtml(nombre)}', '')"
-                  title="Restablecer al color automático">Reset</button>
-        </div>
-      `;
-      // Posicionar al lado del swatch clickeado
-      const rect = e.target.getBoundingClientRect();
-      popup.style.top = (rect.bottom + window.scrollY + 4) + 'px';
-      popup.style.left = (rect.left + window.scrollX) + 'px';
-      document.body.appendChild(popup);
-
-      // Cerrar al click fuera
-      setTimeout(() => {
-        document.addEventListener('click', this._colorClickOutside, {once: true});
-      }, 0);
-    },
-
-    _cerrarColorPicker() {
-      const p = document.getElementById('cal-color-popup');
-      if (p) p.remove();
-    },
-
-    _colorClickOutside(e) {
-      if (!e.target.closest('.cal-color-popup') && !e.target.classList.contains('cal-comp-color')) {
-        CalRadar._cerrarColorPicker();
-      }
-    },
-
-    async guardarColor(nombre, color) {
-      try {
-        const r = await Radar.api(
-          'marketinghub.www.radar.comparativa.index.guardar_color_competidor',
-          {competidor: nombre, color},
-        );
-        // Actualizar en memoria
-        const c = this.competidores.find(x => x.nombre === nombre);
-        if (c) { c.color = r.color; c.personalizado = r.personalizado; }
-        this._cerrarColorPicker();
-        this._renderCompList();
-        this.cargar();  // re-render del calendario con nuevos colores
-        Radar.toast('✓ Color actualizado', 'success');
-      } catch (e) {
-        Radar.toast('Error: ' + e.message, 'error');
-      }
-    },
-
-    toggleSidebar() {
-      document.getElementById('cal-sidebar').classList.toggle('collapsed');
-    },
-
-    toggleViewMenu(e) {
-      e?.stopPropagation();
-      document.getElementById('cal-view-menu').classList.toggle('open');
-    },
-
-    _cerrarViewMenu() {
-      document.getElementById('cal-view-menu').classList.remove('open');
-    },
-
-    hoy() {
-      this.anclaFecha = new Date();
-      this.miniFecha = new Date();
-      this._guardarEstado();
-      this.cargar();
-    },
-    prev() { this._nav(-1); },
-    next() { this._nav(+1); },
-    _nav(dir) {
-      const d = this.anclaFecha;
-      if (this.vista === 'dia') this.anclaFecha = addDays(d, dir);
-      else if (this.vista === 'semana') this.anclaFecha = addDays(d, dir * 7);
-      else if (this.vista === 'mes') this.anclaFecha = new Date(d.getFullYear(), d.getMonth()+dir, 1);
-      else if (this.vista === 'anio') this.anclaFecha = new Date(d.getFullYear()+dir, 0, 1);
-      else if (this.vista === 'custom') this.anclaFecha = addDays(d, dir * 7);
-      this.miniFecha = new Date(this.anclaFecha);
-      this._guardarEstado();
-      this.cargar();
-    },
-
-    miniPrev() { this.miniFecha = new Date(this.miniFecha.getFullYear(), this.miniFecha.getMonth()-1, 1); this._renderMiniCal(); },
-    miniNext() { this.miniFecha = new Date(this.miniFecha.getFullYear(), this.miniFecha.getMonth()+1, 1); this._renderMiniCal(); },
-
-    saltarADia(iso) {
-      this.anclaFecha = fromISO(iso);
-      this.miniFecha = new Date(this.anclaFecha);
-      if (this.vista === 'anio') this.vista = 'dia';
-      this._marcarViewButton();
-      this._updateViewLabel();
-      this._guardarEstado();
-      this.cargar();
-    },
-
-    cambiarVista(v) {
-      this.vista = v;
-      this._marcarViewButton();
-      this._updateViewLabel();
-      this._cerrarViewMenu();
-      this._guardarEstado();
-      this.cargar();
-    },
-
-    _marcarViewButton() {
-      document.querySelectorAll('#cal-view-menu button').forEach(b =>
-        b.classList.toggle('active', b.dataset.view === this.vista)
-      );
-    },
-    _updateViewLabel() {
-      document.getElementById('cal-view-label').textContent = VIEW_LABELS[this.vista] || 'Semana';
-    },
-
-    _chip(p) {
-      const c = platChar(p.plataforma);
-      const hook = Radar.escapeHtml(p.titulo_hook || '(sin título)');
-      return `<span class="cal-chip ${p.es_viral ? 'viral' : ''}" style="--_c: ${p.color};"
-                onclick="CalRadar.abrirModal('${p.name}')" title="${hook}">
-                <span class="cal-chip-plat">${c}</span>${hook}
-              </span>`;
-    },
-
-    _renderDia() {
-      const c = document.getElementById('cal-main');
-      if (!this.posts.length) { c.innerHTML = `<div class="cal-empty">Sin publicaciones este día.</div>`; return; }
-      c.innerHTML = `<div class="cal-day-list">
-        <div class="day-title">${this.posts.length} publicación${this.posts.length===1?'':'es'}</div>
-        ${this.posts.map(p => `
-          <div class="cal-day-item ${p.es_viral?'viral':''}">
-            <div class="cal-day-color" style="--_c: ${p.color};"></div>
-            <div class="cal-day-body">
-              <div class="cal-day-title">${Radar.escapeHtml(p.titulo_hook || '(sin título)')}</div>
-              <div class="cal-day-meta">
-                <b style="color:var(--text);">${Radar.escapeHtml(p.competidor)}</b>
-                · ${Radar.escapeHtml(p.plataforma)}
-                · Tier: ${Radar.escapeHtml(p.tier || '—')}
-                ${p.es_viral ? '· <span style="color:var(--red);font-weight:700;">🔥 VIRAL</span>' : ''}
-              </div>
-              <div class="cal-day-metrics">
-                <span>👁️ <b>${fmtNum(p.vistas_actual)}</b></span>
-                <span>❤️ <b>${fmtNum(p.likes_actual)}</b></span>
-                <span>📊 <b>${(p.engagement_pct||0).toFixed(2)}%</b></span>
-              </div>
-            </div>
-            <div>${p.url_publicacion ? `<a href="${Radar.escapeHtml(p.url_publicacion)}" target="_blank" class="rd-btn rd-btn-secondary rd-btn-sm">Ver post ↗</a>` : ''}</div>
-          </div>`).join('')}
-      </div>`;
-    },
-
-    _renderSemana() {
-      const ini = startOfWeek(this.anclaFecha);
-      const today = new Date();
-      const dias = [0,1,2,3,4,5,6].map(i => addDays(ini, i));
-      const posts_por_dia = {};
-      dias.forEach(d => posts_por_dia[toISO(d)] = []);
-      this.posts.forEach(p => { if (posts_por_dia[p.fecha_publicacion]) posts_por_dia[p.fecha_publicacion].push(p); });
-      document.getElementById('cal-main').innerHTML = '<div class="cal-week">' + dias.map(d => `
-        <div>
-          <div class="day-header ${isSameDay(d, today)?'today':''}">
-            <div class="dow">${DOW_CORTO[d.getDay()]}</div>
-            <div class="num">${d.getDate()}</div>
-          </div>
-          <div class="day-content">
-            ${posts_por_dia[toISO(d)].map(p => this._chip(p)).join('')}
-          </div>
-        </div>`).join('') + '</div>';
-    },
-
-    _renderMes() {
-      const inicio = startOfWeek(startOfMonth(this.anclaFecha));
-      const today = new Date();
-      const cells = [];
-      for (let i = 0; i < 7; i++) cells.push(`<div class="dow">${DOW_CORTO[i]}</div>`);
-      for (let i = 0; i < 42; i++) {
-        const d = addDays(inicio, i);
-        const otro = d.getMonth() !== this.anclaFecha.getMonth();
-        const iso = toISO(d);
-        const posts = this.posts.filter(p => p.fecha_publicacion === iso);
-        const shown = posts.slice(0, 3);
-        const rest = posts.length - shown.length;
-        const isW = d.getDay() === 0 || d.getDay() === 6;
-        cells.push(`
-          <div class="day ${otro?'other-month':''} ${isSameDay(d, today)?'today':''} ${isW?'weekend':''}"
-               onclick="CalRadar.saltarADia('${iso}')">
-            <span class="day-num">${d.getDate()}</span>
-            ${shown.map(p => this._chip(p)).join('')}
-            ${rest > 0 ? `<span class="cal-more" onclick="event.stopPropagation();CalRadar.saltarADia('${iso}')">+${rest} más</span>` : ''}
-          </div>`);
-      }
-      document.getElementById('cal-main').innerHTML = '<div class="cal-month">' + cells.join('') + '</div>';
-    },
-
-    _renderAnio() {
-      const y = this.anclaFecha.getFullYear();
-      const conteos = this._conteos || {};
-      const max = Math.max(1, ...Object.values(conteos));
-      const cls = c => !c ? '' : (c/max >= 0.75 ? 'h4' : c/max >= 0.5 ? 'h3' : c/max >= 0.25 ? 'h2' : 'h1');
-      const meses = [];
-      for (let m = 0; m < 12; m++) {
-        const ini = startOfMonth(new Date(y, m, 1));
-        const fin = endOfMonth(new Date(y, m, 1)).getDate();
-        const offset = ini.getDay();
-        let cells = '';
-        for (let i = 0; i < 7; i++) cells += `<div class="dow">${DOW_1L[i]}</div>`;
-        for (let i = 0; i < offset; i++) cells += `<div class="cell empty"></div>`;
-        for (let d = 1; d <= fin; d++) {
-          const iso = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-          const c = conteos[iso] || 0;
-          cells += `<div class="cell ${cls(c)}" title="${d}/${m+1}: ${c} post${c===1?'':'s'}"
-                       onclick="CalRadar.saltarADia('${iso}')">${d}</div>`;
-        }
-        meses.push(`<div class="cal-year-month"><h4>${MESES_LARGO[m]}</h4><div class="cal-year-grid">${cells}</div></div>`);
-      }
-      document.getElementById('cal-main').innerHTML = '<div class="cal-year">' + meses.join('') + '</div>';
-    },
-
-    _renderCustom() {
-      const r = this._rangoDeVista();
-      const ini = fromISO(r.desde), fin = fromISO(r.hasta);
-      const dias = [];
-      let cur = new Date(ini); let c = 0;
-      while (cur <= fin && c < 90) { dias.push(new Date(cur)); cur = addDays(cur, 1); c++; }
-      const posts_por_dia = {};
-      dias.forEach(d => posts_por_dia[toISO(d)] = []);
-      this.posts.forEach(p => { if (posts_por_dia[p.fecha_publicacion]) posts_por_dia[p.fecha_publicacion].push(p); });
-      const today = new Date();
-      const cols = Math.min(dias.length, 7);
-      document.getElementById('cal-main').innerHTML =
-        `<div class="cal-week" style="grid-template-columns: repeat(${cols}, 1fr);">` + dias.map(d => `
-          <div>
-            <div class="day-header ${isSameDay(d, today)?'today':''}">
-              <div class="dow">${DOW_CORTO[d.getDay()]}</div>
-              <div class="num">${d.getDate()}<span style="font-size:11px;color:var(--muted);font-weight:400;"> ${MESES_CORTO[d.getMonth()]}</span></div>
-            </div>
-            <div class="day-content">${posts_por_dia[toISO(d)].map(p => this._chip(p)).join('')}</div>
-          </div>`).join('') + '</div>';
-    },
-
-    abrirModal(name) {
-      const p = this.posts.find(x => x.name === name);
-      if (!p) return;
-      const body = `
-        <div style="display:flex;gap:12px;">
-          <div style="width:6px;background:${p.color};border-radius:3px;"></div>
-          <div style="flex:1;">
-            <div style="font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em;">${Radar.escapeHtml(p.competidor)} · ${Radar.escapeHtml(p.plataforma)} · ${p.fecha_publicacion}</div>
-            <div style="font-size:15px;font-weight:700;margin:6px 0;">${Radar.escapeHtml(p.titulo_hook || '(sin título)')}</div>
-            <div style="display:flex;gap:16px;font-size:13px;color:var(--text-2);margin-bottom:10px;">
-              <span>👁️ <b style="color:var(--text);">${fmtNum(p.vistas_actual)}</b> vistas</span>
-              <span>❤️ <b style="color:var(--text);">${fmtNum(p.likes_actual)}</b> likes</span>
-              <span>📊 <b style="color:var(--text);">${(p.engagement_pct||0).toFixed(2)}%</b> eng.</span>
-            </div>
-            <div style="margin-bottom:12px;">
-              <span style="background:${p.es_viral?'var(--red)':'var(--bg-soft)'};color:${p.es_viral?'white':'var(--text)'};padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;">
-                ${p.es_viral ? '🔥 ' : ''}${Radar.escapeHtml(p.tier || 'Sin tier')}
-              </span>
-              <span style="margin-left:8px;padding:3px 10px;border:1px solid var(--border);border-radius:999px;font-size:11px;">Estado: ${Radar.escapeHtml(p.estado || 'Nuevo')}</span>
-            </div>
-          </div>
-        </div>`;
-      Radar.modal({
-        title: '📱 Publicación',
-        confirmText: p.url_publicacion ? 'Ver post ↗' : 'Cerrar',
-        cancelText: 'Cerrar',
-        bodyHtml: body,
-        onConfirm: () => { if (p.url_publicacion) window.open(p.url_publicacion, '_blank'); return true; }
+    // elementos que navegan (no son <a>: el CSS pinta los enlaces con el acento)
+    document.querySelectorAll('[data-href]').forEach(function (el) {
+      el.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        if (el.dataset.blank) window.open(el.dataset.href, '_blank', 'noopener');
+        else window.location.href = el.dataset.href;
       });
-    },
-  };
-
-  document.addEventListener('DOMContentLoaded', function() {
-    lucide.createIcons();
-    // Listeners
-    document.querySelectorAll('#cal-view-menu button').forEach(b => {
-      b.addEventListener('click', (e) => { e.stopPropagation(); CalRadar.cambiarVista(b.dataset.view); });
-    });
-    document.getElementById('cal-f-plat').addEventListener('change', function() {
-      CalRadar.filtros.plataforma = this.value; CalRadar.cargar();
-    });
-    document.getElementById('cal-f-tier').addEventListener('change', function() {
-      CalRadar.filtros.tier_orden_max = this.value; CalRadar.cargar();
-    });
-    document.getElementById('cal-f-desde').addEventListener('change', () => CalRadar.cargar());
-    document.getElementById('cal-f-hasta').addEventListener('change', () => CalRadar.cargar());
-
-    // Cerrar view menu al click fuera
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('.cal-view-wrap')) CalRadar._cerrarViewMenu();
     });
 
-    // Atajos de teclado
-    document.addEventListener('keydown', (e) => {
-      // ignorar si estás en un input/textarea
-      if (['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const k = e.key.toLowerCase();
-      if (k === 't')            { CalRadar.hoy(); e.preventDefault(); }
-      else if (k === 'd')       { CalRadar.cambiarVista('dia'); e.preventDefault(); }
-      else if (k === 's')       { CalRadar.cambiarVista('semana'); e.preventDefault(); }
-      else if (k === 'm')       { CalRadar.cambiarVista('mes'); e.preventDefault(); }
-      else if (k === 'a')       { CalRadar.cambiarVista('anio'); e.preventDefault(); }
-      else if (k === 'p')       { CalRadar.cambiarVista('custom'); e.preventDefault(); }
-      else if (e.key === 'ArrowLeft')  { CalRadar.prev(); e.preventDefault(); }
-      else if (e.key === 'ArrowRight') { CalRadar.next(); e.preventDefault(); }
+    // filtros
+    document.querySelectorAll('.cal-select select').forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        var p = new URLSearchParams(window.location.search);
+        if (sel.value) p.set(sel.name, sel.value); else p.delete(sel.name);
+        window.location.search = p.toString();
+      });
     });
 
-    CalRadar.init();
-  });
+    // atajos: T hoy · D/S/M vistas · ← → navegar
+    var rutas = {
+      t: '{{ url_hoy }}',
+      d: '{{ url_vista.dia }}',
+      s: '{{ url_vista.semana }}',
+      m: '{{ url_vista.mes }}',
+      ArrowLeft: '{{ url_prev }}',
+      ArrowRight: '{{ url_next }}'
+    };
+    document.addEventListener('keydown', function (ev) {
+      if (ev.target.tagName === 'SELECT' || ev.target.tagName === 'INPUT') return;
+      var destino = rutas[ev.key] || rutas[ev.key.toLowerCase()];
+      if (destino) window.location.href = destino;
+    });
+  })();
 </script>
+
 {% endif %}
-{% endblock %}
+
+</body>
+</html>
