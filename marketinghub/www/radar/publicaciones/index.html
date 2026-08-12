@@ -1,722 +1,445 @@
-{% extends "templates/web.html" %}
-
-{% block navbar %}{% endblock %}
-{% block header %}{% endblock %}
-{% block footer %}{% endblock %}
-
-{% block style %}
-{{ super() }}
+<!DOCTYPE html>
+<html lang="es" data-theme="light" data-side="on">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Publicaciones · Radar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/radar/publicaciones/publicaciones.css?v=retro2">
-<link rel="stylesheet" href="/radar/radar-sidebar.css?v=1">
-<style>
-  /* Override Frappe containers */
-  html, body,
-  main.container.my-4, body main.container,
-  .page-content-wrapper main.container,
-  .page_content, .page-container, .page-content, .website-content {
-    max-width: none !important; padding: 0 !important; margin: 0 !important;
-    background: var(--bg) !important;
-  }
-  body.pub { min-height: 100vh; }
+<link rel="stylesheet" href="/radar/publicaciones/publicaciones.css?v=pub1">
+</head>
+<!-- este diseño trae su propio sidebar, así que no se inyecta el compartido -->
+<body data-radx-side="off">
 
-  /* Modal reuse (Radar.modal) — mapear su estilo al diseño */
-  .rd-modal-backdrop {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
-    display: none; align-items: flex-start; justify-content: center;
-    padding: 48px 20px; z-index: 200;
-  }
-  .rd-modal-backdrop.rd-visible { display: flex; }
-  .rd-modal {
-    width: 600px; max-width: 94vw; border-radius: 12px;
-    background: var(--bg); border: 1px solid var(--line);
-    box-shadow: 0 30px 70px rgba(0,0,0,0.35); overflow: hidden;
-    display: flex; flex-direction: column;
-  }
-  .rd-modal-head {
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    padding: 12px 18px; border-bottom: 1px solid var(--line); background: var(--panel);
-    font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
-    text-transform: uppercase; color: var(--muted);
-  }
-  .rd-modal-close {
-    width: 26px; height: 26px; border-radius: 7px; border: none;
-    display: flex; align-items: center; justify-content: center;
-    background: transparent; color: var(--muted); cursor: pointer;
-  }
-  .rd-modal-close:hover { background: var(--raise); color: var(--text); }
-  .rd-modal-body { padding: 20px 24px; overflow-y: auto; }
-  .rd-modal-actions {
-    display: flex; justify-content: flex-end; gap: 10px;
-    padding: 12px 18px; border-top: 1px solid var(--line); background: var(--panel);
-  }
-  .rd-btn {
-    height: auto; padding: 9px 16px; border-radius: 8px;
-    border: 1px solid var(--line); background: var(--panel);
-    color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600;
-    cursor: pointer;
-  }
-  .rd-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .rd-btn.rd-btn-secondary { background: var(--panel); color: var(--text); }
-  .rd-btn:not(.rd-btn-secondary):not(.rd-btn-danger) {
-    background: var(--accent); border-color: transparent; color: var(--onaccent);
-    padding: 9px 18px;
-  }
-  .rd-btn:not(.rd-btn-secondary):not(.rd-btn-danger):hover {
-    background: var(--accent-2); border-color: transparent; color: var(--onaccent);
-  }
-  .rd-btn.rd-btn-danger { background: #d33; border-color: #d33; color: #fff; }
-
-  /* Fields dentro del modal */
-  .rd-field { margin-bottom: 14px; }
-  .rd-field label {
-    display: block; font-size: 12px; font-weight: 600; color: var(--muted);
-    margin-bottom: 5px;
-  }
-  .rd-select, .rd-textarea, .rd-input {
-    width: 100%; padding: 8px 10px;
-    border: 1px solid var(--line); border-radius: 8px;
-    background: var(--panel); color: var(--text);
-    font-family: inherit; font-size: 13px;
-  }
-  .rd-textarea { min-height: 80px; resize: vertical; }
-  .rd-select:focus, .rd-textarea:focus, .rd-input:focus {
-    outline: 2px solid var(--accent-soft); border-color: var(--accent);
-  }
-
-  /* Toast */
-  .rd-toast {
-    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
-    padding: 11px 20px; border-radius: 9px;
-    font-size: 13px; font-weight: 600;
-    color: var(--onaccent); background: var(--accent);
-    box-shadow: 0 14px 34px rgba(0,0,0,0.3);
-    display: flex; align-items: center; gap: 9px; z-index: 300;
-    opacity: 0; transition: opacity .2s;
-  }
-  .rd-toast.rd-visible { opacity: 1; }
-  .rd-toast::before {
-    content: ""; width: 6px; height: 6px; border-radius: 999px;
-    background: var(--onaccent); opacity: 0.7;
-  }
-  .rd-toast.rd-error { background: #d33; }
-
-  /* Empty state */
-  .pub-empty-wrap {
-    display: flex; flex-direction: column; align-items: center;
-    padding: 60px 20px; color: var(--muted);
-  }
-  .pub-empty-wrap .t { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
-</style>
-{% endblock %}
-
-{% block page_content %}
 {% if no_access %}
-<div style="padding: 60px 20px; max-width: 500px; margin: 0 auto; text-align: center;
-            background: var(--panel); border: 1px solid var(--line); border-radius: 12px;">
-  <div style="font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 10px;">
-    Radar de Competencia · Acceso denegado
-  </div>
-  <div style="color: var(--muted); font-size: 13px; line-height: 1.5;">
-    Se requiere alguno de los siguientes roles:
-    <ul style="margin: 10px 0; list-style: none; padding: 0;">
-      {% for r in required_roles %}
-      <li><code style="background: var(--raise); padding: 2px 8px; border-radius: 4px;">{{ r }}</code></li>
-      {% endfor %}
-    </ul>
-  </div>
-</div>
+<div class="app"><div class="main"><div class="empty" style="margin-top:80px">
+  <span>Publicaciones · Acceso denegado. Se requiere uno de estos roles: {{ required_roles|join(", ") }}.</span>
+</div></div></div>
 {% else %}
 
-<div class="pub-app">
+<div class="app">
 
-  <!-- ============ CABECERA ============ -->
-  <header class="pub-header">
-    <div class="pub-header__left">
-      <a class="pub-back" href="/radar">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
-        Volver
-      </a>
-      <span class="pub-sep"></span>
-      <div class="pub-title-group">
-        <svg class="pub-title-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 20.5h17 M7.5 20.5v-6.5 M12.5 20.5v-11 M17.5 20.5v-4"/></svg>
-        <span class="pub-title">Publicaciones</span>
-      </div>
-    </div>
-    <div class="pub-header__right">
-      <span class="pub-total" id="pub-total">0 publicaciones total</span>
-      <button class="pub-icon-btn" id="theme-toggle" title="Cambiar tema" type="button">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="side">
+    <div class="side-top">
+      <span class="brand">
+        <span class="mark"><svg class="ico" viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.4"/></svg></span>
+        <span class="txt">Radar</span>
+      </span>
+      <button class="iconbtn" data-side-toggle title="Ocultar sidebar">
+        <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M14 6l-6 6 6 6"/></svg>
       </button>
     </div>
-  </header>
 
-  <!-- ============ FILTROS ============ -->
-  <div class="pub-toolbar">
-    <div class="pub-toolbar__filters">
-
-      <!-- Tier -->
-      <div class="pub-select" id="pub-wrap-tier">
-        <svg class="pub-select__icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 14.6 9l6 .9-4.3 4.2 1 6-5.3-2.8-5.3 2.8 1-6L3.4 9.9l6-.9z"/></svg>
-        <select id="pub-f-tier">
-          <option value="">Todos los tiers</option>
-        </select>
-        <svg class="pub-select__caret" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>
-      </div>
-
-      <!-- Rango -->
-      <div class="pub-select">
-        <svg class="pub-select__icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15v13.5h-15z M8.5 3.5v4 M15.5 3.5v4 M4.5 11h15"/></svg>
-        <select id="pub-f-fecha">
-          <option value="1">Últimas 24h</option>
-          <option value="7" selected>Últimos 7 días</option>
-          <option value="30">Últimos 30 días</option>
-          <option value="90">Últimos 90 días</option>
-          <option value="">Todos</option>
-        </select>
-        <svg class="pub-select__caret" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>
-      </div>
-
-      <!-- Competidor -->
-      <div class="pub-select">
-        <svg class="pub-select__icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5a3.4 3.4 0 1 0 0 6.8A3.4 3.4 0 0 0 9 5z M3 20c1.2-3.2 3.6-4.5 6-4.5s4.8 1.3 6 4.5 M16.5 6.2a3 3 0 0 1 0 5.6 M21 19.5c-.8-2.2-2-3.2-3.5-3.7"/></svg>
-        <select id="pub-f-comp">
-          <option value="">Todos los competidores</option>
-        </select>
-        <svg class="pub-select__caret" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>
-      </div>
-
-      <!-- Plataforma -->
-      <div class="pub-select">
-        <svg class="pub-select__icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 3.5 8l8.5 4.5L20.5 8z M3.5 12.5 12 17l8.5-4.5 M3.5 16.5 12 21l8.5-4.5"/></svg>
-        <select id="pub-f-plat">
-          <option value="">Todas las plataformas</option>
-          <option value="TikTok">TikTok</option>
-          <option value="Instagram">Instagram</option>
-          <option value="Facebook">Facebook</option>
-          <option value="YouTube">YouTube</option>
-        </select>
-        <svg class="pub-select__caret" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>
-      </div>
-
-      <!-- Estado -->
-      <div class="pub-select">
-        <svg class="pub-select__icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5v17 M6.5 4.5h11l-2.2 3.8 2.2 3.7h-11"/></svg>
-        <select id="pub-f-estado">
-          <option value="">Todos los estados</option>
-          {% for e in estados %}<option value="{{ e }}">{{ e }}</option>{% endfor %}
-        </select>
-        <svg class="pub-select__caret" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>
-      </div>
-
-      <!-- Buscador -->
-      <div class="pub-search">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M16.2 16.2 20.5 20.5"/></svg>
-        <input type="text" id="pub-f-search" placeholder="Buscar en título / caption…">
-      </div>
-
-      <button class="pub-btn pub-btn--quiet" type="button" id="pub-limpiar">Limpiar</button>
-    </div>
-
-    <div class="pub-toolbar__actions">
-      <button class="pub-btn" type="button" id="pub-csv">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11 M8 11l4 4 4-4 M4.5 19.5h15"/></svg>
-        Exportar CSV
+    <nav class="side-nav">
+      <div class="nav-group">Contenido</div>
+      <button class="nav-item active" data-href="/radar/publicaciones">
+        <svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M3.5 20.5h17M7.5 20.5v-6.5M12.5 20.5v-11M17.5 20.5v-4"/></svg>
+        <span class="lbl">Publicaciones</span><span class="badge tnum">{{ contadores.publicaciones or "" }}</span>
       </button>
-      <span class="pub-counter" id="pub-counter">0 / 0</span>
+      <button class="nav-item" data-href="/radar/guiones">
+        <svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5zM14.5 6.5l3 3"/></svg>
+        <span class="lbl">Guiones</span><span class="badge tnum">{{ contadores.guiones or "" }}</span>
+      </button>
+      <button class="nav-item" data-href="/radar/comparativa">
+        <svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M4.5 6.5h15v13.5h-15zM8.5 3.5v4M15.5 3.5v4M4.5 11h15"/></svg>
+        <span class="lbl">Calendario pubs</span><span class="badge"></span>
+      </button>
+      <button class="nav-item" data-href="/radar/guiones?vista=calendario">
+        <svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M4 6.5h16M4 12h16M4 17.5h16"/></svg>
+        <span class="lbl">Agenda guiones</span><span class="badge"></span>
+      </button>
+      <button class="nav-item" data-href="/radar/ads">
+        <svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M3.5 6.5h17v11h-17zM3.5 10.5h17"/></svg>
+        <span class="lbl">Ads Library</span><span class="badge tnum">{{ contadores.ads or "" }}</span>
+      </button>
+
+      <div class="nav-group">Configuración</div>
+      <button class="nav-item" data-href="/radar/competidores">
+        <svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M9 5a3.4 3.4 0 1 0 0 6.8A3.4 3.4 0 0 0 9 5zM3 20c1.2-3.2 3.6-4.5 6-4.5s4.8 1.3 6 4.5M16.5 6.2a3 3 0 0 1 0 5.6M21 19.5c-.8-2.2-2-3.2-3.5-3.7"/></svg>
+        <span class="lbl">Competidores</span><span class="badge tnum">{{ contadores.competidores or "" }}</span>
+      </button>
+      <button class="nav-item" data-href="/radar/cuentas">
+        <svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17zM3.5 12h17M12 3.5c2.4 2.4 2.4 14.2 0 17M12 3.5c-2.4 2.4-2.4 14.2 0 17"/></svg>
+        <span class="lbl">Cuentas</span><span class="badge tnum">{{ contadores.cuentas or "" }}</span>
+      </button>
+      <button class="nav-item" data-href="/radar/categorias">
+        <svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M4 11.5 11.5 4H20v8.5L12.5 20zM15.5 8.5h.01"/></svg>
+        <span class="lbl">Categorías</span><span class="badge tnum">{{ contadores.categorias or "" }}</span>
+      </button>
+      <button class="nav-item" data-href="/radar/settings">
+        <svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8zM19.4 14.2a1.6 1.6 0 0 0 .3 1.8 2 2 0 1 1-2.8 2.8 1.6 1.6 0 0 0-2.7 1.1 2 2 0 1 1-4 0 1.6 1.6 0 0 0-2.8-1.1 2 2 0 1 1-2.8-2.8 1.6 1.6 0 0 0-1.1-2.7 2 2 0 1 1 0-4 1.6 1.6 0 0 0 1.1-2.8 2 2 0 1 1 2.8-2.8 1.6 1.6 0 0 0 2.7-1.1 2 2 0 1 1 4 0 1.6 1.6 0 0 0 2.7 1.1 2 2 0 1 1 2.8 2.8 1.6 1.6 0 0 0 1.1 2.7 2 2 0 1 1 0 4z"/></svg>
+        <span class="lbl">Ajustes</span><span class="badge"></span>
+      </button>
+    </nav>
+
+    <div class="side-foot">
+      <div class="run"><span>Última corrida</span><span class="tnum" style="color:var(--muted)">{{ ultima_corrida }}</span></div>
+      <button class="theme-btn" id="theme">
+        <svg class="ico" viewBox="0 0 24 24" width="14" height="14"><path id="themePath" d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
+        <span class="txt" id="themeLabel">Tema oscuro</span>
+      </button>
     </div>
-  </div>
+  </aside>
 
-  <!-- ============ TABLA ============ -->
-  <div class="pub-tablewrap">
-    <div class="pub-table" id="pub-table">
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-l">
+        <button class="hamb" data-side-toggle title="Mostrar u ocultar sidebar">
+          <svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M4 5h16v14H4zM9.5 5v14"/></svg>
+        </button>
+        <span class="page-title">
+          <svg class="ico" viewBox="0 0 24 24" width="17" height="17"><path d="M3.5 20.5h17M7.5 20.5v-6.5M12.5 20.5v-11M17.5 20.5v-4"/></svg>
+          Publicaciones
+        </span>
+        <span class="sub"><span id="visibles">0</span> visibles · {{ total }} en total</span>
+      </div>
+      <div class="topbar-r">
+        {% if can_edit %}<button class="btn primary" id="bulk" hidden>Analizar seleccionadas</button>{% endif %}
+        <button class="btn" id="csv">
+          <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M12 4v11M8 11l4 4 4-4M4.5 19.5h15"/></svg>
+          Exportar CSV
+        </button>
+      </div>
+    </header>
 
-      <!-- cabecera -->
-      <div class="pub-row pub-head" id="pub-head-row">
-        <div>
-          <span class="pub-check" id="pub-check-all" title="Seleccionar todos">
-            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
-          </span>
-        </div>
-        <div class="pub-head__cell pub-head__cell--sortable is-sorted" data-sort="tier_orden">Tier <span class="pub-sort-dir">↑</span></div>
-        <div class="pub-head__cell">Plat</div>
-        <div class="pub-head__cell pub-head__cell--sortable" data-sort="competidor">Competidor</div>
-        <div class="pub-head__cell pub-head__cell--sortable" data-sort="fecha_publicacion">Fecha</div>
-        <div class="pub-head__cell">Título / hook</div>
-        <div class="pub-head__cell pub-head__cell--num pub-head__cell--sortable" data-sort="vistas_actual">Vistas</div>
-        <div class="pub-head__cell pub-head__cell--num pub-head__cell--sortable" data-sort="likes_actual">Likes</div>
-        <div class="pub-head__cell pub-head__cell--num">Coment.</div>
-        <div class="pub-head__cell pub-head__cell--num">Shares</div>
-        <div class="pub-head__cell pub-head__cell--num">Guar.</div>
-        <div class="pub-head__cell pub-head__cell--num pub-head__cell--sortable" data-sort="engagement_pct">Eng %</div>
-        <div class="pub-head__cell">Scrapeado</div>
-        <div class="pub-head__cell">Estado</div>
-        <div class="pub-head__cell"></div>
+    <div class="filters">
+      <div class="pick" data-filter>
+        <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M12 3.5 14.6 9l6 .9-4.3 4.2 1 6-5.3-2.8-5.3 2.8 1-6L3.4 9.9l6-.9z"/></svg>
+        <select id="f-tier" data-default="todos">
+          <option value="todos">Todos los tiers</option>
+          {% for t in tiers %}<option value="{{ t|e }}">{{ t|e }}</option>
+          {% endfor %}
+        </select>
+        <svg class="ico caret" viewBox="0 0 24 24" width="12" height="12"><path d="M7 10l5 5 5-5"/></svg>
       </div>
 
-      <!-- filas aquí (JS) -->
-      <div id="pub-body">
-        <div class="pub-empty-wrap"><div class="t">Cargando…</div></div>
+      <div class="pick" data-filter>
+        <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M4.5 6.5h15v13.5h-15zM8.5 3.5v4M15.5 3.5v4M4.5 11h15"/></svg>
+        <select id="f-rango" data-default="7d">
+          <option value="7d">Últimos 7 días</option>
+          <option value="30d">Últimos 30 días</option>
+          <option value="90d">Últimos 90 días</option>
+          <option value="todo">Todo el histórico</option>
+        </select>
+        <svg class="ico caret" viewBox="0 0 24 24" width="12" height="12"><path d="M7 10l5 5 5-5"/></svg>
       </div>
 
+      <div class="pick" data-filter>
+        <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M9 5a3.4 3.4 0 1 0 0 6.8A3.4 3.4 0 0 0 9 5zM3 20c1.2-3.2 3.6-4.5 6-4.5s4.8 1.3 6 4.5M16.5 6.2a3 3 0 0 1 0 5.6M21 19.5c-.8-2.2-2-3.2-3.5-3.7"/></svg>
+        <select id="f-comp" data-default="todos">
+          <option value="todos">Todos los competidores</option>
+          {% for c in competidores %}<option value="{{ c|e }}">{{ c|e }}</option>
+          {% endfor %}
+        </select>
+        <svg class="ico caret" viewBox="0 0 24 24" width="12" height="12"><path d="M7 10l5 5 5-5"/></svg>
+      </div>
+
+      <div class="pick" data-filter>
+        <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M12 3.5 3.5 8l8.5 4.5L20.5 8zM3.5 12.5 12 17l8.5-4.5M3.5 16.5 12 21l8.5-4.5"/></svg>
+        <select id="f-plat" data-default="todas">
+          <option value="todas">Todas las plataformas</option>
+          {% for r in redes %}<option value="{{ r.sigla|e }}">{{ r.nombre|e }}</option>
+          {% endfor %}
+        </select>
+        <svg class="ico caret" viewBox="0 0 24 24" width="12" height="12"><path d="M7 10l5 5 5-5"/></svg>
+      </div>
+
+      <div class="pick" data-filter>
+        <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M6.5 3.5v17M6.5 4.5h11l-2.2 3.8 2.2 3.7h-11"/></svg>
+        <select id="f-estado" data-default="todos">
+          <option value="todos">Todos los estados</option>
+          {% for e in estados %}<option value="{{ e|e }}">{{ e|e }}</option>
+          {% endfor %}
+        </select>
+        <svg class="ico caret" viewBox="0 0 24 24" width="12" height="12"><path d="M7 10l5 5 5-5"/></svg>
+      </div>
+
+      <div class="searchbox">
+        <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM16.2 16.2 20.5 20.5"/></svg>
+        <input type="search" id="q" placeholder="Buscar en título / caption...">
+      </div>
+
+      <button class="clear" id="clear">Limpiar</button>
+      <span class="hint" id="hint">Clic en el encabezado para ordenar</span>
+    </div>
+
+    <div class="tablewrap">
+      <div class="thead">
+        <div class="th chk" id="all"><span class="box"><svg class="ico" viewBox="0 0 24 24" width="9" height="9"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span></div>
+        <button class="th sortable on" data-sort="tier"><span>Tier</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 14l6-5 6 5"/></svg></button>
+        <div class="th c"><span>Red</span></div>
+        <button class="th sortable" data-sort="comp"><span>Competidor</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 14l6-5 6 5"/></svg></button>
+        <button class="th sortable" data-sort="fecha"><span>Fecha</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 14l6-5 6 5"/></svg></button>
+        <div class="th"><span>Título / hook</span></div>
+        <button class="th sortable r" data-sort="v"><span>Vistas</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 14l6-5 6 5"/></svg></button>
+        <button class="th sortable r col-inter" data-sort="l"><span>Interacc.</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 14l6-5 6 5"/></svg></button>
+        <button class="th sortable r" data-sort="e"><span>Eng %</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 14l6-5 6 5"/></svg></button>
+        <div class="th c"><span>Sync</span></div>
+        <div class="th col-state"><span>Estado</span></div>
+        <div class="th c"><span></span></div>
+      </div>
+      <div id="rows"></div>
+      <div class="empty" id="empty" hidden>
+        <svg class="ico" viewBox="0 0 24 24" width="26" height="26" style="stroke-width:1.6;color:var(--faint)"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM16.2 16.2 20.5 20.5"/></svg>
+        <span>Ninguna publicación coincide con los filtros.</span>
+      </div>
+    </div>
+
+    <div class="footbar">
+      <span><span id="counter">0</span> de {{ total }} publicaciones · orden por <span id="sortLabel">tier</span></span>
+      <div class="sums">
+        <span>Vistas: <strong id="sumV">—</strong></span>
+        <span>Likes: <strong id="sumL">—</strong></span>
+        <span>Eng. medio: <strong class="hot" id="avgE">—</strong></span>
+      </div>
     </div>
   </div>
-
 </div>
 
-<script src="/radar/radar.js?v=retro2"></script>
+<div class="toast" id="toast"></div>
+
 <script>
-  const CAN_EDIT = {{ 'true' if can_edit else 'false' }};
-  const FORMATOS = {{ formatos|tojson }};
-  const ESTADOS  = {{ estados|tojson }};
+(function(){
+  var root = document.documentElement;
+  var API = '/api/method/marketinghub.www.radar.';
+  var CSRF = '{{ csrf_token }}';
+  var PUEDE_EDITAR = {{ 'true' if can_edit else 'false' }};
 
-  function fmtNum(n) {
-    n = n || 0;
-    if (n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
-    if (n >= 1000)    return (n/1000).toFixed(1).replace(/\.0$/,'') + 'k';
-    return n.toLocaleString('es-PE');
+  /* ---------- tema ---------- */
+  var SUN = "M12 6.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z M12 2v2 M12 20v2 M4.9 4.9l1.4 1.4 M17.7 17.7l1.4 1.4 M2 12h2 M20 12h2 M4.9 19.1l1.4-1.4 M17.7 6.3l1.4-1.4";
+  var MOON = "M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z";
+  function setTheme(t){
+    root.setAttribute('data-theme', t);
+    document.getElementById('themePath').setAttribute('d', t === 'dark' ? SUN : MOON);
+    document.getElementById('themeLabel').textContent = t === 'dark' ? 'Tema claro' : 'Tema oscuro';
+    try{ localStorage.setItem('radar-theme', t); }catch(e){}
   }
-  function fmtDate(s) {
-    if (!s) return '—';
-    try {
-      const d = new Date(s + 'T00:00:00');
-      const dd = String(d.getDate()).padStart(2,'0');
-      const mm = String(d.getMonth()+1).padStart(2,'0');
-      const yy = String(d.getFullYear()).slice(-2);
-      return `${dd}/${mm}/${yy}`;
-    } catch (e) { return s; }
-  }
-  function fmtScrapeo(s) {
-    if (!s) return '—';
-    try {
-      const d = new Date(s.replace(' ', 'T'));
-      const now = new Date();
-      const diffH = (now - d) / 3600000;
-      if (diffH < 1)   return 'hace ' + Math.max(1, Math.round(diffH*60)) + ' min';
-      if (diffH < 24)  return 'hace ' + Math.round(diffH) + ' h';
-      if (diffH < 48)  return 'ayer';
-      const dias = Math.round(diffH / 24);
-      if (dias < 30)   return 'hace ' + dias + ' días';
-      return d.toLocaleDateString('es-PE', {day:'2-digit', month:'short'});
-    } catch (e) { return s; }
-  }
-  function esc(s) {
-    if (s == null) return '';
-    return String(s).replace(/[&<>"']/g, c => ({
-      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
-    })[c]);
-  }
-  function iconTier(orden) {
-    // Ícono por rango de tier: alto (estrella/hacha), medio (rombo), bajo (círculo)
-    if (orden && orden <= 5) {
-      // hacha/warn
-      return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 3.5c3 0 6 2 6.5 5-2.5.6-4.4.2-6.2-1 M13.8 7.5 4.5 16.8l2.7 2.7 9.3-9.3"/></svg>';
-    }
-    if (orden && orden <= 8) {
-      return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8.5 12 4l6 4.5v7L12 20l-6-4.5z"/></svg>';
-    }
-    return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/></svg>';
-  }
-  function iconGuion() {
-    return '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5z M14.5 6.5l3 3"/></svg>';
-  }
-  function iconAnalizar() {
-    return '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M16.2 16.2 20.5 20.5"/></svg>';
-  }
-  function iconLink() {
-    return '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5h5v5 M19 5l-8 8 M18 14v5H5V6h5"/></svg>';
-  }
-  function iconCheck() {
-    return '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
-  }
-
-  window.RadarPubs = {
-    lista: [],
-    tierPorOrden: {},
-    sortBy: 'tier_orden',
-    sortDir: 'asc',
-    seleccionados: new Set(),
-
-    async cargar() {
-      const q = new URLSearchParams(location.search);
-      const args = {limite: 500};
-      if (q.get('fecha_desde')) args.fecha_desde = q.get('fecha_desde');
-      if (q.get('fecha_hasta')) args.fecha_hasta = q.get('fecha_hasta');
-      try {
-        this.lista = await Radar.api('marketinghub.www.radar.publicaciones.index.listar', args);
-      } catch (e) {
-        document.getElementById('pub-body').innerHTML =
-          `<div class="pub-empty-wrap"><div class="t">Error</div><div>${esc(e.message)}</div></div>`;
-        return;
-      }
-      document.getElementById('pub-total').textContent = `${this.lista.length} publicaciones total`;
-      this.render();
-    },
-
-    render() {
-      const q       = document.getElementById('pub-f-search').value.toLowerCase().trim();
-      const comp    = document.getElementById('pub-f-comp').value;
-      const plat    = document.getElementById('pub-f-plat').value;
-      const est     = document.getElementById('pub-f-estado').value;
-      const tierMin = document.getElementById('pub-f-tier').value;
-      const dias    = document.getElementById('pub-f-fecha').value;
-
-      let cutoff = null;
-      if (dias) { cutoff = new Date(); cutoff.setDate(cutoff.getDate() - parseInt(dias)); }
-
-      let items = this.lista.filter(p =>
-        (!q     || (p.titulo_hook || '').toLowerCase().includes(q) || (p.descripcion || '').toLowerCase().includes(q)) &&
-        (!comp  || p.competidor === comp) &&
-        (!plat  || p.plataforma === plat) &&
-        (!est   || p.estado === est) &&
-        (!tierMin || (p.tier_orden && p.tier_orden <= parseInt(tierMin))) &&
-        (!cutoff || (p.fecha_publicacion && new Date(p.fecha_publicacion + 'T00:00:00') >= cutoff))
-      );
-
-      // Ordenar
-      items.sort((a, b) => {
-        const va = a[this.sortBy], vb = b[this.sortBy];
-        if (va == null && vb == null) return 0;
-        if (va == null) return 1;
-        if (vb == null) return -1;
-        const dir = this.sortDir === 'asc' ? 1 : -1;
-        if (typeof va === 'string') return va.localeCompare(vb) * dir;
-        return (va - vb) * dir;
-      });
-
-      document.getElementById('pub-counter').textContent = `${items.length} / ${this.lista.length}`;
-
-      const body = document.getElementById('pub-body');
-      if (!items.length) {
-        body.innerHTML = `<div class="pub-empty-wrap">
-          <div class="t">Sin resultados</div>
-          <div>Ningún post coincide con los filtros aplicados.</div>
-        </div>`;
-        return;
-      }
-      body.innerHTML = items.map(p => this.row(p)).join('');
-      // Actualizar indicador de sort
-      document.querySelectorAll('.pub-head__cell--sortable').forEach(el => {
-        const cur = el.dataset.sort === this.sortBy;
-        el.classList.toggle('is-sorted', cur);
-        // limpiar flechas
-        const dirSpan = el.querySelector('.pub-sort-dir');
-        if (cur) {
-          if (!dirSpan) el.insertAdjacentHTML('beforeend', ` <span class="pub-sort-dir">${this.sortDir === 'asc' ? '↑' : '↓'}</span>`);
-          else dirSpan.textContent = this.sortDir === 'asc' ? '↑' : '↓';
-        } else if (dirSpan) {
-          dirSpan.remove();
-        }
-      });
-    },
-
-    row(p) {
-      const isSel = this.seleccionados.has(p.name);
-      const orden = p.tier_orden || 99;
-      const tierName = (this.tierPorOrden[orden] || {}).nombre || p.tier || '—';
-      let tierMod = '';
-      if (orden <= 5) tierMod = 'pub-tier--top';
-      else if (orden >= 9) tierMod = 'pub-tier--low';
-
-      const plat = (p.plataforma || '?').charAt(0).toUpperCase();
-      const eng = p.engagement_pct || 0;
-      const engMod = eng >= 3 ? 'pub-eng--high' : '';
-
-      let statusMod = '';
-      const est = (p.estado || 'Nuevo');
-      if (est === 'Analizada') statusMod = 'pub-status--analizada';
-      else if (est === 'Guardado') statusMod = 'pub-status--guion';
-      else if (est === 'Descartado') statusMod = 'pub-status--programada';
-
-      const hookText = p.titulo_hook || p.descripcion || '—';
-      const hookHtml = p.url_publicacion
-        ? `<a class="pub-link" href="${esc(p.url_publicacion)}" target="_blank" rel="noopener">
-             <span>${esc(hookText)}</span>${iconLink()}
-           </a>`
-        : `<div class="pub-cell"><span>${esc(hookText)}</span></div>`;
-
-      return `
-        <div class="pub-row pub-body-row ${isSel ? 'is-selected' : ''}" data-name="${esc(p.name)}">
-          <div>
-            <span class="pub-check ${isSel ? 'is-checked' : ''}" data-check="${esc(p.name)}">
-              ${iconCheck()}
-            </span>
-          </div>
-          <div class="pub-tier ${tierMod}">
-            ${iconTier(orden)}
-            <span class="pub-tier__label">${esc(tierName)}</span>
-          </div>
-          <div class="pub-cell"><span class="pub-plat">${plat}</span></div>
-          <div class="pub-cell pub-cell--strong">${esc(p.competidor || '')}</div>
-          <div class="pub-cell pub-cell--date">${fmtDate(p.fecha_publicacion)}</div>
-          ${hookHtml}
-          <div class="pub-cell pub-cell--views">${fmtNum(p.vistas_actual)}</div>
-          <div class="pub-cell pub-cell--num">${fmtNum(p.likes_actual)}</div>
-          <div class="pub-cell pub-cell--num">${fmtNum(p.comentarios_actual)}</div>
-          <div class="pub-cell pub-cell--num">${fmtNum(p.compartidos_actual)}</div>
-          <div class="pub-cell pub-cell--num">${fmtNum(p.guardados_actual)}</div>
-          <div class="pub-cell" style="text-align:right"><span class="pub-eng ${engMod}">${eng.toFixed(2)}%</span></div>
-          <div class="pub-cell pub-cell--muted">${fmtScrapeo(p.fecha_ultimo_scrapeo)}</div>
-          <div class="pub-cell"><span class="pub-status ${statusMod}">${esc(est)}</span></div>
-          <div class="pub-cell--actions">
-            ${CAN_EDIT ? `
-              <button class="pub-btn pub-btn--sm" data-act="guion" data-name="${esc(p.name)}" type="button">
-                ${iconGuion()} Guion
-              </button>
-              <button class="pub-btn pub-btn--sm pub-btn--primary" data-act="analizar" data-name="${esc(p.name)}" type="button">
-                ${iconAnalizar()} Analizar
-              </button>
-            ` : ''}
-          </div>
-        </div>`;
-    },
-
-    ordenar(campo) {
-      if (this.sortBy === campo) {
-        this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
-      } else {
-        this.sortBy = campo;
-        this.sortDir = (campo === 'competidor') ? 'asc' : 'desc';
-      }
-      this.render();
-    },
-
-    limpiarFiltros() {
-      ['pub-f-search','pub-f-comp','pub-f-plat','pub-f-estado','pub-f-tier'].forEach(id => {
-        document.getElementById(id).value = '';
-      });
-      document.getElementById('pub-f-fecha').value = '7';
-      this.render();
-    },
-
-    exportarCSV() {
-      const q       = document.getElementById('pub-f-search').value.toLowerCase().trim();
-      const comp    = document.getElementById('pub-f-comp').value;
-      const plat    = document.getElementById('pub-f-plat').value;
-      const est     = document.getElementById('pub-f-estado').value;
-      const tierMin = document.getElementById('pub-f-tier').value;
-      const dias    = document.getElementById('pub-f-fecha').value;
-      let cutoff = null;
-      if (dias) { cutoff = new Date(); cutoff.setDate(cutoff.getDate() - parseInt(dias)); }
-      const items = this.lista.filter(p =>
-        (!q     || (p.titulo_hook || '').toLowerCase().includes(q) || (p.descripcion || '').toLowerCase().includes(q)) &&
-        (!comp  || p.competidor === comp) &&
-        (!plat  || p.plataforma === plat) &&
-        (!est   || p.estado === est) &&
-        (!tierMin || (p.tier_orden && p.tier_orden <= parseInt(tierMin))) &&
-        (!cutoff || (p.fecha_publicacion && new Date(p.fecha_publicacion + 'T00:00:00') >= cutoff))
-      );
-      if (!items.length) { Radar.toast('Sin datos para exportar', 'error'); return; }
-      const cols = [
-        ['tier', 'Tier'], ['plataforma', 'Plataforma'], ['competidor', 'Competidor'],
-        ['fecha_publicacion', 'Fecha'], ['titulo_hook', 'Título'],
-        ['vistas_actual', 'Vistas'], ['likes_actual', 'Likes'],
-        ['comentarios_actual', 'Coment'], ['compartidos_actual', 'Shares'],
-        ['guardados_actual', 'Guardados'], ['engagement_pct', 'Eng %'],
-        ['es_viral', 'Viral'], ['estado', 'Estado'],
-        ['url_publicacion', 'URL'], ['fecha_ultimo_scrapeo', 'Último scrapeo'],
-      ];
-      const escCsv = v => {
-        if (v == null) return '';
-        const s = String(v).replace(/"/g, '""');
-        return /[,\n"]/.test(s) ? `"${s}"` : s;
-      };
-      let csv = cols.map(c => c[1]).join(',') + '\n';
-      items.forEach(p => { csv += cols.map(([k]) => escCsv(p[k])).join(',') + '\n'; });
-      const blob = new Blob(['﻿' + csv], {type: 'text/csv;charset=utf-8'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const stamp = new Date().toISOString().slice(0,10);
-      a.href = url; a.download = `radar-publicaciones-${stamp}.csv`;
-      document.body.appendChild(a); a.click();
-      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
-      Radar.toast(`${items.length} publicaciones exportadas`, 'success');
-    },
-
-    async hacerGuion(name) {
-      const p = this.lista.find(x => x.name === name);
-      if (!p) return;
-      const hook = p.titulo_hook || name;
-      Radar.modal({
-        title: 'Crear guión inspirado',
-        confirmText: 'Crear y abrir editor',
-        bodyHtml: `
-          <p style="font-size:13px;line-height:1.5;color:var(--muted);margin-bottom:12px;">
-            Se creará un guión nuevo tomando como referencia:
-          </p>
-          <div style="background:var(--raise);padding:12px;border-radius:8px;font-size:12.5px;">
-            <div style="font-weight:600;color:var(--text);">${esc(hook)}</div>
-            <div style="color:var(--muted);margin-top:4px;">
-              ${esc(p.competidor || '')} · ${esc(p.plataforma || '')} · ${esc((p.vistas_actual || 0).toLocaleString('es-PE'))} vistas
-            </div>
-          </div>
-        `,
-        onConfirm: async () => {
-          try {
-            const res = await Radar.api(
-              'marketinghub.www.radar.guiones.index.crear_desde_publicacion',
-              { publicacion_name: name },
-            );
-            Radar.toast('Guión creado', 'success');
-            window.location.href = res.url;
-            return true;
-          } catch (e) {
-            Radar.toast(e.message || 'Error', 'error');
-            return false;
-          }
-        },
-      });
-    },
-
-    analizar(name) {
-      const p = this.lista.find(x => x.name === name);
-      if (!p) return;
-      const formOpts = ['<option value="">— Sin formato —</option>'].concat(
-        FORMATOS.map(f => `<option value="${esc(f)}" ${p.formato === f ? 'selected' : ''}>${esc(f)}</option>`)
-      ).join('');
-      const estOpts = ESTADOS.map(e => `<option value="${esc(e)}" ${p.estado === e ? 'selected' : ''}>${esc(e)}</option>`).join('');
-      Radar.modal({
-        title: 'Analizar publicación',
-        confirmText: 'Guardar análisis',
-        bodyHtml: `
-          <div class="rd-field">
-            <label>Formato</label>
-            <select id="pub-a-formato" class="rd-select">${formOpts}</select>
-          </div>
-          <div class="rd-field">
-            <label>Estado</label>
-            <select id="pub-a-estado" class="rd-select">${estOpts}</select>
-          </div>
-          <div class="rd-field">
-            <label>Elementos a copiar (checklist rápido)</label>
-            <textarea id="pub-a-elementos" class="rd-textarea" placeholder="Ej: hook 3 seg, corte a 0:05, CTA final">${esc(p.elementos_a_copiar || '')}</textarea>
-          </div>
-          <div class="rd-field">
-            <label>Notas de análisis</label>
-            <textarea id="pub-a-notas" class="rd-textarea" placeholder="Hook, storytelling, edición, música, público...">${esc(p.notas_analisis || '')}</textarea>
-          </div>
-        `,
-        onConfirm: async () => {
-          const data = {
-            name: p.name,
-            formato: document.getElementById('pub-a-formato').value,
-            estado: document.getElementById('pub-a-estado').value,
-            elementos_a_copiar: document.getElementById('pub-a-elementos').value,
-            notas_analisis: document.getElementById('pub-a-notas').value,
-          };
-          await Radar.api('marketinghub.www.radar.publicaciones.index.actualizar_analisis', data);
-          Radar.toast('Análisis guardado', 'success');
-          this.cargar();
-        }
-      });
-    },
-  };
-
-  // CRITICAL: aplicar la clase .pub al body REAL de Frappe (no puedo poner
-  // <body> anidado dentro del template porque Frappe ya renderizó el suyo)
-  document.body.classList.add('pub');
-
-  document.addEventListener('DOMContentLoaded', async function() {
-    // Poblar dropdowns
-    try {
-      const opts = await Radar.api('marketinghub.www.radar.publicaciones.index.opciones_filtros');
-      document.getElementById('pub-f-comp').innerHTML =
-        '<option value="">Todos los competidores</option>' +
-        opts.competidores.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-      RadarPubs.tierPorOrden = {};
-      (opts.tiers || []).forEach(t => { RadarPubs.tierPorOrden[t.orden] = t; });
-      const selT = document.getElementById('pub-f-tier');
-      selT.innerHTML = '<option value="">Todos los tiers</option>' +
-        (opts.tiers || []).map(t => `<option value="${t.orden}">${t.orden}. ${esc(t.nombre)}${t.es_viral ? ' 🔥' : ''} o mejor</option>`).join('');
-    } catch (e) { console.error(e); }
-
-    // Query string
-    const q = new URLSearchParams(location.search);
-    for (const [key, elId] of [
-      ['competidor', 'pub-f-comp'],
-      ['plataforma', 'pub-f-plat'],
-      ['estado', 'pub-f-estado'],
-    ]) { if (q.get(key)) { const el = document.getElementById(elId); if (el) el.value = q.get(key); } }
-    if (q.get('fecha_desde') || q.get('fecha_hasta')) {
-      document.getElementById('pub-f-fecha').value = '';
-    }
-
-    RadarPubs.cargar();
-
-    // Listeners de filtros
-    ['pub-f-comp','pub-f-plat','pub-f-estado','pub-f-tier','pub-f-fecha'].forEach(id => {
-      document.getElementById(id).addEventListener('change', () => {
-        // marcar el tier chip como activo si seleccionado
-        if (id === 'pub-f-tier') {
-          const val = document.getElementById(id).value;
-          document.getElementById('pub-wrap-tier').classList.toggle('is-active', !!val);
-        }
-        RadarPubs.render();
-      });
-    });
-    document.getElementById('pub-f-search').addEventListener('input', () => RadarPubs.render());
-
-    // Sort en headers
-    document.querySelectorAll('.pub-head__cell--sortable').forEach(el => {
-      el.addEventListener('click', () => RadarPubs.ordenar(el.dataset.sort));
-    });
-
-    // Botones toolbar
-    document.getElementById('pub-limpiar').addEventListener('click', () => RadarPubs.limpiarFiltros());
-    document.getElementById('pub-csv').addEventListener('click', () => RadarPubs.exportarCSV());
-
-    // Delegación: check individual + botones Guion/Analizar
-    document.getElementById('pub-body').addEventListener('click', function (e) {
-      const chk = e.target.closest('[data-check]');
-      if (chk) {
-        e.preventDefault();
-        const name = chk.dataset.check;
-        if (RadarPubs.seleccionados.has(name)) RadarPubs.seleccionados.delete(name);
-        else RadarPubs.seleccionados.add(name);
-        chk.classList.toggle('is-checked');
-        chk.closest('.pub-body-row').classList.toggle('is-selected');
-        return;
-      }
-      const btn = e.target.closest('[data-act]');
-      if (btn) {
-        e.preventDefault();
-        const act = btn.dataset.act;
-        const name = btn.dataset.name;
-        if (act === 'guion') RadarPubs.hacerGuion(name);
-        else if (act === 'analizar') RadarPubs.analizar(name);
-      }
-    });
-
-    // Checkbox master
-    document.getElementById('pub-check-all').addEventListener('click', function () {
-      const checked = !this.classList.contains('is-checked');
-      this.classList.toggle('is-checked', checked);
-      document.querySelectorAll('#pub-body [data-check]').forEach(el => {
-        el.classList.toggle('is-checked', checked);
-        el.closest('.pub-body-row')?.classList.toggle('is-selected', checked);
-        const name = el.dataset.check;
-        if (checked) RadarPubs.seleccionados.add(name); else RadarPubs.seleccionados.delete(name);
-      });
-    });
-
-    // Toggle tema
-    document.getElementById('theme-toggle').addEventListener('click', function () {
-      const body = document.body;
-      const curr = body.getAttribute('data-theme');
-      body.setAttribute('data-theme', curr === 'dark' ? '' : 'dark');
-      try { localStorage.setItem('pub-theme', body.getAttribute('data-theme') || ''); } catch(e){}
-    });
-    // Restaurar tema
-    try {
-      const saved = localStorage.getItem('pub-theme');
-      if (saved) document.body.setAttribute('data-theme', saved);
-    } catch(e){}
+  var savedT = null; try{ savedT = localStorage.getItem('radar-theme'); }catch(e){}
+  setTheme(savedT || 'light');
+  document.getElementById('theme').addEventListener('click', function(){
+    setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
   });
+
+  /* ---------- sidebar ---------- */
+  function setSide(v){
+    root.setAttribute('data-side', v);
+    try{ localStorage.setItem('radar-side', v); }catch(e){}
+  }
+  var savedS = null; try{ savedS = localStorage.getItem('radar-side'); }catch(e){}
+  setSide(savedS || 'on');
+  document.querySelectorAll('[data-side-toggle]').forEach(function(b){
+    b.addEventListener('click', function(){
+      setSide(root.getAttribute('data-side') === 'on' ? 'off' : 'on');
+    });
+  });
+  document.querySelectorAll('.nav-item[data-href]').forEach(function(b){
+    b.addEventListener('click', function(){ window.location.href = b.dataset.href; });
+  });
+
+  /* ---------- datos ---------- */
+  var DATA = {{ filas_json }};
+  var TOTAL = {{ total }};
+  var TIER_ICON = {
+    alto:  "M13.5 3.5c3 0 6 2 6.5 5-2.5.6-4.4.2-6.2-1M13.8 7.5 4.5 16.8l2.7 2.7 9.3-9.3",
+    medio: "M6 8.5 12 4l6 4.5v7L12 20l-6-4.5z",
+    bajo:  "M5 9.5h14v5H5zM5 9.5c0-1.4 3.1-2.5 7-2.5s7 1.1 7 2.5",
+    llano: "M12 4.5a4.5 4.5 0 0 1 4.5 4.5v3.5a4.5 4.5 0 0 1-9 0V9A4.5 4.5 0 0 1 12 4.5zM12 17v3M10.5 8.5h.01"
+  };
+  function icono(orden){
+    return orden <= 3 ? TIER_ICON.alto : orden <= 6 ? TIER_ICON.medio
+         : orden <= 8 ? TIER_ICON.bajo : TIER_ICON.llano;
+  }
+
+  var sort = {k:"tier", dir:1}, sel = {};
+  function fmt(n){ return n >= 1000 ? (n/1000).toFixed(1).replace(/\.0$/,'') + 'k' : String(n); }
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  function toast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('on');
+    clearTimeout(toast._t); toast._t = setTimeout(function(){ t.classList.remove('on'); }, 2400);
+  }
+
+  function val(id){ return document.getElementById(id).value; }
+
+  function desdeISO(rango){
+    if(rango === 'todo') return '';
+    var dias = rango === '7d' ? 7 : rango === '30d' ? 30 : 90;
+    var d = new Date(); d.setDate(d.getDate() - dias);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function filtered(){
+    var q = val('q').trim().toLowerCase();
+    var tier = val('f-tier'), comp = val('f-comp'), plat = val('f-plat'), est = val('f-estado');
+    var desde = desdeISO(val('f-rango'));
+    return DATA.filter(function(r){
+      return (tier === 'todos' || r.tier === tier)
+        && (comp === 'todos' || r.comp === comp)
+        && (plat === 'todas' || r.plat === plat)
+        && (est === 'todos' || r.estado === est)
+        && (!desde || (r.iso && r.iso >= desde))
+        && (!q || (r.titulo + ' ' + r.comp).toLowerCase().indexOf(q) > -1);
+    });
+  }
+
+  function render(){
+    var rows = filtered().slice();
+    var k = sort.k, dir = sort.dir;
+    rows.sort(function(a,b){
+      if(k === 'tier') return (a.orden - b.orden) * dir;
+      if(k === 'fecha') return String(a.iso).localeCompare(String(b.iso)) * dir;
+      if(k === 'comp') return a.comp.localeCompare(b.comp) * dir;
+      return (a[k] - b[k]) * dir;
+    });
+
+    document.getElementById('rows').innerHTML = rows.map(function(r){
+      var dot = r.dias === 0 ? '' : r.dias <= 4 ? ' warn' : ' bad';
+      return '<div class="tr' + (sel[r.id] ? ' sel' : '') + '" data-id="' + esc(r.id) + '">'
+        + '<div class="td chk" data-check><span class="box"><svg class="ico" viewBox="0 0 24 24" width="9" height="9"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span></div>'
+        + '<div class="td"><span class="tier' + (r.top ? ' top' : '') + '"><svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="' + icono(r.orden) + '"/></svg><span class="chip">' + esc(r.tier) + '</span></span></div>'
+        + '<div class="td c"><span class="red">' + esc(r.plat) + '</span></div>'
+        + '<div class="td comp">' + esc(r.comp) + '</div>'
+        + '<div class="td tnum" style="color:var(--muted)">' + esc(r.fecha) + '</div>'
+        + '<div class="td title" data-open><span>' + esc(r.titulo) + '</span><svg class="ico" viewBox="0 0 24 24" width="11" height="11"><path d="M14 5h5v5M19 5l-8 8M18 14v5H5V6h5"/></svg></div>'
+        + '<div class="td r views tnum">' + fmt(r.v) + '</div>'
+        + '<div class="td inter tnum col-inter" title="Likes · comentarios · shares · guardados"><b>' + r.l + '</b><i>·</i>' + r.c + '<i>·</i>' + r.s + '<i>·</i>' + r.g + '</div>'
+        + '<div class="td r"><span class="eng tnum' + (r.e >= 2.5 ? ' hot' : '') + '">' + r.e.toFixed(2) + '%</span></div>'
+        + '<div class="td sync" title="' + esc(r.sync) + '"><span class="dot' + dot + '"></span>' + esc(r.sync.replace('hace ','').replace('sin datos','—')) + '</div>'
+        + '<div class="td col-state"><span class="state ' + r.cls + '">' + esc(r.estado) + '</span></div>'
+        + '<div class="td acts">'
+          + (PUEDE_EDITAR
+              ? '<button class="act" data-guion title="Crear guion"><svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5zM14.5 6.5l3 3"/></svg></button>'
+                + '<button class="act go" data-analizar title="Marcar como analizada"><svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM16.2 16.2 20.5 20.5"/></svg></button>'
+              : '')
+        + '</div>'
+      + '</div>';
+    }).join('');
+
+    document.getElementById('empty').hidden = rows.length > 0;
+    document.getElementById('visibles').textContent = rows.length;
+    document.getElementById('counter').textContent = rows.length;
+    document.getElementById('sumV').textContent = fmt(rows.reduce(function(a,b){ return a + b.v; }, 0));
+    document.getElementById('sumL').textContent = rows.reduce(function(a,b){ return a + b.l; }, 0);
+    var avg = rows.length ? rows.reduce(function(a,b){ return a + b.e; }, 0) / rows.length : 0;
+    document.getElementById('avgE').textContent = avg.toFixed(2) + '%';
+
+    var n = Object.keys(sel).filter(function(i){ return sel[i]; }).length;
+    document.getElementById('hint').textContent = n ? n + ' seleccionadas' : 'Clic en el encabezado para ordenar';
+    var bulk = document.getElementById('bulk');
+    if(bulk){
+      bulk.hidden = n === 0;
+      bulk.textContent = 'Analizar ' + n + ' seleccionadas';
+    }
+    document.getElementById('all').classList.toggle('on', rows.length > 0 && rows.every(function(r){ return sel[r.id]; }));
+
+    document.querySelectorAll('.th.sortable').forEach(function(th){
+      var on = th.dataset.sort === sort.k;
+      th.classList.toggle('on', on);
+      th.querySelector('path').setAttribute('d', dir === 1 ? 'M6 14l6-5 6 5' : 'M6 10l6 5 6-5');
+    });
+    document.querySelectorAll('[data-filter]').forEach(function(p){
+      var s = p.querySelector('select');
+      p.classList.toggle('on', s.value !== s.dataset.default);
+    });
+  }
+
+  /* ---------- backend ---------- */
+  function llamar(metodo, datos){
+    return fetch(API + metodo, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'X-Frappe-CSRF-Token': CSRF },
+      body: JSON.stringify(datos)
+    }).then(function(r){
+      return r.json().then(function(j){
+        if(!r.ok) throw new Error((j._server_messages && JSON.parse(j._server_messages)[0]) || j.exception || 'Error');
+        return j.message;
+      });
+    });
+  }
+  function fila(id){ return DATA.filter(function(r){ return r.id === id; })[0]; }
+  function marcarAnalizada(ids){
+    return Promise.all(ids.map(function(id){
+      return llamar('publicaciones.index.actualizar_analisis', { name:id, estado:'Analizado' })
+        .then(function(){ var r = fila(id); if(r){ r.estado = 'Analizado'; r.cls = 'ok'; } });
+    }));
+  }
+
+  /* ---------- eventos ---------- */
+  document.querySelectorAll('.filters select, #q').forEach(function(el){
+    el.addEventListener('input', render);
+    el.addEventListener('change', render);
+  });
+  document.getElementById('clear').addEventListener('click', function(){
+    document.querySelectorAll('.filters select').forEach(function(s){ s.value = s.dataset.default; });
+    document.getElementById('q').value = ''; sel = {}; render();
+  });
+  document.querySelectorAll('.th.sortable').forEach(function(th){
+    th.addEventListener('click', function(){
+      var k = th.dataset.sort;
+      sort = {k:k, dir: sort.k === k ? -sort.dir : (k === 'tier' || k === 'comp' || k === 'fecha' ? 1 : -1)};
+      document.getElementById('sortLabel').textContent = th.textContent.trim().toLowerCase();
+      render();
+    });
+  });
+  document.getElementById('all').addEventListener('click', function(){
+    var rows = filtered(), all = rows.every(function(r){ return sel[r.id]; });
+    rows.forEach(function(r){ sel[r.id] = !all; });
+    render();
+  });
+  document.getElementById('rows').addEventListener('click', function(e){
+    var tr = e.target.closest('.tr'); if(!tr) return;
+    var id = tr.dataset.id, row = fila(id);
+    if(e.target.closest('[data-check]')){ sel[id] = !sel[id]; render(); return; }
+    if(e.target.closest('[data-guion]')){
+      llamar('guiones.index.crear_desde_publicacion', { publicacion_name:id })
+        .then(function(){ toast('Guion creado.'); })
+        .catch(function(err){ toast(String(err.message).replace(/<[^>]*>/g, '')); });
+      return;
+    }
+    if(e.target.closest('[data-analizar]')){
+      marcarAnalizada([id])
+        .then(function(){ toast('Publicación analizada.'); render(); })
+        .catch(function(err){ toast(String(err.message).replace(/<[^>]*>/g, '')); });
+      return;
+    }
+    if(e.target.closest('[data-open]')){
+      if(row && row.url) window.open(row.url, '_blank', 'noopener');
+      else toast(row ? row.titulo : '');
+    }
+  });
+  var bulk = document.getElementById('bulk');
+  if(bulk) bulk.addEventListener('click', function(){
+    var ids = Object.keys(sel).filter(function(i){ return sel[i]; });
+    marcarAnalizada(ids)
+      .then(function(){ sel = {}; toast(ids.length + ' publicaciones analizadas.'); render(); })
+      .catch(function(err){ toast(String(err.message).replace(/<[^>]*>/g, '')); });
+  });
+  document.getElementById('csv').addEventListener('click', function(){
+    var rows = filtered();
+    var out = [['Tier','Red','Competidor','Fecha','Título','Vistas','Likes','Comentarios','Shares','Guardados','Eng %','Estado','URL']];
+    rows.forEach(function(r){
+      out.push([r.tier, r.plat, r.comp, r.fecha, r.titulo, r.v, r.l, r.c, r.s, r.g, r.e.toFixed(2), r.estado, r.url]);
+    });
+    var csv = out.map(function(f){
+      return f.map(function(v){ return '"' + String(v).replace(/"/g,'""') + '"'; }).join(',');
+    }).join('\n');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8'}));
+    a.download = 'publicaciones.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('Exportadas ' + rows.length + ' publicaciones a CSV.');
+  });
+
+  render();
+})();
 </script>
 
-<script src="/radar/radar-sidebar.js?v=1"></script>
-
 {% endif %}
-{% endblock %}
+
+</body>
+</html>
