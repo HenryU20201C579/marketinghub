@@ -258,11 +258,23 @@ def obtener_contadores():
 	hace_24h = hoy - timedelta(days=1)
 	fin_semana = hoy + timedelta(days=6)
 
+	# Guiones + Ads (nuevos módulos)
+	try:
+		guiones = frappe.db.count("Guion")
+	except Exception:
+		guiones = 0
+	try:
+		ads = frappe.db.count("Anuncio Competencia", filters={"esta_activo": 1})
+	except Exception:
+		ads = 0
+
 	return {
 		"categorias": frappe.db.count("Categoria Competencia"),
 		"competidores": frappe.db.count("Competidor", filters={"activo": 1}),
 		"cuentas": frappe.db.count("Cuenta Social", filters={"activo": 1}),
 		"publicaciones": frappe.db.count("Publicacion Competencia"),
+		"guiones": guiones,
+		"ads": ads,
 		"virales": frappe.db.count("Publicacion Competencia", filters={"es_viral": 1}),
 		"virales_hoy": frappe.db.count("Publicacion Competencia", filters={
 			"es_viral": 1,

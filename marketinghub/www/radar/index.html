@@ -8,339 +8,277 @@
 {{ super() }}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest"></script>
-<link rel="stylesheet" href="/radar/radar.css">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/radar/radar-retro.css?v=retro1">
 <style>
-  /* Full-width */
-  main.container.my-4,
-  body main.container,
-  .page-content-wrapper main.container {
+  html, body,
+  main.container.my-4, body main.container,
+  .page-content-wrapper main.container,
+  .page_content, .page-container, .page-content, .website-content {
     max-width: none !important; padding: 0 !important; margin: 0 !important;
-  }
-  .page_content { padding: 0 !important; }
-  body { background: #fafbfc; }
-
-  /* Layout con sidebar izquierdo */
-  .rd-shell {
-    display: grid; grid-template-columns: 220px 1fr;
-    min-height: 100vh;
-  }
-
-  /* SIDEBAR */
-  .rd-sidebar {
-    background: #fff; border-right: 1px solid #eef1f5;
-    padding: 16px 12px; display: flex; flex-direction: column;
-    position: sticky; top: 0; height: 100vh; overflow-y: auto;
-  }
-  .rd-sb-brand {
-    display: flex; align-items: center; gap: 8px;
-    padding: 4px 8px 12px; border-bottom: 1px solid #eef1f5;
-    margin-bottom: 12px;
-  }
-  .rd-sb-brand .dot { width: 10px; height: 10px; background: #1f5eff; border-radius: 50%; }
-  .rd-sb-brand .name { font-weight: 700; font-size: 15px; color: #111827; }
-  .rd-sb-brand .date {
-    font-size: 10.5px; color: #9ca3af; margin-left: auto;
-    font-family: 'JetBrains Mono', monospace;
-  }
-  .rd-sb-group-title {
-    font-size: 10.5px; font-weight: 600; color: #9ca3af;
-    text-transform: uppercase; letter-spacing: .06em;
-    margin: 14px 10px 6px;
-  }
-  .rd-sb-link {
-    display: flex; align-items: center; gap: 8px;
-    padding: 7px 10px; border-radius: 5px;
-    font-size: 13px; color: #374151; text-decoration: none;
-    margin-bottom: 1px;
-  }
-  .rd-sb-link:hover { background: #f3f4f6; color: #111827; text-decoration: none; }
-  .rd-sb-link.primary { color: #111827; font-weight: 500; }
-  .rd-sb-link .ico {
-    width: 16px; height: 16px; flex-shrink: 0;
-    display: inline-flex; align-items: center; justify-content: center;
-    color: #6b7280;
-  }
-  .rd-sb-link.primary .ico { color: #1f5eff; }
-  .rd-sb-link .ico i { width: 14px; height: 14px; }
-  .rd-sb-link .badge {
-    margin-left: auto;
-    background: #1f5eff; color: white;
-    font-size: 10px; font-weight: 700; padding: 1px 6px;
-    border-radius: 999px; font-family: 'JetBrains Mono', monospace;
-  }
-
-  .rd-sb-user {
-    margin-top: auto; padding: 10px; border-top: 1px solid #eef1f5;
-    display: flex; align-items: center; gap: 8px;
-    font-size: 11.5px; color: #6b7280;
-  }
-  .rd-sb-user i { width: 14px; height: 14px; }
-
-  /* MAIN */
-  .rd-content { padding: 16px 24px 24px; overflow-x: hidden; }
-
-  /* Stats — 3 tiles compactos */
-  .rd-stats-row {
-    display: flex; gap: 0;
-    background: #fff; border: 1px solid #eef1f5; border-radius: 8px;
-    padding: 10px 8px; margin-bottom: 12px;
-  }
-  .rd-stats-row .st {
-    display: flex; align-items: baseline; gap: 8px;
-    padding: 4px 20px; border-right: 1px solid #f1f3f5;
-    font-size: 13px; color: #6b7280;
-  }
-  .rd-stats-row .st:last-child { border-right: none; }
-  .rd-stats-row .st .n {
-    font-size: 22px; font-weight: 700; color: #111827;
-    font-family: 'JetBrains Mono', monospace;
-  }
-  .rd-stats-row .st.viral .n { color: #dc2626; }
-  .rd-stats-row .st.new .n { color: #ea580c; }
-
-  /* Grid principal */
-  .rd-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-  }
-
-  .rd-card {
-    background: #fff; border: 1px solid #eef1f5; border-radius: 8px;
-    padding: 14px 16px;
-  }
-  .rd-card h3 {
-    font-size: 13px; font-weight: 600; color: #111827;
-    margin: 0 0 12px; display: flex; align-items: center; gap: 8px;
-  }
-  .rd-card h3 .spacer { flex: 1; }
-  .rd-card h3 .sub { font-size: 11px; color: #9ca3af; font-weight: 400; }
-
-  /* Toggle Semana/Mes */
-  .tg {
-    display: inline-flex; padding: 2px; background: #f3f4f6; border-radius: 5px;
-  }
-  .tg button {
-    padding: 3px 10px; font-size: 11px; font-weight: 500; color: #6b7280;
-    background: transparent; border: none; border-radius: 3px;
-    cursor: pointer; font-family: inherit;
-  }
-  .tg button:hover { color: #111827; }
-  .tg button.on { background: #fff; color: #111827; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
-
-  /* Top 10 virales — filas compactas */
-  .rd-top-list { display: flex; flex-direction: column; gap: 3px; max-height: 440px; overflow-y: auto; }
-  .rd-top-item {
-    display: flex; align-items: center; gap: 8px;
-    padding: 6px 8px; border-radius: 5px;
-    text-decoration: none; color: inherit;
-  }
-  .rd-top-item:hover { background: #f9fafb; text-decoration: none; color: inherit; }
-  .rd-top-rank {
-    width: 22px; height: 22px; border-radius: 50%;
-    display: inline-flex; align-items: center; justify-content: center;
-    background: #f3f4f6; color: #6b7280;
-    font-weight: 700; font-size: 11px; flex-shrink: 0;
-    font-family: 'JetBrains Mono', monospace;
-  }
-  .rd-top-item.rank-1 .rd-top-rank { background: #ffd700; color: #78350f; }
-  .rd-top-item.rank-2 .rd-top-rank { background: #d4d4d8; color: #3f3f46; }
-  .rd-top-item.rank-3 .rd-top-rank { background: #f4a261; color: #7c2d12; }
-  .rd-top-color { width: 3px; height: 26px; border-radius: 2px; flex-shrink: 0; }
-  .rd-top-body { flex: 1; min-width: 0; }
-  .rd-top-hook {
-    font-size: 12.5px; font-weight: 500; color: #111827;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .rd-top-meta { font-size: 11px; color: #6b7280; margin-top: 1px; }
-  .rd-top-metrics {
-    text-align: right; font-size: 11px; color: #6b7280;
-    font-family: 'JetBrains Mono', monospace; white-space: nowrap; flex-shrink: 0;
-  }
-  .rd-top-metrics b { color: #111827; display: block; font-size: 12px; }
-
-  /* Virales por competidor — barras horizontales apiladas 3 segmentos */
-  .rd-vpc { display: flex; flex-direction: column; gap: 8px; }
-  .rd-vpc .row {
-    display: grid; grid-template-columns: 90px 1fr 70px; gap: 8px; align-items: center;
-    font-size: 12px;
-  }
-  .rd-vpc .name {
-    color: #111827; font-weight: 500;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    display: flex; align-items: center; gap: 6px;
-  }
-  .rd-vpc .name .dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
-  .rd-vpc .bar {
-    display: flex; height: 18px; background: #f3f4f6; border-radius: 3px; overflow: hidden;
-  }
-  .rd-vpc .bar .seg { display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: 600; }
-  .rd-vpc .bar .seg-v { background: #dc2626; }
-  .rd-vpc .bar .seg-c { background: #f59e0b; }
-  .rd-vpc .bar .seg-b { background: #cbd5e1; color: #475569; }
-  .rd-vpc .cnt { color: #6b7280; font-family: 'JetBrains Mono', monospace; font-size: 11px; text-align: right; }
-  .rd-vpc-legend {
-    display: flex; gap: 12px; margin-top: 8px; padding-top: 8px;
-    border-top: 1px solid #f1f3f5; font-size: 10.5px; color: #6b7280; flex-wrap: wrap;
-  }
-  .rd-vpc-legend span { display: inline-flex; align-items: center; gap: 4px; }
-  .rd-vpc-legend .dot { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
-
-  /* Cuándo publican — lista ordenada */
-  .rd-dow-list { display: flex; flex-direction: column; gap: 4px; }
-  .rd-dow-list .row {
-    display: grid; grid-template-columns: 90px 1fr 40px; gap: 8px; align-items: center;
-    font-size: 12px;
-  }
-  .rd-dow-list .n { color: #111827; font-weight: 500; }
-  .rd-dow-list .bar {
-    height: 14px; background: #f3f4f6; border-radius: 3px; overflow: hidden;
-  }
-  .rd-dow-list .bar > div {
-    height: 100%; background: linear-gradient(90deg, #3b82f6, #1e40af);
-  }
-  .rd-dow-list .c {
-    color: #6b7280; font-family: 'JetBrains Mono', monospace;
-    text-align: right; font-size: 11px;
-  }
-
-  /* Responsive */
-  @media (max-width: 900px) {
-    .rd-shell { grid-template-columns: 1fr; }
-    .rd-sidebar { position: static; height: auto; }
-    .rd-grid { grid-template-columns: 1fr; }
-    .rd-stats-row { flex-wrap: wrap; }
+    background: var(--bg) !important;
   }
 </style>
 {% endblock %}
 
 {% block page_content %}
 {% if no_access %}
-<div class="rd-na-screen">
-  <div class="rd-na-card">
-    <div class="rd-na-brand"><span class="rd-na-dot"></span><span>Radar de Competencia · Acceso denegado</span></div>
-    <div class="rd-na-body">
-      Se requieren los roles:
-      <ul class="rd-na-roles">
-        {% for r in required_roles %}<li><code>{{ r }}</code></li>{% endfor %}
-      </ul>
-    </div>
+<div style="padding: 60px 20px; max-width: 500px; margin: 60px auto; text-align: center;
+            background: #fff; border: 1px solid #ddd; border-radius: 12px;">
+  <div style="font-size: 15px; font-weight: 700; margin-bottom: 10px;">
+    Radar de Competencia · Acceso denegado
+  </div>
+  <div style="color: #666; font-size: 13px;">
+    Se requieren los roles:
+    <ul style="margin: 10px 0; list-style: none; padding: 0;">
+      {% for r in required_roles %}
+      <li><code style="background: #eee; padding: 2px 8px; border-radius: 4px;">{{ r }}</code></li>
+      {% endfor %}
+    </ul>
   </div>
 </div>
 {% else %}
-<div class="rd-shell">
 
-  <!-- =========================== SIDEBAR =========================== -->
-  <aside class="rd-sidebar">
-    <div class="rd-sb-brand">
-      <span class="dot"></span>
-      <span class="name">Radar</span>
-      <span class="date" id="rd-fecha-hoy">–</span>
+<div class="rad-app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="rad-side">
+    <div class="rad-side__top">
+      <span class="rad-brand">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M12 11.4a.6.6 0 1 0 0 1.2.6.6 0 0 0 0-1.2z"/></svg>
+        <span class="rad-brand__name">Radar</span>
+      </span>
+      <span class="rad-side__date" id="rad-fecha">–</span>
     </div>
 
-    <div class="rd-sb-group-title">Contenido</div>
-    <a href="/radar/publicaciones" class="rd-sb-link primary">
-      <span class="ico"><i data-lucide="flame"></i></span> Publicaciones
-    </a>
-    <a href="/radar/guiones" class="rd-sb-link primary">
-      <span class="ico"><i data-lucide="pen-line"></i></span> Guiones
-      <span class="badge" id="rd-badge-guiones" style="display:none;">0</span>
-    </a>
-    <a href="/radar/comparativa" class="rd-sb-link primary">
-      <span class="ico"><i data-lucide="calendar"></i></span> Calendario pubs
-    </a>
-    <a href="/radar/guiones?vista=calendario" class="rd-sb-link primary">
-      <span class="ico"><i data-lucide="calendar-clock"></i></span> Agenda guiones
-    </a>
-    <a href="/radar/ads" class="rd-sb-link primary">
-      <span class="ico"><i data-lucide="megaphone"></i></span> Ads Library
-    </a>
+    <div class="rad-side__body">
+      <div class="rad-navgroup">
+        <div class="rad-navgroup__title">Contenido</div>
 
-    <div class="rd-sb-group-title">Configuración</div>
-    <a href="/radar/competidores" class="rd-sb-link">
-      <span class="ico"><i data-lucide="users"></i></span> Competidores
-    </a>
-    <a href="/radar/cuentas" class="rd-sb-link">
-      <span class="ico"><i data-lucide="at-sign"></i></span> Cuentas
-    </a>
-    <a href="/radar/categorias" class="rd-sb-link">
-      <span class="ico"><i data-lucide="tag"></i></span> Categorías
-    </a>
-    <a href="/radar/settings" class="rd-sb-link">
-      <span class="ico"><i data-lucide="settings"></i></span> Ajustes
-    </a>
+        <a class="rad-nav is-active" href="/radar/publicaciones">
+          <span class="rad-nav__label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5s4.5 3.6 4.5 8a4.5 4.5 0 0 1-9 0c0-1.6.8-2.9 1.6-3.8 0 1.6.9 2.4 1.6 2.4 1 0 1.3-1 1.3-2.3 0-1.6-.5-3.1-1-4.3z M8 15.5a4 4 0 0 0 8 0"/></svg>
+            <span>Publicaciones</span>
+          </span>
+          <span class="rad-nav__count rad-nav__count--accent" data-count="publicaciones">–</span>
+        </a>
 
-    <div class="rd-sb-user">
-      <i data-lucide="user-round"></i>
-      <span>{{ usuario }}</span>
+        <a class="rad-nav" href="/radar/guiones">
+          <span class="rad-nav__label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5z M14.5 6.5l3 3"/></svg>
+            <span>Guiones</span>
+          </span>
+          <span class="rad-nav__count" data-count="guiones"></span>
+        </a>
+
+        <a class="rad-nav" href="/radar/comparativa">
+          <span class="rad-nav__label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15v13.5h-15z M8.5 3.5v4 M15.5 3.5v4 M4.5 11h15"/></svg>
+            <span>Calendario pubs</span>
+          </span>
+          <span class="rad-nav__count"></span>
+        </a>
+
+        <a class="rad-nav" href="/radar/guiones?vista=calendario">
+          <span class="rad-nav__label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6.5h12 M8 12h12 M8 17.5h12 M4 6.5h.01 M4 12h.01 M4 17.5h.01"/></svg>
+            <span>Agenda guiones</span>
+          </span>
+          <span class="rad-nav__count"></span>
+        </a>
+
+        <a class="rad-nav" href="/radar/ads">
+          <span class="rad-nav__label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16v11H4z M4 10h16 M8 6.5v11"/></svg>
+            <span>Ads Library</span>
+          </span>
+          <span class="rad-nav__count" data-count="ads"></span>
+        </a>
+      </div>
+
+      <div class="rad-navgroup">
+        <div class="rad-navgroup__title">Configuración</div>
+
+        <a class="rad-nav" href="/radar/competidores">
+          <span class="rad-nav__label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5v17 M6.5 4.5h11l-2.2 3.8 2.2 3.7h-11"/></svg>
+            <span>Competidores</span>
+          </span>
+          <span class="rad-nav__count" data-count="competidores"></span>
+        </a>
+
+        <a class="rad-nav" href="/radar/cuentas">
+          <span class="rad-nav__label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7.8a4.2 4.2 0 1 0 0 8.4 4.2 4.2 0 0 0 0-8.4z M16.2 7.8v5.1a3 3 0 0 0 5.3 1.9 M20 15.9A9 9 0 1 1 18.4 5.6"/></svg>
+            <span>Cuentas</span>
+          </span>
+          <span class="rad-nav__count" data-count="cuentas"></span>
+        </a>
+
+        <a class="rad-nav" href="/radar/categorias">
+          <span class="rad-nav__label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h7l9 9-6.5 6.5-9-9z M7.6 8.1h.01"/></svg>
+            <span>Categorías</span>
+          </span>
+          <span class="rad-nav__count" data-count="categorias"></span>
+        </a>
+
+        <a class="rad-nav" href="/radar/settings">
+          <span class="rad-nav__label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8z M19.4 14.2a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1v.2a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.8-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H3.4a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 2.7-1.1V3.4a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7h.2a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.4 1.1z"/></svg>
+            <span>Ajustes</span>
+          </span>
+          <span class="rad-nav__count"></span>
+        </a>
+      </div>
+    </div>
+
+    <div class="rad-side__foot">
+      <button class="rad-themebtn" id="theme-toggle" type="button">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
+        <span id="rad-theme-label">Tema oscuro</span>
+      </button>
     </div>
   </aside>
 
-  <!-- =========================== CONTENT =========================== -->
-  <main class="rd-content">
+  <!-- ============ MAIN ============ -->
+  <main class="rad-main">
 
-    <!-- Stats: 3 tiles -->
-    <section class="rd-stats-row" id="rd-stats">
-      <div class="st"><span class="n" data-key="publicaciones">–</span> Publicaciones</div>
-      <div class="st viral"><span class="n" data-key="virales_hoy">–</span> 🔥 Virales hoy</div>
-      <div class="st new"><span class="n" data-key="nuevos">–</span> ✨ Sin analizar</div>
-    </section>
-
-    <!-- Grid 2 columnas -->
-    <div class="rd-grid">
-      <!-- Izq: Top virales -->
-      <div class="rd-card">
-        <h3>
-          🔥 Top 10 virales
-          <div class="spacer"></div>
-          <div class="tg" id="rd-top-range">
-            <button data-dias="7">Semana</button>
-            <button class="on" data-dias="30">Mes</button>
-          </div>
-        </h3>
-        <div class="rd-top-list" id="rd-top-list">
-          <div style="text-align:center;color:#9ca3af;padding:20px;font-size:12px;">Cargando…</div>
-        </div>
-      </div>
-
-      <!-- Der: Virales por comp + Cuándo publican -->
-      <div style="display:flex;flex-direction:column;gap:12px;">
-        <div class="rd-card">
-          <h3>📊 Virales por competidor <span class="sub">últimos 30 días</span></h3>
-          <div class="rd-vpc" id="rd-vpc">
-            <div style="text-align:center;color:#9ca3af;padding:16px;font-size:12px;">Cargando…</div>
-          </div>
-          <div class="rd-vpc-legend">
-            <span><span class="dot" style="background:#dc2626;"></span>Viral (Dragón · Cetro · Hachón)</span>
-            <span><span class="dot" style="background:#f59e0b;"></span>Casi viral (tier 6-7)</span>
-            <span><span class="dot" style="background:#cbd5e1;"></span>Bajo (tier 8-10)</span>
-          </div>
+    <div class="rad-topbar">
+      <div class="rad-kpis">
+        <div class="rad-kpi">
+          <span class="rad-kpi__value" data-kpi="publicaciones">–</span>
+          <span class="rad-kpi__label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h7l4.5 4.5v12h-11.5z M13.5 3.5V8H18"/></svg>
+            <span>Publicaciones</span>
+          </span>
         </div>
 
-        <div class="rd-card">
-          <h3>📆 Cuándo publican tus competidores <span class="sub">últimos 90 días</span></h3>
-          <div class="rd-dow-list" id="rd-dow">
-            <div style="text-align:center;color:#9ca3af;padding:16px;font-size:12px;">Cargando…</div>
-          </div>
+        <div class="rad-kpi">
+          <span class="rad-kpi__value rad-kpi__value--muted" data-kpi="virales_hoy">–</span>
+          <span class="rad-kpi__label">
+            <svg class="is-top" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5s4.5 3.6 4.5 8a4.5 4.5 0 0 1-9 0c0-1.6.8-2.9 1.6-3.8 0 1.6.9 2.4 1.6 2.4 1 0 1.3-1 1.3-2.3 0-1.6-.5-3.1-1-4.3z M8 15.5a4 4 0 0 0 8 0"/></svg>
+            <span>Virales hoy</span>
+          </span>
+        </div>
+
+        <div class="rad-kpi">
+          <span class="rad-kpi__value rad-kpi__value--accent" data-kpi="nuevos">–</span>
+          <span class="rad-kpi__label">
+            <svg class="is-accent" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v4 M12 16.5v4 M3.5 12h4 M16.5 12h4 M6 6l2.5 2.5 M15.5 15.5 18 18 M18 6l-2.5 2.5 M8.5 15.5 6 18"/></svg>
+            <span>Sin analizar</span>
+          </span>
+        </div>
+
+        <div class="rad-kpis__cta">
+          <a class="rad-btn rad-btn--primary" href="/radar/publicaciones?estado=Nuevo">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M16.2 16.2 20.5 20.5"/></svg>
+            <span id="rad-cta-analizar">Analizar</span>
+          </a>
         </div>
       </div>
     </div>
 
+    <div class="rad-content">
+      <div class="rad-cols">
+
+        <!-- ---- Top 10 virales ---- -->
+        <section class="rad-col--main rad-card">
+          <div class="rad-card__head">
+            <span class="rad-card__title">
+              <svg class="is-top" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 14.6 9l6 .9-4.3 4.2 1 6-5.3-2.8-5.3 2.8 1-6L3.4 9.9l6-.9z"/></svg>
+              Top 10 virales
+            </span>
+            <div class="rad-seg" id="rad-top-range">
+              <button class="rad-seg__item" type="button" data-dias="7">Semana</button>
+              <button class="rad-seg__item is-on" type="button" data-dias="30">Mes</button>
+            </div>
+          </div>
+
+          <div id="rad-top-list"></div>
+
+          <div class="rad-card__foot">
+            <span id="rad-top-foot">–</span>
+            <a href="/radar/publicaciones">Ver todas →</a>
+          </div>
+        </section>
+
+        <!-- ---- Columna derecha ---- -->
+        <div class="rad-col--side">
+
+          <section class="rad-card">
+            <div class="rad-card__head">
+              <span class="rad-card__title">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V9.5 M10 20V4.5 M16 20v-7 M21 20H3"/></svg>
+                Virales por competidor
+              </span>
+              <span class="rad-card__sub">últimos 30 días</span>
+            </div>
+            <div class="rad-card__body" id="rad-vpc-body">
+              <div style="text-align:center;color:var(--muted);font-size:12px;padding:16px;">Cargando…</div>
+            </div>
+          </section>
+
+          <section class="rad-card">
+            <div class="rad-card__head">
+              <span class="rad-card__title">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15v13.5h-15z M8.5 3.5v4 M15.5 3.5v4 M4.5 11h15"/></svg>
+                Cuándo publican tus competidores
+              </span>
+              <span class="rad-card__sub">últimos 90 días</span>
+            </div>
+            <div class="rad-card__body" style="gap:8px" id="rad-dow-body">
+              <div style="text-align:center;color:var(--muted);font-size:12px;padding:16px;">Cargando…</div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
 
-<script src="/radar/radar.js"></script>
+<script src="/radar/radar.js?v=retro3"></script>
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    if (window.lucide) lucide.createIcons();
-    if (window.RadarDash) RadarDash.init();
-    // Fecha en sidebar
+  document.body.classList.add('rad');
+  document.addEventListener('DOMContentLoaded', function () {
+    // Fecha DD/MM
     const hoy = new Date();
     const dd = String(hoy.getDate()).padStart(2,'0');
     const mm = String(hoy.getMonth()+1).padStart(2,'0');
-    const el = document.getElementById('rd-fecha-hoy');
+    const el = document.getElementById('rad-fecha');
     if (el) el.textContent = `${dd}/${mm}`;
+
+    // Marcar el link activo en el sidebar según ruta
+    const path = window.location.pathname;
+    document.querySelectorAll('.rad-nav').forEach(a => {
+      a.classList.remove('is-active');
+      const href = a.getAttribute('href') || '';
+      if (href === '/radar' && path === '/radar') a.classList.add('is-active');
+      // En dashboard ninguno debe estar activo — dejar el default
+    });
+    // En dashboard limpio: sin nav activo (evitar el default en Publicaciones)
+    document.querySelectorAll('.rad-nav.is-active').forEach(a => a.classList.remove('is-active'));
+
+    // Toggle tema
+    const tt = document.getElementById('theme-toggle');
+    const themeLabel = document.getElementById('rad-theme-label');
+    function setTema(t) {
+      if (t === 'dark') { document.body.dataset.theme = 'dark'; themeLabel.textContent = 'Tema claro'; }
+      else              { document.body.dataset.theme = '';     themeLabel.textContent = 'Tema oscuro'; }
+    }
+    if (tt) tt.addEventListener('click', function () {
+      const c = document.body.dataset.theme === 'dark' ? '' : 'dark';
+      setTema(c);
+      try { localStorage.setItem('rad-theme', c); } catch(e){}
+    });
+    try {
+      const saved = localStorage.getItem('rad-theme');
+      if (saved) setTema(saved);
+    } catch(e){}
+
+    if (window.RadarDash) RadarDash.init();
   });
 </script>
+
 {% endif %}
 {% endblock %}

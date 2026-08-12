@@ -1,0 +1,313 @@
+/* ==========================================================================
+   Radar — hoja de estilos del panel
+   Uso:  <link rel="stylesheet" href="radar.css">
+         <body class="rad">                    -> claro (papel cálido)
+         <body class="rad" data-theme="dark">  -> oscuro
+   Fuente: Public Sans (400/500/600/700)
+   ========================================================================== */
+
+/* ---------- 1. Tokens ---------- */
+:root,
+.rad {
+  --bg:#E9EAE6;
+  --panel:#F7F7F4;
+  --raise:#EFEFEB;
+  --line:#D2D3CD;
+  --hair:#E2E3DE;
+  --text:#17191B;
+  --muted:#4E5358;
+  --faint:#61666B;
+  --accent:#008060;
+  --accent-2:#006B51;
+  --accent-soft:rgba(0,128,96,0.10);
+  --onaccent:#FFFFFF;
+  --warn:#8A4B12;
+  --warn-soft:rgba(138,75,18,0.12);
+  --top:#8A5A0B;
+  --top-soft:rgba(196,140,20,0.16);
+  --info:#4E5358;
+  --info-soft:rgba(78,83,88,0.10);
+  --shadow:0 1px 2px rgba(0,0,0,0.06);
+}
+
+.rad[data-theme="dark"] {
+  --bg:#0C0D0D;
+  --panel:#151616;
+  --raise:#1D1E1E;
+  --line:#2E3030;
+  --hair:#232424;
+  --text:#E4E5E5;
+  --muted:#A8AAAA;
+  --faint:#8C8E8E;
+  --accent:#00A47C;
+  --accent-2:#00C08B;
+  --accent-soft:rgba(0,164,124,0.14);
+  --onaccent:#08120E;
+  --warn:#E3A75C;
+  --warn-soft:rgba(227,167,92,0.14);
+  --top:#E8B84B;
+  --top-soft:rgba(232,184,75,0.16);
+  --info:#A8AAAA;
+  --info-soft:rgba(168,170,170,0.12);
+  --shadow:none;
+}
+
+/* ---------- 2. Base ---------- */
+body.rad, .rad {
+  margin:0;
+  font-family:"Public Sans", system-ui, sans-serif !important;
+  background:var(--bg) !important;
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+}
+body.rad *, .rad * { font-family:"Public Sans", system-ui, sans-serif !important; }
+body.rad a, .rad a { color:var(--accent); text-decoration:none; }
+.rad a:hover { color:var(--accent-2); text-decoration:underline; }
+.rad ::-webkit-scrollbar { width:10px; height:10px; }
+.rad ::-webkit-scrollbar-track { background:transparent; }
+.rad ::-webkit-scrollbar-thumb { background:var(--line); border-radius:10px; }
+
+.rad-app {
+  height:100vh; min-height:640px; overflow:hidden; box-sizing:border-box;
+  display:flex; background:var(--bg); color:var(--text);
+}
+
+/* ---------- 3. Sidebar ---------- */
+.rad-side {
+  width:222px; flex:none; background:var(--panel);
+  border-right:1px solid var(--line); display:flex; flex-direction:column;
+}
+.rad-side__top {
+  padding:16px 16px 14px; display:flex; align-items:center; justify-content:space-between;
+  gap:10px; border-bottom:1px solid var(--hair);
+}
+.rad-brand { display:flex; align-items:center; gap:9px; min-width:0; }
+.rad-brand svg { color:var(--accent); }
+.rad-brand__name { font-size:16px; font-weight:700; letter-spacing:-0.02em; }
+.rad-side__date { font-size:12px; font-variant-numeric:tabular-nums; color:var(--faint); }
+.rad-side__body { flex:1; overflow:auto; padding:14px 10px; display:flex; flex-direction:column; gap:18px; }
+.rad-navgroup { display:flex; flex-direction:column; gap:2px; }
+.rad-navgroup__title {
+  font-size:11px; font-weight:600; letter-spacing:0.07em; text-transform:uppercase;
+  color:var(--faint); padding:4px 10px 6px;
+}
+.rad-nav {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:8px 10px; border-radius:8px; font-size:13px; font-weight:500;
+  color:var(--muted); cursor:pointer;
+}
+.rad-nav:hover { background:var(--raise); color:var(--text); }
+.rad-nav.is-active { background:var(--accent-soft); color:var(--text); font-weight:600; }
+.rad-nav.is-active svg { color:var(--accent); }
+.rad-nav__label { display:flex; align-items:center; gap:10px; min-width:0; }
+.rad-nav__label span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rad-nav__count { font-size:11px; font-weight:600; font-variant-numeric:tabular-nums; color:var(--faint); }
+.rad-nav__count--accent { color:var(--accent); }
+.rad-side__foot { padding:12px; border-top:1px solid var(--hair); }
+.rad-themebtn {
+  display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:8px;
+  font-family:inherit; font-size:13px; color:var(--muted);
+  background:transparent; border:none; cursor:pointer; width:100%;
+}
+.rad-themebtn:hover { background:var(--raise); color:var(--text); }
+
+/* ---------- 4. Main ---------- */
+.rad-main { flex:1; min-width:0; display:flex; flex-direction:column; min-height:0; }
+.rad-topbar { flex:none; padding:16px 20px 0; }
+.rad-kpis {
+  display:flex; align-items:stretch; flex-wrap:wrap;
+  border-radius:12px; border:1px solid var(--line); background:var(--panel);
+  box-shadow:var(--shadow); overflow:hidden;
+}
+.rad-kpi {
+  flex:1 1 200px; min-width:0; display:flex; align-items:center; gap:12px;
+  padding:16px 20px; border-right:1px solid var(--hair); cursor:pointer;
+}
+.rad-kpi:hover { background:var(--raise); }
+.rad-kpi__value {
+  font-size:26px; font-weight:700; line-height:1; letter-spacing:-0.03em;
+  font-variant-numeric:tabular-nums;
+}
+.rad-kpi__value--muted { color:var(--muted); }
+.rad-kpi__value--accent { color:var(--accent); }
+.rad-kpi__label { display:flex; align-items:center; gap:7px; font-size:13px; color:var(--muted); min-width:0; }
+.rad-kpi__label svg { flex:none; color:var(--muted); }
+.rad-kpi__label svg.is-top { color:var(--top); }
+.rad-kpi__label svg.is-accent { color:var(--accent); }
+.rad-kpis__cta { flex:none; display:flex; align-items:center; padding:12px 16px; }
+
+.rad-content { flex:1; min-height:0; overflow:auto; padding:16px 20px 24px; }
+.rad-cols { display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
+.rad-col--main { flex:1.25 1 460px; min-width:0; }
+.rad-col--side { flex:1 1 380px; min-width:0; display:flex; flex-direction:column; gap:16px; }
+
+/* ---------- 5. Tarjetas ---------- */
+.rad-card {
+  border-radius:12px; border:1px solid var(--line); background:var(--panel);
+  box-shadow:var(--shadow); overflow:hidden;
+}
+.rad-card__head {
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:14px 18px; border-bottom:1px solid var(--hair);
+}
+.rad-card__title {
+  display:flex; align-items:center; gap:9px; font-size:14px; font-weight:700; letter-spacing:-0.01em;
+}
+.rad-card__title svg { color:var(--accent); }
+.rad-card__title svg.is-top { color:var(--top); }
+.rad-card__sub { font-size:12px; color:var(--muted); }
+.rad-card__body { padding:16px 18px; display:flex; flex-direction:column; gap:14px; }
+.rad-card__foot {
+  padding:11px 18px; background:var(--raise);
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; flex-wrap:wrap; font-size:12px; color:var(--muted);
+}
+.rad-card__foot a { font-weight:600; }
+
+/* ---------- 6. Segmented (Semana / Mes) ---------- */
+.rad-seg { display:flex; gap:3px; padding:3px; border-radius:9px; background:var(--raise); border:1px solid var(--hair); }
+.rad-seg__item {
+  padding:5px 13px; border-radius:6px; font-family:inherit; font-size:12px; font-weight:600;
+  color:var(--muted); background:transparent; border:none; cursor:pointer;
+}
+.rad-seg__item:hover { color:var(--text); }
+.rad-seg__item.is-on { color:var(--text); background:var(--panel); box-shadow:0 1px 2px rgba(0,0,0,0.12); }
+
+/* ---------- 7. Botones ---------- */
+.rad-btn {
+  height:34px; box-sizing:border-box; padding:0 16px;
+  display:inline-flex; align-items:center; gap:7px; border-radius:8px;
+  border:1px solid var(--line); background:var(--panel);
+  font-family:inherit; font-size:13px; font-weight:600; color:var(--text);
+  cursor:pointer; white-space:nowrap;
+}
+.rad-btn:hover { border-color:var(--accent); color:var(--accent); }
+.rad-btn--primary { border-color:transparent; background:var(--accent); color:var(--onaccent); }
+.rad-btn--primary:hover { background:var(--accent-2); border-color:transparent; color:var(--onaccent); }
+
+/* ---------- 8. Top virales ---------- */
+.rad-viral {
+  display:flex; align-items:center; gap:14px; padding:11px 18px;
+  border-bottom:1px solid var(--hair); cursor:pointer;
+}
+.rad-viral:hover { background:var(--raise); }
+.rad-viral__rank {
+  flex:none; width:24px; height:24px; border-radius:999px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:700; font-variant-numeric:tabular-nums;
+  color:var(--muted); background:transparent; border:1px solid var(--line);
+}
+.rad-viral__rank--top { color:var(--top); background:var(--top-soft); border-color:var(--top-soft); }
+.rad-viral__bar { flex:none; width:3px; align-self:stretch; border-radius:3px; background:var(--hair); }
+.rad-viral__bar--viral { background:var(--top); }
+.rad-viral__bar--casi { background:var(--accent); }
+.rad-viral__text { flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; }
+.rad-viral__title { font-size:13px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rad-viral__meta { font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rad-viral__nums { flex:none; display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+.rad-viral__views { font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-0.01em; }
+.rad-viral__eng { font-size:12px; font-variant-numeric:tabular-nums; color:var(--muted); }
+.rad-viral__eng--high { color:var(--accent); }
+
+/* ---------- 9. Barras de competidor ---------- */
+.rad-comp { display:flex; align-items:center; gap:12px; }
+.rad-comp__name {
+  flex:none; width:78px; display:flex; align-items:center; gap:7px;
+  font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.rad-comp__dot { width:8px; height:8px; flex:none; border-radius:3px; background:var(--top); }
+.rad-comp__dot--accent { background:var(--accent); }
+.rad-comp__track {
+  flex:1; min-width:0; display:flex; height:18px;
+  border-radius:6px; overflow:hidden; background:var(--raise);
+}
+.rad-comp__viral {
+  background:var(--top); display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700; color:var(--panel);
+}
+.rad-comp__casi {
+  background:var(--accent-soft); display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:600; color:var(--muted);
+}
+.rad-comp__sum { flex:none; font-size:12px; font-variant-numeric:tabular-nums; color:var(--muted); }
+
+.rad-legend { display:flex; gap:14px; flex-wrap:wrap; padding-top:12px; border-top:1px solid var(--hair); }
+.rad-legend__item { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); }
+.rad-legend__sw { width:9px; height:9px; border-radius:3px; }
+
+/* ---------- 10. Días de la semana ---------- */
+.rad-day { display:flex; align-items:center; gap:12px; }
+.rad-day__label { flex:none; width:76px; font-size:13px; color:var(--muted); }
+.rad-day__label--top { font-weight:600; color:var(--text); }
+.rad-day__label--zero { color:var(--faint); }
+.rad-day__track { flex:1; min-width:0; height:16px; border-radius:6px; background:var(--raise); overflow:hidden; }
+.rad-day__fill { display:block; height:100%; border-radius:6px; background:var(--accent-soft); }
+.rad-day__fill--top { background:var(--accent); }
+.rad-day__n { flex:none; width:22px; text-align:right; font-size:12px; font-variant-numeric:tabular-nums; color:var(--muted); }
+
+.rad-note {
+  margin-top:6px; padding:12px 14px; border-radius:8px;
+  background:var(--accent-soft); border-left:3px solid var(--accent);
+  font-size:12px; line-height:1.6; color:var(--text);
+}
+
+/* ---------- 11. Toast ---------- */
+.rad-toast {
+  position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
+  padding:11px 20px; border-radius:9px; font-size:13px; font-weight:600;
+  color:var(--onaccent); background:var(--accent);
+  box-shadow:0 14px 34px rgba(0,0,0,0.3);
+  display:flex; align-items:center; gap:9px; z-index:60;
+}
+.rad-toast::before { content:""; width:6px; height:6px; border-radius:999px; background:var(--onaccent); opacity:0.7; }
+
+/* ---------- 12. Modal ---------- */
+.rad-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.45);
+  display:flex; align-items:flex-start; justify-content:center; padding:48px 20px; z-index:80;
+}
+.rad-modal {
+  width:600px; max-width:94vw; border-radius:12px;
+  background:var(--bg); border:1px solid var(--line);
+  box-shadow:0 30px 70px rgba(0,0,0,0.35); overflow:hidden;
+}
+.rad-modal__head {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:12px 18px; border-bottom:1px solid var(--line); background:var(--panel);
+  font-size:12px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:var(--muted);
+}
+.rad-modal__close {
+  width:26px; height:26px; border-radius:7px;
+  display:flex; align-items:center; justify-content:center; color:var(--muted); cursor:pointer;
+}
+.rad-modal__close:hover { background:var(--raise); color:var(--text); }
+.rad-modal__body { padding:24px 28px 26px; display:flex; flex-direction:column; gap:18px; }
+.rad-modal__title { font-size:20px; font-weight:700; line-height:1.35; letter-spacing:-0.02em; }
+.rad-props { display:flex; flex-direction:column; }
+.rad-prop { display:flex; gap:14px; align-items:baseline; font-size:13px; padding:8px 0; border-bottom:1px solid var(--hair); }
+.rad-prop__k { width:120px; flex:none; color:var(--muted); }
+.rad-prop__v { font-variant-numeric:tabular-nums; }
+.rad-modal__foot { display:flex; justify-content:flex-end; gap:10px; }
+
+/* ---------- 13. Iconos SVG (referencia) -------------------------------
+   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+
+   radar       M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M12 11.4a.6.6 0 1 0 0 1.2.6.6 0 0 0 0-1.2z
+   viral       M12 3.5s4.5 3.6 4.5 8a4.5 4.5 0 0 1-9 0c0-1.6.8-2.9 1.6-3.8 0 1.6.9 2.4 1.6 2.4 1 0 1.3-1 1.3-2.3 0-1.6-.5-3.1-1-4.3z M8 15.5a4 4 0 0 0 8 0
+   guion       M4 20l1-4 10.5-10.5 3 3-10.5 10.5z M14.5 6.5l3 3
+   calendario  M4.5 6.5h15v13.5h-15z M8.5 3.5v4 M15.5 3.5v4 M4.5 11h15
+   agenda      M8 6.5h12 M8 12h12 M8 17.5h12 M4 6.5h.01 M4 12h.01 M4 17.5h.01
+   ads         M4 6.5h16v11H4z M4 10h16 M8 6.5v11
+   competidor  M6.5 3.5v17 M6.5 4.5h11l-2.2 3.8 2.2 3.7h-11
+   cuentas     M12 7.8a4.2 4.2 0 1 0 0 8.4 4.2 4.2 0 0 0 0-8.4z M16.2 7.8v5.1a3 3 0 0 0 5.3 1.9 M20 15.9A9 9 0 1 1 18.4 5.6
+   categorías  M4 4.5h7l9 9-6.5 6.5-9-9z M7.6 8.1h.01
+   documento   M6.5 3.5h7l4.5 4.5v12h-11.5z M13.5 3.5V8H18
+   chispa      M12 3.5v4 M12 16.5v4 M3.5 12h4 M16.5 12h4 M6 6l2.5 2.5 M15.5 15.5 18 18 M18 6l-2.5 2.5 M8.5 15.5 6 18
+   estrella    M12 3.5 14.6 9l6 .9-4.3 4.2 1 6-5.3-2.8-5.3 2.8 1-6L3.4 9.9l6-.9z
+   barras      M4 20V9.5 M10 20V4.5 M16 20v-7 M21 20H3
+   buscar      M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M16.2 16.2 20.5 20.5
+   cerrar      M6 6l12 12 M18 6L6 18
+   sol         M12 6.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z M12 2v2 M12 20v2 M4.9 4.9l1.4 1.4 M17.7 17.7l1.4 1.4 M2 12h2 M20 12h2 M4.9 19.1l1.4-1.4 M17.7 6.3l1.4-1.4
+   luna        M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z
+   --------------------------------------------------------------------- */

@@ -130,17 +130,21 @@
 		async init() {
 			try {
 				const c = await apiCall('marketinghub.www.radar.index.obtener_contadores');
-				document.querySelectorAll('#rd-stats [data-key]').forEach(el => {
-					const key = el.dataset.key;
+				// KPIs arriba
+				document.querySelectorAll('[data-kpi]').forEach(el => {
+					const key = el.dataset.kpi;
 					el.textContent = (c[key] ?? 0).toLocaleString('es-PE');
 				});
-				// Badge de guiones en el sidebar (solo si > 0)
-				const badge = document.getElementById('rd-badge-guiones');
-				if (badge) {
-					const n = c.guiones_semana || 0;
-					if (n > 0) { badge.textContent = n; badge.style.display = ''; }
-					else       { badge.style.display = 'none'; }
-				}
+				// Counts en sidebar
+				document.querySelectorAll('[data-count]').forEach(el => {
+					const k = el.dataset.count;
+					const v = c[k];
+					if (v != null && v > 0) el.textContent = v;
+					else el.textContent = '';
+				});
+				// CTA "Analizar N"
+				const cta = document.getElementById('rad-cta-analizar');
+				if (cta && c.nuevos > 0) cta.textContent = `Analizar ${c.nuevos}`;
 			} catch (e) {
 				console.error(e);
 				toast('No se pudieron cargar los contadores: ' + e.message, 'error');
@@ -154,10 +158,10 @@
 		},
 
 		_wireTopRange() {
-			document.querySelectorAll('#rd-top-range button').forEach(btn => {
+			document.querySelectorAll('#rad-top-range .rad-seg__item').forEach(btn => {
 				btn.addEventListener('click', async () => {
-					document.querySelectorAll('#rd-top-range button').forEach(b => b.classList.remove('on'));
-					btn.classList.add('on');
+					document.querySelectorAll('#rad-top-range .rad-seg__item').forEach(b => b.classList.remove('is-on'));
+					btn.classList.add('is-on');
 					this._topRangeDias = parseInt(btn.dataset.dias);
 					await this._renderTopVirales();
 				});
@@ -165,87 +169,117 @@
 		},
 
 		async _renderTopVirales() {
-			const cont = document.getElementById('rd-top-list');
+			const cont = document.getElementById('rad-top-list');
+			const foot = document.getElementById('rad-top-foot');
 			if (!cont) return;
-			cont.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:16px;font-size:12px;">Cargando…</div>';
+			cont.innerHTML = '<div style="text-align:center;color:var(--muted);padding:16px;font-size:12px;">Cargando…</div>';
 			try {
 				const posts = await apiCall('marketinghub.www.radar.index.obtener_top_virales',
 				                             {limite: 10, dias: this._topRangeDias});
 				if (!posts.length) {
 					const txt = this._topRangeDias === 7 ? 'esta semana' : 'este mes';
-					cont.innerHTML = `<div style="text-align:center;color:#9ca3af;padding:20px;font-size:12px;">Sin publicaciones ${txt}.</div>`;
+					cont.innerHTML = `<div style="text-align:center;color:var(--muted);padding:20px;font-size:12px;">Sin publicaciones ${txt}.</div>`;
+					if (foot) foot.textContent = '';
 					return;
 				}
 				cont.innerHTML = posts.map((p, i) => {
 					const rank = i + 1;
+					const rankMod = rank <= 3 ? 'rad-viral__rank--top' : '';
+					const eng = p.engagement_pct || 0;
+					const engMod = eng >= 2 ? 'rad-viral__eng--high' : '';
+					// bar por tier
+					let barMod = '';
+					if (p.tier_orden && p.tier_orden <= 5) barMod = 'rad-viral__bar--viral';
+					else if (p.tier_orden && p.tier_orden <= 7) barMod = 'rad-viral__bar--casi';
 					const fecha = p.fecha_publicacion ? p.fecha_publicacion.split('-').reverse().slice(0,2).join('/') : '';
 					return `
-						<a class="rd-top-item rank-${rank}" href="${escapeHtml(p.url_publicacion || '#')}" target="_blank" rel="noopener">
-							<span class="rd-top-rank">${rank}</span>
-							<div class="rd-top-color" style="background:${escapeHtml(p.color)}"></div>
-							<div class="rd-top-body">
-								<div class="rd-top-hook">${escapeHtml(p.titulo_hook || '(sin título)')}</div>
-								<div class="rd-top-meta">${escapeHtml(p.competidor || '')} · ${escapeHtml(p.plataforma || '')} · ${fecha}</div>
-							</div>
-							<div class="rd-top-metrics">
-								<b>${_fmtNum(p.vistas_actual)}</b>
-								${(p.engagement_pct || 0).toFixed(1)}% eng
-							</div>
+						<a class="rad-viral" href="${escapeHtml(p.url_publicacion || '#')}" target="_blank" rel="noopener">
+							<span class="rad-viral__rank ${rankMod}">${rank}</span>
+							<span class="rad-viral__bar ${barMod}"></span>
+							<span class="rad-viral__text">
+								<span class="rad-viral__title">${escapeHtml(p.titulo_hook || '(sin título)')}</span>
+								<span class="rad-viral__meta">${escapeHtml(p.competidor || '')} · ${escapeHtml(p.plataforma || '')} · ${fecha}</span>
+							</span>
+							<span class="rad-viral__nums">
+								<span class="rad-viral__views">${_fmtNum(p.vistas_actual)}</span>
+								<span class="rad-viral__eng ${engMod}">${eng.toFixed(1)}% eng</span>
+							</span>
 						</a>`;
 				}).join('');
+				if (foot) {
+					const rangoTxt = this._topRangeDias === 7 ? 'semana' : 'mes';
+					foot.textContent = `${posts.length} publicaciones · orden por vistas · ${rangoTxt}`;
+				}
 			} catch(e) { console.error('top:', e); }
 		},
 
 		async _renderViralesPorComp() {
-			const cont = document.getElementById('rd-vpc');
+			const cont = document.getElementById('rad-vpc-body');
 			if (!cont) return;
 			try {
 				const rows = await apiCall('marketinghub.www.radar.index.obtener_virales_por_competidor', {dias: 30});
 				if (!rows.length) {
-					cont.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:16px;font-size:12px;">Sin publicaciones en el último mes.</div>';
+					cont.innerHTML = '<div style="text-align:center;color:var(--muted);padding:16px;font-size:12px;">Sin publicaciones en el último mes.</div>';
 					return;
 				}
 				const maxTotal = Math.max(...rows.map(r => r.total)) || 1;
-				cont.innerHTML = rows.map(r => {
+				let html = '';
+				rows.forEach((r, i) => {
 					const pctV = (r.virales      / maxTotal) * 100;
 					const pctC = (r.casi_virales / maxTotal) * 100;
-					const pctB = (r.bajo         / maxTotal) * 100;
-					return `
-						<div class="row">
-							<div class="name">
-								<span class="dot" style="background:${escapeHtml(r.color)};"></span>
-								<span title="${escapeHtml(r.competidor)}">${escapeHtml(r.competidor)}</span>
-							</div>
-							<div class="bar">
-								${r.virales      ? `<div class="seg seg-v" style="width:${pctV}%;" title="${r.virales} virales">${r.virales      >= 2 ? r.virales      : ''}</div>` : ''}
-								${r.casi_virales ? `<div class="seg seg-c" style="width:${pctC}%;" title="${r.casi_virales} casi virales">${r.casi_virales >= 2 ? r.casi_virales : ''}</div>` : ''}
-								${r.bajo         ? `<div class="seg seg-b" style="width:${pctB}%;" title="${r.bajo} bajo">${r.bajo         >= 2 ? r.bajo         : ''}</div>` : ''}
-							</div>
-							<div class="cnt" title="virales / casi / bajo">${r.virales}·${r.casi_virales}·${r.bajo}</div>
-						</div>`;
-				}).join('');
+					const dotMod = i === 1 ? 'rad-comp__dot--accent' : '';
+					html += `
+						<div class="rad-comp">
+							<span class="rad-comp__name"><span class="rad-comp__dot ${dotMod}" style="background:${escapeHtml(r.color || '')}"></span>${escapeHtml(r.competidor || '')}</span>
+							<span class="rad-comp__track">
+								${r.virales      ? `<span class="rad-comp__viral" style="width:${pctV}%">${r.virales >= 2 ? r.virales : ''}</span>` : ''}
+								${r.casi_virales ? `<span class="rad-comp__casi"  style="width:${pctC}%">${r.casi_virales >= 2 ? r.casi_virales : ''}</span>` : ''}
+							</span>
+							<span class="rad-comp__sum">${r.virales} · ${r.casi_virales} · ${r.bajo}</span>
+						</div>
+					`;
+				});
+				html += `
+					<div class="rad-legend">
+						<span class="rad-legend__item"><span class="rad-legend__sw" style="background:var(--top)"></span>Viral (Dragón · Cetro · Hachón)</span>
+						<span class="rad-legend__item"><span class="rad-legend__sw" style="background:var(--accent-soft)"></span>Casi viral (tier 6-7)</span>
+						<span class="rad-legend__item"><span class="rad-legend__sw" style="background:var(--raise)"></span>Bajo (tier 8-10)</span>
+					</div>`;
+				cont.innerHTML = html;
 			} catch(e) { console.error('vpc:', e); cont.innerHTML = '<div style="text-align:center;color:#dc2626;padding:16px;font-size:12px;">Error: ' + escapeHtml(e.message) + '</div>'; }
 		},
 
 		async _renderDiasSemana() {
-			const cont = document.getElementById('rd-dow');
+			const cont = document.getElementById('rad-dow-body');
 			if (!cont) return;
 			try {
 				const rows = await apiCall('marketinghub.www.radar.index.obtener_publicaciones_por_dia_semana', {dias: 90});
 				if (!rows.some(r => r.count)) {
-					cont.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:16px;font-size:12px;">Sin datos suficientes.</div>';
+					cont.innerHTML = '<div style="text-align:center;color:var(--muted);padding:16px;font-size:12px;">Sin datos suficientes.</div>';
 					return;
 				}
 				const maxC = Math.max(...rows.map(r => r.count)) || 1;
-				cont.innerHTML = rows.map(r => {
+				const top1 = rows[0]?.nombre;
+				const top2 = rows[1]?.nombre;
+				let html = '';
+				rows.forEach(r => {
 					const pct = Math.round((r.count / maxC) * 100);
-					return `
-						<div class="row">
-							<div class="n">${escapeHtml(r.nombre)}</div>
-							<div class="bar"><div style="width:${pct}%;"></div></div>
-							<div class="c">${r.count}</div>
+					const isTop = r.count === maxC && r.count > 0;
+					const isZero = r.count === 0;
+					const lblMod = isTop ? 'rad-day__label--top' : (isZero ? 'rad-day__label--zero' : '');
+					const fillMod = isTop ? 'rad-day__fill--top' : '';
+					html += `
+						<div class="rad-day">
+							<span class="rad-day__label ${lblMod}">${escapeHtml(r.nombre)}</span>
+							<span class="rad-day__track"><span class="rad-day__fill ${fillMod}" style="width:${pct}%"></span></span>
+							<span class="rad-day__n">${r.count}</span>
 						</div>`;
-				}).join('');
+				});
+				if (top1 && top2 && rows[0].count > 0) {
+					const pctTop = Math.round(((rows[0].count + (rows[1]?.count || 0)) / rows.reduce((s,x)=>s+x.count,0)) * 100);
+					html += `<p class="rad-note">El ${pctTop}% de las publicaciones salen <strong>${top1.toLowerCase()} y ${top2.toLowerCase()}</strong>.</p>`;
+				}
+				cont.innerHTML = html;
 			} catch(e) { console.error('dow:', e); cont.innerHTML = '<div style="text-align:center;color:#dc2626;padding:16px;font-size:12px;">Error: ' + escapeHtml(e.message) + '</div>'; }
 		},
 	};
