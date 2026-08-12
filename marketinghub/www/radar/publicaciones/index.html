@@ -262,194 +262,267 @@
   .rd-notas-modal-body textarea { min-height: 100px; }
 
   /* ================================================================
-     PALETA EXACTA DEL MOCKUP (Public Sans + gris neutro + verde teal)
-     Extraída del HTML original que subió el usuario.
+     OVERRIDE 1:1 DEL MOCKUP (extraído del HTML original del usuario)
+     Paleta + valores estructurales copiados literales.
      ================================================================ */
   :root {
-    /* Paleta mockup — modo light */
-    --bg:            #F1F2F3;   /* fondo principal (gris neutro claro) */
-    --bg-soft:       #F7F8F8;   /* raise / hover */
-    --surface:       #FFFFFF;   /* panel */
-    --border:        #E9EBEC;   /* hair line (más sutil) */
-    --border-strong: #D8DBDD;   /* line */
-    --text:          #17191B;   /* text primario */
-    --text-2:        #4E5358;   /* muted */
-    --muted:         #61666B;   /* faint / label */
+    /* Vars EXACTAS del mockup */
+    --bg:            #F1F2F3;
+    --panel:         #FFFFFF;
+    --raise:         #F7F8F8;
+    --line:          #D8DBDD;
+    --hair:          #E9EBEC;
+    --text:          #17191B;
+    --muted:         #4E5358;
+    --faint:         #61666B;
+    --accent:        #008060;
+    --accent-2:      #006B51;
+    --accent-soft:   rgba(0,128,96,0.10);
+    --onaccent:      #FFFFFF;
+    --warn:          #8A4B12;
+    --warn-soft:     rgba(138,75,18,0.12);
+    --info:          #4B5055;
+    --info-soft:     rgba(75,80,85,0.10);
+    --shadow:        0 1px 2px rgba(0,0,0,0.06);
 
-    --brand:         #008060;   /* accent */
-    --brand-bg:      #E7F3EC;
-    --brand-strong:  #006B51;
-    --brand-2:       #00A47C;
-
-    --green:         #008060;
-    --green-bg:      #D6EBDF;
-    --orange:        #8A4B12;   /* warn */
-    --orange-bg:     #F5E4CE;
-    --red:           #B03A3A;
-    --red-bg:        #F0D6D6;
+    /* Aliases para compat con clases legacy que aún usan --brand, --bg-soft, etc. */
+    --brand:         var(--accent);
+    --brand-bg:      var(--accent-soft);
+    --brand-strong:  var(--accent-2);
+    --bg-soft:       var(--raise);
+    --surface:       var(--panel);
+    --border:        var(--hair);
+    --border-strong: var(--line);
+    --text-2:        var(--muted);
   }
-  /* Fondo gris a TODOS los contenedores de Frappe */
-  body,
-  body .page-container,
-  body .page-content,
-  body .website-content,
-  body main.container,
-  body main,
-  body .page-content-wrapper,
-  body .rd-app {
+
+  /* Fondo + font aplicado a TODOS los contenedores de Frappe */
+  html, body,
+  body .page-container, body .page-content, body .website-content,
+  body main.container, body main, body .page-content-wrapper, body .rd-app {
     background: var(--bg) !important;
   }
+  body,
+  body * {
+    font-family: "Public Sans", system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+  }
   body {
-    font-family: 'Public Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
-    color: var(--text);
+    color: var(--text) !important;
     -webkit-font-smoothing: antialiased;
+    margin: 0; padding: 0;
   }
-  * { font-family: inherit; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--accent-2); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 10px; }
+  ::placeholder { color: var(--faint); }
 
-  /* Topbar */
+  /* =========== TOPBAR =========== */
   .rd-app .rd-topbar {
-    background: var(--bg); border-bottom: 1px solid var(--border); padding: 12px 24px;
+    background: var(--panel) !important;
+    border-bottom: 1px solid var(--line);
+    padding: 12px 20px !important;
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
   }
-  .rd-app .rd-back { color: var(--brand); font-weight: 600; }
-  .rd-app .rd-back:hover { background: var(--brand-bg); }
+  .rd-app .rd-back {
+    color: var(--accent); font-weight: 600; font-size: 13px;
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 8px; border-radius: 6px;
+  }
+  .rd-app .rd-back:hover { background: var(--accent-soft); color: var(--accent); }
+  .rd-app .rd-back i { width: 14px; height: 14px; }
   .rd-app .rd-topbar-title {
-    font-weight: 600; font-size: 15px; color: var(--text);
-    border-left: none; padding-left: 8px;
+    font-weight: 700; font-size: 15px; color: var(--text);
+    border-left: 1px solid var(--line); padding-left: 12px; margin-left: 4px;
     display: inline-flex; align-items: center; gap: 8px;
   }
-  .rd-app .rd-topbar-title .rd-topbar-title-emoji {
+  .rd-app .rd-topbar-title-emoji {
     display: inline-flex; align-items: center; color: var(--muted);
   }
-  .rd-app .rd-topbar-title .rd-topbar-title-emoji i { width: 18px; height: 18px; }
-  .rd-app .rd-topbar-right { gap: 14px; display: flex; align-items: center; }
+  .rd-app .rd-topbar-title-emoji i { width: 18px; height: 18px; }
+  .rd-app .rd-topbar-right { gap: 12px; display: flex; align-items: center; }
   .rd-count-lbl {
     color: var(--muted); font-size: 13px; font-weight: 400;
-    display: inline-flex; align-items: center; gap: 6px;
   }
-  .rd-count-lbl i { width: 14px; height: 14px; }
   .rd-theme-toggle {
-    width: 34px; height: 34px; border-radius: 50%;
-    border: 1px solid var(--border); background: var(--surface);
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 1px solid var(--line); background: var(--panel);
     display: inline-flex; align-items: center; justify-content: center;
-    color: var(--text-2); cursor: pointer; padding: 0;
+    color: var(--faint); cursor: pointer; padding: 0;
   }
-  .rd-theme-toggle:hover { border-color: var(--border-strong); color: var(--text); }
+  .rd-theme-toggle:hover { border-color: var(--muted); color: var(--text); }
   .rd-theme-toggle i { width: 15px; height: 15px; }
 
-  /* Filterbar — chips redondeados con dropdown arrow */
+  /* =========== FILTERBAR (chips estilo mockup) =========== */
   .rd-filterbar {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-    box-shadow: none; padding: 10px 12px; gap: 8px;
+    background: var(--panel) !important;
+    border: none !important; border-bottom: 1px solid var(--line);
+    border-radius: 0 !important;
+    box-shadow: none;
+    padding: 12px 20px !important;
+    gap: 8px !important;
+    margin: 0 !important;
   }
   .rd-filterbar .rd-select,
   .rd-filterbar .rd-input {
-    border: 1px solid var(--border) !important;
-    border-radius: 8px; padding: 7px 12px; font-size: 13px;
-    background: var(--surface) !important; color: var(--text);
-    min-height: 34px; font-family: inherit;
-    box-shadow: none;
+    height: 34px !important; min-height: 34px !important;
+    padding: 0 12px !important; border-radius: 8px !important;
+    border: 1px solid var(--line) !important;
+    background: var(--panel) !important;
+    color: var(--text) !important;
+    font-size: 13px !important; font-weight: 500;
+    font-family: inherit !important;
+    box-shadow: none !important;
+    cursor: pointer;
   }
-  .rd-filterbar .rd-select:hover, .rd-filterbar .rd-input:hover { border-color: var(--border-strong) !important; }
+  .rd-filterbar .rd-select {
+    appearance: none; -webkit-appearance: none;
+    padding-right: 30px !important;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2361666B' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 10px center !important;
+  }
+  .rd-filterbar .rd-input { width: 260px !important; cursor: text; }
+  .rd-filterbar .rd-select:hover, .rd-filterbar .rd-input:hover { border-color: var(--muted) !important; }
   .rd-filterbar .rd-select:focus, .rd-filterbar .rd-input:focus {
-    outline: 2px solid var(--brand-bg); border-color: var(--brand) !important;
+    outline: 2px solid var(--accent-soft); border-color: var(--accent) !important;
   }
   .rd-filterbar .rd-counter {
-    color: var(--muted); font-weight: 500; font-family: inherit;
-    font-variant-numeric: tabular-nums;
+    color: var(--muted); font-weight: 500; font-size: 13px;
+    font-family: inherit; font-variant-numeric: tabular-nums;
   }
   .rd-btn-clear {
-    background: transparent !important; color: var(--text-2) !important;
-    border: none !important; padding: 7px 12px;
+    background: transparent !important; color: var(--text) !important;
+    border: 1px solid var(--line) !important;
+    padding: 0 14px !important; height: 34px !important;
+    border-radius: 8px !important; font-size: 13px !important; font-weight: 500 !important;
+    cursor: pointer; font-family: inherit;
+    display: inline-flex; align-items: center;
   }
-  .rd-btn-clear:hover { color: var(--text) !important; background: var(--bg-soft) !important; }
+  .rd-btn-clear:hover { background: var(--raise) !important; border-color: var(--muted) !important; }
 
-  /* Botón CSV como acción secundaria */
   .rd-btn-csv, .rd-btn-actualizar {
-    background: var(--surface); color: var(--text); border: 1px solid var(--border);
-    padding: 7px 14px; border-radius: 8px; font-weight: 500; font-size: 13px;
+    background: var(--panel); color: var(--text);
+    border: 1px solid var(--line);
+    padding: 0 14px; height: 34px; border-radius: 8px;
+    font-weight: 500; font-size: 13px;
     display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
     font-family: inherit;
   }
-  .rd-btn-csv:hover, .rd-btn-actualizar:hover { border-color: var(--border-strong); background: var(--bg-soft); }
-  .rd-btn-csv i, .rd-btn-actualizar i { width: 14px; height: 14px; }
+  .rd-btn-csv:hover, .rd-btn-actualizar:hover { border-color: var(--muted); background: var(--raise); }
+  .rd-btn-csv i, .rd-btn-actualizar i { width: 14px; height: 14px; color: var(--faint); }
 
-  /* Tabla */
+  /* =========== TABLA =========== */
   .rd-tblwrap {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-    box-shadow: none; padding: 0; overflow: hidden;
+    background: var(--panel) !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    overflow: hidden;
+    margin: 12px 20px;
   }
   .rd-tbl thead th {
-    background: var(--surface); color: var(--muted);
-    font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em;
-    font-weight: 600; padding: 12px 10px;
-    border-bottom: 1px solid var(--border);
+    background: var(--raise);
+    color: var(--muted);
+    font-size: 11px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.07em !important;
+    font-weight: 600 !important;
+    padding: 10px 12px !important;
+    border-bottom: 1px solid var(--line);
   }
-  .rd-tbl thead th.rd-sortable:hover { background: var(--bg-soft); color: var(--text); }
+  .rd-tbl thead th.rd-sortable:hover { background: var(--panel); color: var(--text); }
   .rd-tbl thead th.rd-asc  .rd-sort-ico::after,
-  .rd-tbl thead th.rd-desc .rd-sort-ico::after { color: var(--brand); }
-  .rd-tbl tbody tr { border-bottom: 1px solid var(--border); }
+  .rd-tbl thead th.rd-desc .rd-sort-ico::after { color: var(--accent); }
+
+  .rd-tbl tbody tr {
+    border-bottom: 1px solid var(--hair);
+    background: var(--panel);
+  }
   .rd-tbl tbody tr:nth-child(even) td { background: transparent; }
-  .rd-tbl tbody tr:hover td { background: var(--bg-soft); }
-  .rd-tbl tbody tr.rd-row-viral td { background: #fff9f0; }
-  .rd-tbl tbody tr.rd-row-viral:hover td { background: #fff4e0 !important; }
+  .rd-tbl tbody tr:hover td { background: var(--raise); }
+  .rd-tbl tbody tr.rd-row-viral { background: rgba(0,128,96,0.03); }
+  .rd-tbl tbody tr.rd-row-viral td { background: transparent !important; }
+  .rd-tbl tbody tr.rd-row-viral:hover td { background: var(--raise) !important; }
   .rd-tbl tbody tr.rd-row-viral td.rd-cell-comp,
   .rd-tbl tbody tr.rd-row-viral td.rd-num { color: var(--text); }
   .rd-tbl td {
-    padding: 12px 10px; font-size: 13.5px; color: var(--text);
+    padding: 9px 12px !important; font-size: 13px !important; color: var(--text);
     border-top: none;
   }
-  .rd-tbl td.rd-num { font-family: 'Inter', sans-serif; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .rd-tbl td.rd-num { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text); }
 
-  /* Estado pill (Nuevo, Analizada, etc.) */
+  /* =========== BADGES (Estado + Tier) — rounded pills =========== */
   .rd-pill {
-    padding: 3px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 500;
-    border: none;
+    padding: 3px 10px !important; border-radius: 999px !important;
+    font-size: 11px !important; font-weight: 600 !important;
+    letter-spacing: 0.04em; border: none !important;
+    display: inline-flex; align-items: center;
   }
-  .rd-pill-nuevo      { background: #e8e5dd; color: #4a4638; }
-  .rd-pill-analizada  { background: #d5e8ce; color: #3c6e3b; }
-  .rd-pill-guardado   { background: #d0e6f0; color: #2c5875; }
-  .rd-pill-descartado { background: #ececec; color: #6b6b6b; }
+  .rd-pill-nuevo      { background: var(--info-soft) !important; color: var(--info) !important; }
+  .rd-pill-analizada  { background: var(--accent-soft) !important; color: var(--accent) !important; }
+  .rd-pill-guardado   { background: var(--warn-soft) !important; color: var(--warn) !important; }
+  .rd-pill-descartado { background: var(--raise) !important; color: var(--faint) !important; }
 
-  /* Botones de acciones — Guion outline + Analizar filled verde */
-  .rd-btn-analizar {
-    background: var(--brand); color: white !important; border: 1px solid var(--brand);
-    padding: 6px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 500;
-    display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
-    font-family: inherit; transition: background .1s, border-color .1s;
+  .rd-tier-name, .rd-tier-badge {
+    padding: 2px 10px !important;
+    border-radius: 999px !important;
+    font-size: 11px !important; font-weight: 600 !important;
+    letter-spacing: 0.02em;
+    border: none !important;
   }
-  .rd-btn-analizar:hover { background: var(--brand-strong) !important; border-color: var(--brand-strong) !important; }
+
+  /* =========== BOTONES ACCIÓN — Guion outline + Analizar filled =========== */
+  .rd-btn-analizar {
+    padding: 6px 11px !important; border-radius: 7px !important;
+    font-size: 12px !important; font-weight: 600 !important;
+    color: var(--onaccent) !important; background: var(--accent) !important;
+    border: 1px solid var(--accent) !important;
+    display: inline-flex; align-items: center; gap: 5px;
+    cursor: pointer; font-family: inherit; white-space: nowrap;
+    transition: background .1s;
+  }
+  .rd-btn-analizar:hover { background: var(--accent-2) !important; border-color: var(--accent-2) !important; }
   .rd-btn-analizar i { width: 12px; height: 12px; }
-  /* Guion → outline gris */
+  /* Guion → outline */
   .rd-btn-analizar[title*="guión"], .rd-btn-analizar[title*="Guión"] {
-    background: var(--surface); color: var(--text) !important; border-color: var(--border);
+    color: var(--text) !important;
+    background: var(--panel) !important;
+    border: 1px solid var(--line) !important;
   }
   .rd-btn-analizar[title*="guión"]:hover, .rd-btn-analizar[title*="Guión"]:hover {
-    background: var(--bg-soft) !important; color: var(--text) !important; border-color: var(--border-strong) !important;
+    background: var(--raise) !important; border-color: var(--muted) !important; color: var(--text) !important;
   }
-  .rd-row-viral .rd-btn-analizar { background: var(--brand); color: white !important; border-color: var(--brand); }
+  .rd-row-viral .rd-btn-analizar { background: var(--accent) !important; border-color: var(--accent) !important; color: var(--onaccent) !important; }
 
-  /* Tier badges (mantienen sus colores actuales que están OK) */
-  .rd-tier-badge { padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 500; }
-
-  /* Enlace hook con external icon */
+  /* =========== HOOK CELL =========== */
   .rd-hook-link {
-    color: var(--text); text-decoration: none; display: inline-flex; align-items: center; gap: 5px;
+    color: var(--text); text-decoration: none;
+    display: inline-flex; align-items: center; gap: 5px;
   }
-  .rd-hook-link:hover { color: var(--brand); text-decoration: none; }
-  .rd-hook-link .rd-ext-ico { width: 12px; height: 12px; color: var(--muted); }
+  .rd-hook-link:hover { color: var(--accent); }
+  .rd-hook-link .rd-ext-ico { width: 12px; height: 12px; color: var(--faint); }
 
-  /* Engagement % pill */
-  .rd-eng-hi  { color: #3c6e3b; font-weight: 600; }
-  .rd-eng-mid { color: #b56816; font-weight: 600; }
+  /* Engagement % */
+  .rd-eng-hi  { color: var(--accent); font-weight: 600; }
+  .rd-eng-mid { color: var(--warn); font-weight: 600; }
   .rd-eng-lo  { color: var(--muted); }
 
-  /* Checkbox al inicio de cada fila (visual) */
+  /* Checkbox */
   .rd-tbl thead th:first-child,
-  .rd-tbl tbody td:first-child { padding-left: 16px; padding-right: 6px; }
+  .rd-tbl tbody td:first-child { padding-left: 16px !important; padding-right: 6px !important; }
   .rd-row-check {
-    width: 15px; height: 15px; border: 1.5px solid var(--border-strong);
-    border-radius: 3px; background: white; cursor: pointer;
-    accent-color: var(--brand);
+    width: 14px; height: 14px;
+    border: 1.5px solid var(--line); border-radius: 3px;
+    background: var(--panel); cursor: pointer;
+    accent-color: var(--accent);
+  }
+
+  /* =========== MAIN LAYOUT =========== */
+  .rd-app.rd-wide .rd-main {
+    padding: 0 !important; max-width: none !important;
   }
 </style>
 {% endblock %}
@@ -543,7 +616,7 @@
   </main>
 </div>
 
-<script src="/radar/radar.js?v=shopify2"></script>
+<script src="/radar/radar.js?v=shopify3"></script>
 <script>
   const CAN_EDIT = {{ 'true' if can_edit else 'false' }};
   const FORMATOS = {{ formatos|tojson }};
