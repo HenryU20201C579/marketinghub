@@ -1,174 +1,297 @@
-{% extends "templates/web.html" %}
-
-{% block navbar %}{% endblock %}
-{% block header %}{% endblock %}
-{% block footer %}{% endblock %}
-
-{% block style %}
-{{ super() }}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Categorías</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest"></script>
-<link rel="stylesheet" href="/radar/radar.css">
-<style>
-  .rd-cats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-  .rd-cat-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow-sm);
-    display: flex; flex-direction: column; gap: 8px;
-    transition: box-shadow .15s, transform .15s;
-  }
-  .rd-cat-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
-  .rd-cat-icon {
-    width: 44px; height: 44px; border-radius: var(--radius-sm);
-    background: var(--purple-bg); color: var(--purple);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .rd-cat-icon i { width: 22px; height: 22px; }
-  .rd-cat-name { font-size: 16px; font-weight: 700; color: var(--text); }
-  .rd-cat-desc { font-size: 13px; color: var(--text-2); min-height: 18px; }
-  .rd-cat-count { font-size: 12px; color: var(--muted); font-weight: 500; }
-  .rd-cat-actions {
-    display: flex; gap: 6px; margin-top: 8px;
-    padding-top: 12px; border-top: 1px solid var(--border);
-  }
-</style>
-{% endblock %}
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/radar/categorias/categorias.css?v=cat1">
+</head>
+<body class="cat">
 
-{% block page_content %}
 {% if no_access %}
-<div class="rd-na-screen"><div class="rd-na-card">
-  <div class="rd-na-brand"><span class="rd-na-dot"></span><span>Radar · Acceso denegado</span></div>
-  <div class="rd-na-body">No tienes permiso. Roles requeridos:
-    <ul class="rd-na-roles">{% for r in required_roles %}<li><code>{{ r }}</code></li>{% endfor %}</ul>
+<div class="cat-app" style="display:block">
+  <div class="cat-empty" style="margin-top:80px">
+    <p>Categorías · Acceso denegado. Se requiere uno de estos roles: {{ required_roles|join(", ") }}.</p>
   </div>
-</div></div>
+</div>
 {% else %}
-<div class="rd-app">
-  <header class="rd-topbar">
-    <div class="rd-topbar-left">
-      <a href="/radar" class="rd-back"><i data-lucide="arrow-left"></i> Volver</a>
-      <div class="rd-logo"><span class="rd-logo-dot"></span><span>Radar · Categorías</span></div>
+
+<div class="cat-app">
+
+  <!-- ============ CABECERA ============ -->
+  <header class="cat-header">
+    <div class="cat-header__left">
+      <a class="cat-back" href="/radar"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>Volver</a>
+      <span class="cat-div"></span>
+      <div class="cat-title-group">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h7l9 9-6.5 6.5-9-9z M7.6 8.1h.01"/></svg>
+        <span class="cat-title">Categorías</span>
+      </div>
     </div>
-    <div class="rd-topbar-right">
-      {% if can_edit %}
-      <button class="rd-btn" onclick="RadarCats.abrirModal()">
-        <i data-lucide="plus"></i> Nueva categoría
-      </button>
-      {% endif %}
+    <div class="cat-header__right">
+      <span class="cat-counter">{{ mostradas }} de {{ total }}</span>
+      <button class="cat-iconbtn" id="theme-toggle" title="Cambiar tema" type="button"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg></button>
+      {% if can_edit %}<button class="cat-btn cat-btn--primary" type="button" data-nuevo><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14 M5 12h14"/></svg>Nueva categoría</button>{% endif %}
     </div>
   </header>
 
-  <main class="rd-main">
-    <div class="rd-hero">
-      <h1>🏷️ Categorías</h1>
-      <p class="rd-hero-sub">Agrupa a tus competidores por tipo (cuero, calzado, moda, etc.). Sirve para filtrar y hacer reportes.</p>
+  <!-- ============ FILTROS ============ -->
+  <div class="cat-toolbar">
+    <div class="cat-search">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M16.2 16.2 20.5 20.5"/></svg>
+      <input type="text" name="q" placeholder="Buscar categoría…" value="{{ f_q|e }}">
     </div>
 
-    <div id="rd-cats-container">
-      <div class="rd-empty">
-        <div class="rd-empty-icon"><i data-lucide="loader"></i></div>
-        <div class="rd-empty-title">Cargando…</div>
-      </div>
+    <button class="cat-toggle{% if f_uso %} is-on{% endif %}" type="button" data-toggle-uso>
+      <span class="cat-toggle__box"><svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span>
+      Solo en uso
+    </button>
+
+    <div class="cat-seg">
+      <button class="cat-seg__item{% if f_orden == 'pubs' %} is-on{% endif %}" type="button" data-orden="">Más publicaciones</button>
+      <button class="cat-seg__item{% if f_orden == 'az' %} is-on{% endif %}" type="button" data-orden="az">A–Z</button>
     </div>
-  </main>
+
+    <button class="cat-btn cat-btn--quiet{% if hay_filtros %} is-active{% endif %}" type="button" data-href="/radar/categorias">Limpiar</button>
+  </div>
+
+  <!-- ============ CONTENIDO ============ -->
+  <div class="cat-content">
+    <div class="cat-wrap">
+      <p class="cat-lede">Agrupa a tus competidores por tipo (cuero, calzado, moda…). Las categorías filtran el radar y agrupan los reportes. <strong>{{ sin_competidores }} sin competidores</strong> asignados.</p>
+
+      {% if categorias %}
+      <div class="cat-grid">
+
+        {% for c in categorias %}
+        <article class="cat-card">
+          <div class="cat-card__body">
+            <div class="cat-card__top">
+              <span class="cat-card__id">
+                <span class="cat-ico{{ c.ico_cls }}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h7l9 9-6.5 6.5-9-9z M7.6 8.1h.01"/></svg></span>
+                <span class="cat-card__names">
+                  <span class="cat-card__name">{{ c.titulo|e }}</span>
+                  <span class="cat-card__sub">{{ c.sub }}</span>
+                </span>
+              </span>
+              <span class="cat-pill{{ c.pill_cls }}">{{ c.pill_label }}</span>
+            </div>
+
+            <div class="cat-stat">
+              <span class="cat-stat__row">
+                <span>Publicaciones 30 d</span>
+                <span class="cat-stat__n{% if not c.pubs %} cat-stat__n--zero{% endif %}">{{ c.pubs }}</span>
+              </span>
+              <span class="cat-stat__track">
+                <span class="cat-stat__fill{% if not c.pubs %} cat-stat__fill--zero{% endif %}" style="width:{{ c.pubs_pct }}%"></span>
+              </span>
+            </div>
+
+            <div class="cat-brands">
+            {% for m in c.marcas %}<span class="cat-brand">{{ m|e }}</span>
+            {% else %}<span class="cat-brands__empty">Sin competidores asignados</span>
+            {% endfor %}
+            </div>
+          </div>
+
+          <div class="cat-card__foot">
+            <span class="cat-card__upd">{{ c.upd }}</span>
+            <span class="cat-card__actions">
+              {% if can_edit %}
+              <button class="cat-btn cat-btn--sm" type="button" data-editar="{{ c.name|e }}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5z M14.5 6.5l3 3"/></svg>Editar</button>
+              <button class="cat-del" type="button" title="Eliminar categoría" data-borrar="{{ c.name|e }}" data-usos="{{ c.competidores }}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15 M9.5 6.5V4.5h5v2 M6.5 6.5 7.5 20h9l1-13.5 M10 10v6.5 M14 10v6.5"/></svg></button>
+              {% endif %}
+            </span>
+          </div>
+        </article>
+        {% endfor %}
+
+        {% if can_edit %}
+        <button class="cat-add" type="button" data-nuevo>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14 M5 12h14"/></svg>
+          <span>Añadir categoría</span>
+        </button>
+        {% endif %}
+      </div>
+      {% else %}
+      <div class="cat-empty">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M16.2 16.2 20.5 20.5"/></svg>
+        <p>Ninguna categoría coincide con los filtros.</p>
+        <button class="cat-btn cat-btn--primary" type="button" data-href="/radar/categorias">Limpiar filtros</button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
 </div>
 
-<script src="/radar/radar.js"></script>
-<script>
-  const CAN_EDIT = {{ 'true' if can_edit else 'false' }};
+{% if can_edit %}
+<!-- ============ EDITAR / NUEVA ============ -->
+<div class="cat-overlay" id="dlg-editar" style="display:none">
+  <div class="cat-dialog">
+    <div class="cat-dialog__body">
+      <span class="cat-dialog__icon" style="color:var(--accent);background:var(--accent-soft)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5z M14.5 6.5l3 3"/></svg></span>
+      <span class="cat-dialog__text" style="flex:1">
+        <span class="cat-dialog__title" id="ed-titulo">Nueva categoría</span>
+        <span class="cat-search" style="flex:none"><input type="text" id="ed-nombre" placeholder="Nombre de la categoría"></span>
+        <span class="cat-search" style="flex:none"><input type="text" id="ed-descripcion" placeholder="Descripción (opcional)"></span>
+        <span class="cat-dialog__desc" id="ed-error" style="color:var(--danger);display:none"></span>
+      </span>
+    </div>
+    <div class="cat-dialog__foot">
+      <button class="cat-btn" type="button" data-cerrar>Cancelar</button>
+      <button class="cat-btn cat-btn--primary" type="button" id="ed-guardar">Guardar</button>
+    </div>
+  </div>
+</div>
 
-  window.RadarCats = {
-    lista: [],
-    async cargar() {
-      const cont = document.getElementById('rd-cats-container');
-      try {
-        this.lista = await Radar.api('marketinghub.www.radar.categorias.index.listar');
-      } catch (e) {
-        cont.innerHTML = `<div class="rd-empty"><div class="rd-empty-title">Error</div><div class="rd-empty-sub">${Radar.escapeHtml(e.message)}</div></div>`;
-        return;
-      }
-      if (!this.lista.length) {
-        cont.innerHTML = `
-          <div class="rd-empty">
-            <div class="rd-empty-icon"><i data-lucide="tag"></i></div>
-            <div class="rd-empty-title">Aún no tienes categorías</div>
-            <div class="rd-empty-sub">Crea tu primera categoría para empezar a agrupar competidores.</div>
-            ${CAN_EDIT ? '<button class="rd-btn" onclick="RadarCats.abrirModal()"><i data-lucide="plus"></i> Nueva categoría</button>' : ''}
-          </div>`;
-        lucide.createIcons();
-        return;
-      }
-      cont.innerHTML = '<div class="rd-cats-grid">' + this.lista.map(c => `
-        <div class="rd-cat-card">
-          <div class="rd-cat-icon"><i data-lucide="tag"></i></div>
-          <div class="rd-cat-name">${Radar.escapeHtml(c.nombre_categoria)}</div>
-          <div class="rd-cat-desc">${Radar.escapeHtml(c.descripcion || '')}</div>
-          <div class="rd-cat-count">${c.competidores} competidor${c.competidores === 1 ? '' : 'es'}</div>
-          ${CAN_EDIT ? `
-          <div class="rd-cat-actions">
-            <button class="rd-btn rd-btn-secondary rd-btn-sm" onclick="RadarCats.editar('${Radar.escapeHtml(c.name)}')">
-              <i data-lucide="pencil"></i> Editar
-            </button>
-            <button class="rd-btn rd-btn-danger rd-btn-sm" onclick="RadarCats.borrar('${Radar.escapeHtml(c.name)}')">
-              <i data-lucide="trash-2"></i>
-            </button>
-          </div>` : ''}
-        </div>`).join('') + '</div>';
-      lucide.createIcons();
-    },
-    abrirModal(cat) {
-      const editing = !!cat;
-      Radar.modal({
-        title: editing ? 'Editar categoría' : 'Nueva categoría',
-        confirmText: editing ? 'Guardar' : 'Crear',
-        bodyHtml: `
-          <div class="rd-field">
-            <label for="rd-m-nombre">Nombre <span style="color:var(--red)">*</span></label>
-            <input type="text" id="rd-m-nombre" class="rd-input" placeholder="Ej: Marcas de cuero"
-                   value="${Radar.escapeHtml(cat?.nombre_categoria || '')}" required autofocus>
-          </div>
-          <div class="rd-field">
-            <label for="rd-m-desc">Descripción</label>
-            <textarea id="rd-m-desc" class="rd-textarea" placeholder="Opcional. Ej: Competidores directos con cuero peruano.">${Radar.escapeHtml(cat?.descripcion || '')}</textarea>
-          </div>
-        `,
-        onConfirm: async () => {
-          const nombre = document.getElementById('rd-m-nombre').value.trim();
-          const desc = document.getElementById('rd-m-desc').value.trim();
-          if (!nombre) { Radar.toast('Escribe un nombre', 'error'); return false; }
-          await Radar.api('marketinghub.www.radar.categorias.index.guardar', {
-            name: cat?.name || '', nombre_categoria: nombre, descripcion: desc,
-          });
-          Radar.toast(editing ? '✓ Actualizado' : '✓ Creado', 'success');
-          this.cargar();
-        }
-      });
-    },
-    editar(name) {
-      const cat = this.lista.find(c => c.name === name);
-      if (cat) this.abrirModal(cat);
-    },
-    borrar(name) {
-      Radar.modal({
-        title: 'Borrar categoría',
-        confirmText: 'Sí, borrar',
-        danger: true,
-        bodyHtml: `<p>¿Seguro que quieres borrar la categoría <b>${Radar.escapeHtml(name)}</b>?</p>
-                   <p style="margin-top:8px;color:var(--text-2);font-size:13px;">Esta acción no se puede deshacer. Si hay competidores usando esta categoría, no se podrá borrar.</p>`,
-        onConfirm: async () => {
-          await Radar.api('marketinghub.www.radar.categorias.index.borrar', {name});
-          Radar.toast('✓ Borrada', 'success');
-          this.cargar();
-        }
+<!-- ============ CONFIRMACIÓN DE BORRADO ============ -->
+<div class="cat-overlay" id="dlg-borrar" style="display:none">
+  <div class="cat-dialog">
+    <div class="cat-dialog__body">
+      <span class="cat-dialog__icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15 M9.5 6.5V4.5h5v2 M6.5 6.5 7.5 20h9l1-13.5 M10 10v6.5 M14 10v6.5"/></svg></span>
+      <span class="cat-dialog__text">
+        <span class="cat-dialog__title" id="bo-titulo">Eliminar</span>
+        <span class="cat-dialog__desc" id="bo-desc"></span>
+        <span class="cat-dialog__desc" id="bo-error" style="color:var(--danger);display:none"></span>
+      </span>
+    </div>
+    <div class="cat-dialog__foot">
+      <button class="cat-btn" type="button" data-cerrar>Cancelar</button>
+      <button class="cat-btn cat-btn--danger" type="button" id="bo-confirmar">Eliminar</button>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="cat-toast" id="toast" style="display:none"></div>
+
+<script>
+  (function () {
+    var API = '/api/method/marketinghub.www.radar.categorias.index.';
+    var CSRF = '{{ csrf_token }}';
+    var DATOS = {{ categorias_json }};
+
+    // tema (persistido)
+    var body = document.body;
+    function setTema(t) { body.dataset.theme = t === 'dark' ? 'dark' : ''; }
+    try { setTema(localStorage.getItem('cat-theme') || ''); } catch (e) {}
+    document.getElementById('theme-toggle').addEventListener('click', function () {
+      var t = body.dataset.theme === 'dark' ? '' : 'dark';
+      setTema(t);
+      try { localStorage.setItem('cat-theme', t); } catch (e) {}
+    });
+
+    // elementos que navegan (no son <a>: el CSS pinta los enlaces con el acento)
+    document.querySelectorAll('[data-href]').forEach(function (el) {
+      el.addEventListener('click', function () { window.location.href = el.dataset.href; });
+    });
+
+    // filtros → querystring
+    function aplicar(nombre, valor) {
+      var p = new URLSearchParams(window.location.search);
+      if (valor) p.set(nombre, valor); else p.delete(nombre);
+      window.location.search = p.toString();
+    }
+    var buscador = document.querySelector('.cat-search input[name=q]');
+    if (buscador) buscador.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter') aplicar('q', buscador.value.trim());
+    });
+    var toggle = document.querySelector('[data-toggle-uso]');
+    if (toggle) toggle.addEventListener('click', function () {
+      aplicar('uso', toggle.classList.contains('is-on') ? '' : '1');
+    });
+    document.querySelectorAll('[data-orden]').forEach(function (b) {
+      b.addEventListener('click', function () { aplicar('orden', b.dataset.orden); });
+    });
+
+    function toast(msg) {
+      var t = document.getElementById('toast');
+      t.textContent = msg; t.style.display = '';
+      setTimeout(function () { t.style.display = 'none'; }, 3000);
+    }
+
+    function llamar(metodo, datos) {
+      return fetch(API + metodo, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': CSRF },
+        body: JSON.stringify(datos)
+      }).then(function (r) {
+        return r.json().then(function (j) {
+          if (!r.ok) throw new Error((j._server_messages && JSON.parse(j._server_messages)[0]) || j.exception || 'Error');
+          return j.message;
+        });
       });
     }
-  };
 
-  document.addEventListener('DOMContentLoaded', function() {
-    lucide.createIcons();
-    RadarCats.cargar();
-  });
+    var edit = document.getElementById('dlg-editar');
+    var del = document.getElementById('dlg-borrar');
+    if (!edit) return;
+    var editando = null, borrando = null;
+
+    function abrirEditar(name) {
+      editando = name;
+      var c = DATOS.filter(function (x) { return x.name === name; })[0] || {};
+      document.getElementById('ed-titulo').textContent = name ? 'Editar «' + (c.titulo || name) + '»' : 'Nueva categoría';
+      document.getElementById('ed-nombre').value = c.nombre_categoria || '';
+      document.getElementById('ed-descripcion').value = c.descripcion || '';
+      document.getElementById('ed-error').style.display = 'none';
+      edit.style.display = '';
+    }
+
+    document.querySelectorAll('[data-nuevo]').forEach(function (b) {
+      b.addEventListener('click', function () { abrirEditar(null); });
+    });
+    document.querySelectorAll('[data-editar]').forEach(function (b) {
+      b.addEventListener('click', function () { abrirEditar(b.dataset.editar); });
+    });
+    document.querySelectorAll('[data-borrar]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        borrando = b.dataset.borrar;
+        var usos = parseInt(b.dataset.usos, 10) || 0;
+        document.getElementById('bo-titulo').textContent = 'Eliminar «' + borrando + '»';
+        document.getElementById('bo-desc').textContent = usos
+          ? 'Tiene ' + usos + ' competidor' + (usos === 1 ? '' : 'es') + ' asignado' + (usos === 1 ? '' : 's') + '. Hay que dejarlos sin categoría antes de borrarla.'
+          : 'No tiene competidores asignados. Esta acción no se puede deshacer.';
+        document.getElementById('bo-error').style.display = 'none';
+        del.style.display = '';
+      });
+    });
+    document.querySelectorAll('[data-cerrar]').forEach(function (b) {
+      b.addEventListener('click', function () { edit.style.display = 'none'; del.style.display = 'none'; });
+    });
+
+    document.getElementById('ed-guardar').addEventListener('click', function () {
+      var err = document.getElementById('ed-error');
+      llamar('guardar', {
+        name: editando || '',
+        nombre_categoria: document.getElementById('ed-nombre').value.trim(),
+        descripcion: document.getElementById('ed-descripcion').value.trim()
+      }).then(function () {
+        toast('Categoría guardada.');
+        setTimeout(function () { window.location.reload(); }, 600);
+      }).catch(function (e) {
+        err.textContent = String(e.message).replace(/<[^>]*>/g, '');
+        err.style.display = '';
+      });
+    });
+
+    document.getElementById('bo-confirmar').addEventListener('click', function () {
+      var err = document.getElementById('bo-error');
+      llamar('borrar', { name: borrando }).then(function () {
+        toast('«' + borrando + '» eliminada.');
+        setTimeout(function () { window.location.reload(); }, 600);
+      }).catch(function (e) {
+        err.textContent = String(e.message).replace(/<[^>]*>/g, '');
+        err.style.display = '';
+      });
+    });
+  })();
 </script>
+
 {% endif %}
-{% endblock %}
+
+</body>
+</html>
