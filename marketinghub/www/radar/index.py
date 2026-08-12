@@ -7,6 +7,7 @@ Lo único que cambia respecto al zip son los datos: se resuelven en el backend
 y se inyectan con Jinja, manteniendo el mismo markup y las mismas clases.
 """
 import hashlib
+import re
 from datetime import date, timedelta
 
 import frappe
@@ -37,6 +38,17 @@ def _colores_competidor():
 		c.name: (c.color or PALETA[hashlib.md5(c.name.encode()).digest()[0] % 12])
 		for c in frappe.db.get_all("Competidor", fields=["name", "color"])
 	}
+
+
+RE_EMOJI = re.compile(
+	"[\U0001F000-\U0001FAFF\U00002600-\U000027BF\U0001F1E6-\U0001F1FF"
+	"⬀-⯿←-⇿️‍]+"
+)
+
+
+def _limpiar(texto):
+	"""Quita emojis y espacios sobrantes: el diseño muestra los títulos en limpio."""
+	return re.sub(r"\s{2,}", " ", RE_EMOJI.sub(" ", texto or "")).strip(" ·-—")
 
 
 def _fmt_vistas(v):
@@ -77,11 +89,12 @@ def get_context(context):
 
 def _top_para_vista(dias):
 	filas = []
-	for p in obtener_top_virales(limite=10, dias=dias):
-		tier = int(p.get("tier_orden") or 0)
-		if tier and tier <= 5:
+	for i, p in enumerate(obtener_top_virales(limite=10, dias=dias)):
+		# La barra marca la posición dentro del top, que es la jerarquía visual
+		# del diseño: dorado el 1-4, verde el 5-8, neutro el resto.
+		if i < 4:
 			bar = " rad-viral__bar--viral"
-		elif tier in (6, 7):
+		elif i < 8:
 			bar = " rad-viral__bar--casi"
 		else:
 			bar = ""
@@ -96,7 +109,7 @@ def _top_para_vista(dias):
 		)
 		url = (p.get("url_publicacion") or "").strip()
 		filas.append({
-			"titulo": (p.get("titulo_hook") or p.get("name") or "").strip(),
+			"titulo": _limpiar(p.get("titulo_hook")) or p.get("name"),
 			"meta": meta,
 			"url_publicacion": url if url.startswith(("http://", "https://")) else "",
 			"vistas_fmt": _fmt_vistas(p.get("vistas_actual")),
@@ -128,14 +141,13 @@ def _dias_para_vista(dias):
 		f["fill_cls"] = " rad-day__fill--top" if es_top else ""
 
 	total = sum(f["count"] for f in filas)
-	if not total:
-		return filas, ""
-	top2 = filas[:2]
-	pct = round(sum(f["count"] for f in top2) / total * 100)
-	nombres = " y ".join(f["nombre"].lower() for f in top2 if f["count"])
-	if not nombres:
-		return filas, ""
-	return filas, f"El {pct}% de las publicaciones de tus competidores salen {nombres}."
+	top2 = [f for f in filas[:2] if f["count"]]
+	if not total or not top2:
+		return filas, {}
+	return filas, {
+		"pct": round(sum(f["count"] for f in top2) / total * 100),
+		"dias": " y ".join(f["nombre"].lower() for f in top2),
+	}
 
 
 # ============ ENDPOINTS ============
