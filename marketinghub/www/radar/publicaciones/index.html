@@ -7,7 +7,8 @@
 {% block style %}
 {{ super() }}
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest"></script>
 <link rel="stylesheet" href="/radar/radar.css">
 <style>
@@ -261,31 +262,33 @@
   .rd-notas-modal-body textarea { min-height: 100px; }
 
   /* ================================================================
-     SHOPIFY-STYLE OVERRIDE (paleta beige/verde teal)
-     Aplicado solo a esta página. Sobrescribe la paleta global azul.
+     PALETA EXACTA DEL MOCKUP (Public Sans + gris neutro + verde teal)
+     Extraída del HTML original que subió el usuario.
      ================================================================ */
   :root {
-    --bg:            #faf9f5;   /* beige crema */
-    --bg-soft:       #f5f3ec;
-    --surface:       #ffffff;
-    --border:        #eeeae0;   /* borde cálido */
-    --border-strong: #e0dbcd;
-    --text:          #1a1a1a;
-    --text-2:        #616161;
-    --muted:         #8a8a8a;
+    /* Paleta mockup — modo light */
+    --bg:            #F1F2F3;   /* fondo principal (gris neutro claro) */
+    --bg-soft:       #F7F8F8;   /* raise / hover */
+    --surface:       #FFFFFF;   /* panel */
+    --border:        #E9EBEC;   /* hair line (más sutil) */
+    --border-strong: #D8DBDD;   /* line */
+    --text:          #17191B;   /* text primario */
+    --text-2:        #4E5358;   /* muted */
+    --muted:         #61666B;   /* faint / label */
 
-    --brand:         #008060;   /* Shopify teal */
-    --brand-bg:      #e7f3ec;
-    --brand-strong:  #005c48;
+    --brand:         #008060;   /* accent */
+    --brand-bg:      #E7F3EC;
+    --brand-strong:  #006B51;
+    --brand-2:       #00A47C;
 
-    --green:         #3c6e3b;
-    --green-bg:      #d5e8ce;
-    --orange:        #b56816;
-    --orange-bg:     #f0e3b8;
-    --red:           #a93a3a;
-    --red-bg:        #f3d7d7;
+    --green:         #008060;
+    --green-bg:      #D6EBDF;
+    --orange:        #8A4B12;   /* warn */
+    --orange-bg:     #F5E4CE;
+    --red:           #B03A3A;
+    --red-bg:        #F0D6D6;
   }
-  /* Fondo beige a TODOS los contenedores de Frappe */
+  /* Fondo gris a TODOS los contenedores de Frappe */
   body,
   body .page-container,
   body .page-content,
@@ -296,7 +299,12 @@
   body .rd-app {
     background: var(--bg) !important;
   }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; }
+  body {
+    font-family: 'Public Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  * { font-family: inherit; }
 
   /* Topbar */
   .rd-app .rd-topbar {
@@ -535,7 +543,7 @@
   </main>
 </div>
 
-<script src="/radar/radar.js?v=shopify1"></script>
+<script src="/radar/radar.js?v=shopify2"></script>
 <script>
   const CAN_EDIT = {{ 'true' if can_edit else 'false' }};
   const FORMATOS = {{ formatos|tojson }};
