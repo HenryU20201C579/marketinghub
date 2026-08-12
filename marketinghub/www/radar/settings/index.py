@@ -1,7 +1,26 @@
-"""Página de configuración del Radar."""
+"""Página de configuración del Radar.
+
+El frontend es el diseño del zip: `index.html` es un documento standalone (no
+extiende `templates/web.html`) y `configuracion.css` es copia literal del CSS
+del diseño. `get_context` solo lee lo que pinta ese markup; el guardado sigue
+pasando por `guardar_settings`, sin cambios.
+"""
+import json
+from datetime import date, timedelta
+
 import frappe
 
 no_cache = 1
+
+CANALES = (
+	# valor real del doctype, etiqueta del diseño, icono
+	("In-app ERP", "Campanita ERP", "campana"),
+	("Email", "Correo", "correo"),
+	("Telegram", "Telegram", "chat"),
+	("WhatsApp", "WhatsApp", "chat"),
+)
+# Precio aproximado por item scrapeado en Apify, el mismo que asume el diseño
+COSTE_POR_ITEM = 0.001
 
 ADMIN_ROLES = ("Marketinghub-Radar-Administrar", "System Manager")
 VIEW_ROLES = (
@@ -28,6 +47,99 @@ def get_context(context):
 	context.no_access = not _has_role(VIEW_ROLES)
 	context.required_roles = list(VIEW_ROLES)
 	context.can_edit = _has_role(ADMIN_ROLES)
+	if context.no_access:
+		return
+
+	s = frappe.get_cached_doc("Radar Settings")
+	datos = obtener_settings()
+
+	tiers = datos["tiers"]
+	for t in tiers:
+		t["ini"] = _iniciales(t["nombre"])
+		t["eng"] = _num(t["engagement_min"])
+		t["vistas"] = _num(t["vistas_min"])
+	context.tiers = tiers
+	context.tiers_json = frappe.as_json(tiers).replace("</", "<\\/")
+	context.n_virales = sum(1 for t in tiers if t["es_viral"])
+
+	context.retencion = datos["dias_retencion_snapshots"]
+	context.ig = datos["posts_por_perfil_ig"]
+	context.tt = datos["posts_por_perfil_tiktok"]
+	context.cron = datos["cron_scrape"]
+	context.preset = datos["preset_frecuencia"]
+	context.presets = _opciones("preset_frecuencia")
+	context.canal = datos["canal_alerta"]
+	context.canales = [
+		{"valor": v, "label": etiqueta, "icono": icono, "on": v == datos["canal_alerta"]}
+		for v, etiqueta, icono in CANALES
+	]
+
+	context.proxima = _proxima_corrida(datos["cron_scrape"])
+	corte = date.today() - timedelta(days=int(datos["dias_retencion_snapshots"] or 90))
+	context.corte_retencion = corte.strftime("%d/%m/%y")
+	context.coste_ig = f"{(datos['posts_por_perfil_ig'] or 0) * COSTE_POR_ITEM:.3f}"
+	context.coste_tt = f"{(datos['posts_por_perfil_tiktok'] or 0) * COSTE_POR_ITEM:.3f}"
+	context.coste_total = f"{((datos['posts_por_perfil_ig'] or 0) + (datos['posts_por_perfil_tiktok'] or 0)) * COSTE_POR_ITEM:.3f}"
+
+	stats = {}
+	if s.ultima_corrida_stats:
+		try:
+			stats = json.loads(s.ultima_corrida_stats)
+		except Exception:
+			stats = {}
+	context.corrida = {
+		"cuando": frappe.utils.format_datetime(s.ultima_corrida, "dd/MM HH:mm") if s.ultima_corrida else "—",
+		"estado": {"ok": "Correcta", "warn": "Con avisos", "error": "Con errores"}.get(
+			s.ultima_corrida_estado or "", "Sin datos"),
+		"insert": int(stats.get("insert") or 0),
+		"update": int(stats.get("update") or 0),
+		"skip": int(stats.get("skip") or 0),
+		"error": int(stats.get("error") or 0),
+		"duracion": f"{float(s.ultima_corrida_duracion or 0):.0f} s",
+		"mensaje": s.ultima_corrida_mensaje or "Sin registro de la última corrida.",
+	}
+	try:
+		context.csrf_token = frappe.local.session.data.csrf_token
+	except Exception:
+		context.csrf_token = ""
+
+
+def _iniciales(nombre):
+	partes = (nombre or "").split()
+	if not partes:
+		return "··"
+	if len(partes) == 1:
+		return partes[0][:2]
+	return partes[0][:1] + partes[1][:1]
+
+
+def _num(valor):
+	"""3.5 -> '3.5' · 3.0 -> '3' (los umbrales se editan como texto)."""
+	try:
+		f = float(valor or 0)
+	except (TypeError, ValueError):
+		return "0"
+	return str(int(f)) if f == int(f) else str(f)
+
+
+def _opciones(fieldname):
+	campo = frappe.get_meta("Radar Settings").get_field(fieldname)
+	return [o for o in (campo.options or "").split("\n") if o.strip()]
+
+
+def _proxima_corrida(cron):
+	try:
+		from croniter import croniter
+
+		from frappe.utils import now_datetime
+		siguiente = croniter(cron, now_datetime()).get_next(type(now_datetime()))
+		hoy = date.today()
+		dia = {0: "hoy", 1: "mañana"}.get((siguiente.date() - hoy).days)
+		if dia:
+			return f"Próxima: {dia} {siguiente.strftime('%H:%M')}"
+		return f"Próxima: {siguiente.strftime('%d/%m %H:%M')}"
+	except Exception:
+		return f"Cron: {cron}"
 
 
 @frappe.whitelist()
