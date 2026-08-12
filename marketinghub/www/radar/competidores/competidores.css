@@ -1,0 +1,270 @@
+/* ==========================================================================
+   Competidores — hoja de estilos del módulo
+   Uso:  <link rel="stylesheet" href="competidores.css">
+         <body class="cmp">                    -> claro (papel cálido)
+         <body class="cmp" data-theme="dark">  -> oscuro
+   Fuente: Public Sans (400/500/600/700)
+   ========================================================================== */
+
+/* ---------- 1. Tokens ---------- */
+.cmp {
+  --bg:#E9EAE6;
+  --panel:#F7F7F4;
+  --raise:#EFEFEB;
+  --line:#D2D3CD;
+  --hair:#E2E3DE;
+  --text:#17191B;
+  --muted:#4E5358;
+  --faint:#61666B;
+  --accent:#008060;
+  --accent-2:#006B51;
+  --accent-soft:rgba(0,128,96,0.12);
+  --onaccent:#FFFFFF;
+  --top:#9A6B00;                      /* dorado vivo */
+  --top-soft:rgba(212,158,20,0.20);
+  --danger:#9B2C1E;
+  --danger-soft:rgba(155,44,30,0.10);
+  --shadow:0 1px 2px rgba(0,0,0,0.06);
+}
+
+.cmp[data-theme="dark"] {
+  --bg:#0C0D0D;
+  --panel:#151616;
+  --raise:#1D1E1E;
+  --line:#2E3030;
+  --hair:#232424;
+  --text:#E4E5E5;
+  --muted:#A8AAAA;
+  --faint:#8C8E8E;
+  --accent:#00A47C;
+  --accent-2:#00C08B;
+  --accent-soft:rgba(0,164,124,0.16);
+  --onaccent:#08120E;
+  --top:#E8B84B;
+  --top-soft:rgba(232,184,75,0.20);
+  --danger:#E58A7A;
+  --danger-soft:rgba(229,138,122,0.14);
+  --shadow:none;
+}
+
+/* ---------- 2. Base ---------- */
+.cmp {
+  margin:0;
+  font-family:"Public Sans", system-ui, sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+}
+.cmp a { color:var(--accent); text-decoration:none; }
+.cmp a:hover { color:var(--accent-2); text-decoration:underline; }
+.cmp ::placeholder { color:var(--faint); }
+.cmp select { appearance:none; -webkit-appearance:none; }
+.cmp ::-webkit-scrollbar { width:10px; height:10px; }
+.cmp ::-webkit-scrollbar-track { background:transparent; }
+.cmp ::-webkit-scrollbar-thumb { background:var(--line); border-radius:10px; }
+
+.cmp-app {
+  height:100vh; min-height:640px; overflow:hidden; box-sizing:border-box;
+  display:flex; flex-direction:column; background:var(--bg); color:var(--text);
+}
+
+/* ---------- 3. Cabecera ---------- */
+.cmp-header {
+  flex:none; display:flex; align-items:center; justify-content:space-between;
+  gap:14px; padding:12px 20px; border-bottom:1px solid var(--line); background:var(--panel);
+}
+.cmp-header__left { display:flex; align-items:center; gap:14px; min-width:0; }
+.cmp-header__right { display:flex; align-items:center; gap:10px; }
+.cmp-back { display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:var(--accent); cursor:pointer; }
+.cmp-back:hover { color:var(--accent-2); }
+.cmp-div { width:1px; height:16px; background:var(--line); }
+.cmp-title-group { display:flex; align-items:center; gap:9px; min-width:0; }
+.cmp-title-group svg { color:var(--accent); }
+.cmp-title { font-size:17px; font-weight:700; letter-spacing:-0.02em; }
+.cmp-counter { font-size:13px; font-variant-numeric:tabular-nums; color:var(--muted); }
+
+/* ---------- 4. Barra de filtros ---------- */
+.cmp-toolbar {
+  flex:none; display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  padding:12px 20px; border-bottom:1px solid var(--line);
+}
+.cmp-toolbar__filters { flex:1 1 auto; min-width:0; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+
+.cmp-search {
+  display:flex; align-items:center; gap:8px; height:34px; box-sizing:border-box;
+  padding:0 12px; border-radius:8px; border:1px solid var(--line); background:var(--panel);
+  flex:0 1 240px; min-width:170px;
+}
+.cmp-search svg { flex:none; color:var(--faint); }
+.cmp-search input {
+  border:none; outline:none; background:transparent; width:100%;
+  font-family:inherit; font-size:13px; color:var(--text);
+}
+
+.cmp-select {
+  position:relative; display:flex; align-items:center; height:34px; box-sizing:border-box;
+  padding:0 30px 0 11px; border-radius:8px; border:1px solid var(--line); background:var(--panel);
+}
+.cmp-select.is-active { border-color:var(--accent); }
+.cmp-select__icon { flex:none; margin-right:8px; color:var(--muted); }
+.cmp-select.is-active .cmp-select__icon { color:var(--accent); }
+.cmp-select__caret { position:absolute; right:9px; pointer-events:none; color:var(--faint); }
+.cmp-select select {
+  border:none; outline:none; background:transparent;
+  font-family:inherit; font-size:13px; font-weight:500; color:var(--text); cursor:pointer;
+}
+
+/* ---------- 5. Botones ---------- */
+.cmp-btn {
+  height:34px; box-sizing:border-box; padding:0 14px;
+  display:inline-flex; align-items:center; gap:7px; border-radius:8px;
+  border:1px solid var(--line); background:var(--panel);
+  font-family:inherit; font-size:13px; font-weight:600; color:var(--text);
+  cursor:pointer; white-space:nowrap;
+}
+.cmp-btn:hover { border-color:var(--accent); color:var(--accent); }
+.cmp-btn--primary { border-color:transparent; background:var(--accent); color:var(--onaccent); padding:0 16px; }
+.cmp-btn--primary:hover { background:var(--accent-2); border-color:transparent; color:var(--onaccent); }
+.cmp-btn--quiet { font-weight:500; color:var(--muted); }
+.cmp-btn--quiet.is-active { color:var(--accent); }
+.cmp-btn--sm { height:auto; padding:6px 11px; border-radius:7px; font-size:12px; gap:6px; }
+.cmp-btn--danger { border-color:transparent; background:var(--danger); color:var(--onaccent); }
+.cmp-btn--danger:hover { opacity:0.9; border-color:transparent; color:var(--onaccent); }
+
+.cmp-iconbtn {
+  width:34px; height:34px; border-radius:8px; border:1px solid var(--line); background:var(--bg);
+  display:flex; align-items:center; justify-content:center; color:var(--muted); cursor:pointer;
+}
+.cmp-iconbtn:hover { border-color:var(--accent); color:var(--accent); }
+
+/* botón de borrar: discreto hasta el hover */
+.cmp-del {
+  width:30px; height:30px; border-radius:7px;
+  display:flex; align-items:center; justify-content:center;
+  color:var(--muted); border:1px solid var(--line); background:var(--panel); cursor:pointer;
+}
+.cmp-del:hover { border-color:var(--danger); color:var(--danger); background:var(--danger-soft); }
+
+/* ---------- 6. Contenido ---------- */
+.cmp-content { flex:1; min-height:0; overflow:auto; padding:20px; }
+.cmp-wrap { max-width:1080px; margin:0 auto; display:flex; flex-direction:column; gap:16px; }
+.cmp-lede { font-size:13px; line-height:1.6; color:var(--muted); max-width:66ch; }
+.cmp-lede strong { color:var(--text); font-weight:600; }
+.cmp-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(270px,1fr)); gap:14px; }
+
+/* ---------- 7. Tarjeta ---------- */
+.cmp-card {
+  min-width:0; border-radius:12px; border:1px solid var(--line); background:var(--panel);
+  box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column;
+}
+.cmp-card__body { padding:16px 16px 14px; display:flex; flex-direction:column; gap:12px; }
+.cmp-card__top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.cmp-card__id { display:flex; align-items:center; gap:10px; min-width:0; }
+.cmp-avatar {
+  width:32px; height:32px; flex:none; border-radius:9px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:13px; font-weight:700; color:var(--accent); background:var(--accent-soft);
+}
+.cmp-avatar--top { color:var(--top); background:var(--top-soft); }
+.cmp-avatar--neutral { color:var(--muted); background:var(--raise); }
+.cmp-card__names { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.cmp-card__name {
+  font-size:15px; font-weight:700; letter-spacing:-0.01em;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.cmp-card__cat { font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.cmp-prio {
+  flex:none; font-size:11px; font-weight:600; letter-spacing:0.02em;
+  padding:3px 9px; border-radius:999px; white-space:nowrap;
+  color:var(--accent); background:var(--accent-soft);
+}
+.cmp-prio--ref { color:var(--top); background:var(--top-soft); }
+.cmp-prio--ind { color:var(--muted); background:var(--raise); }
+
+.cmp-meta { display:flex; align-items:center; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--muted); }
+.cmp-meta__item { display:flex; align-items:center; gap:6px; }
+.cmp-meta__link { display:flex; align-items:center; gap:6px; color:var(--accent); cursor:pointer; }
+.cmp-meta__link:hover { text-decoration:underline; }
+
+.cmp-stat { display:flex; flex-direction:column; gap:5px; }
+.cmp-stat__row { display:flex; align-items:baseline; justify-content:space-between; gap:8px; font-size:12px; color:var(--muted); }
+.cmp-stat__n { font-weight:700; font-variant-numeric:tabular-nums; color:var(--top); }
+.cmp-stat__n--zero { color:var(--muted); }
+.cmp-stat__track { height:5px; border-radius:5px; background:var(--raise); overflow:hidden; }
+.cmp-stat__fill { display:block; height:100%; border-radius:5px; background:var(--top); }
+.cmp-stat__fill--zero { background:var(--line); }
+
+.cmp-card__foot {
+  margin-top:auto; display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:10px 16px; border-top:1px solid var(--hair); background:var(--bg);
+}
+.cmp-card__sync { font-size:11px; color:var(--faint); }
+.cmp-card__actions { display:flex; gap:7px; }
+
+/* tarjeta "añadir" */
+.cmp-add {
+  min-width:0; min-height:190px; border-radius:12px; border:1px dashed var(--line);
+  background:transparent; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:8px; cursor:pointer; color:var(--muted);
+  font-family:inherit; font-size:13px; font-weight:600;
+}
+.cmp-add:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+
+/* ---------- 8. Estado vacío ---------- */
+.cmp-empty { padding:48px 20px; display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center; }
+.cmp-empty svg { color:var(--faint); }
+.cmp-empty p { margin:0; font-size:14px; color:var(--muted); }
+
+/* ---------- 9. Toast ---------- */
+.cmp-toast {
+  position:fixed; left:50%; bottom:22px; transform:translateX(-50%);
+  padding:11px 20px; border-radius:9px; font-size:13px; font-weight:600;
+  color:var(--onaccent); background:var(--accent);
+  box-shadow:0 14px 34px rgba(0,0,0,0.3);
+  display:flex; align-items:center; gap:9px; z-index:60;
+}
+.cmp-toast::before { content:""; width:6px; height:6px; border-radius:999px; background:var(--onaccent); opacity:0.7; }
+
+/* ---------- 10. Diálogo de confirmación ---------- */
+.cmp-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.45);
+  display:flex; align-items:center; justify-content:center; padding:24px; z-index:80;
+}
+.cmp-dialog {
+  width:420px; max-width:94vw; border-radius:12px;
+  background:var(--bg); border:1px solid var(--line);
+  box-shadow:0 30px 70px rgba(0,0,0,0.35); overflow:hidden;
+}
+.cmp-dialog__body { padding:20px 22px 8px; display:flex; align-items:flex-start; gap:12px; }
+.cmp-dialog__icon {
+  width:34px; height:34px; flex:none; border-radius:9px;
+  display:flex; align-items:center; justify-content:center;
+  color:var(--danger); background:var(--danger-soft);
+}
+.cmp-dialog__text { display:flex; flex-direction:column; gap:6px; min-width:0; }
+.cmp-dialog__title { font-size:16px; font-weight:700; letter-spacing:-0.01em; }
+.cmp-dialog__desc { font-size:13px; line-height:1.6; color:var(--muted); }
+.cmp-dialog__foot { padding:16px 22px 20px; display:flex; justify-content:flex-end; gap:10px; }
+.cmp-dialog__foot .cmp-btn { height:auto; padding:9px 16px; }
+.cmp-dialog__foot .cmp-btn--danger { padding:9px 18px; }
+
+/* ---------- 11. Iconos SVG (referencia) -------------------------------
+   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+
+   volver      M15 5l-7 7 7 7
+   competidor  M9 5a3.4 3.4 0 1 0 0 6.8A3.4 3.4 0 0 0 9 5z M3 20c1.2-3.2 3.6-4.5 6-4.5s4.8 1.3 6 4.5 M16.5 6.2a3 3 0 0 1 0 5.6 M21 19.5c-.8-2.2-2-3.2-3.5-3.7
+   más         M12 5v14 M5 12h14
+   buscar      M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M16.2 16.2 20.5 20.5
+   prioridad   M6.5 3.5v17 M6.5 4.5h11l-2.2 3.8 2.2 3.7h-11
+   categoría   M4 4.5h7l9 9-6.5 6.5-9-9z M7.6 8.1h.01
+   ubicación   M12 21s6.5-5.6 6.5-10.5a6.5 6.5 0 1 0-13 0C5.5 15.4 12 21 12 21z M12 8.2a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z
+   cuentas     M12 7.8a4.2 4.2 0 1 0 0 8.4 4.2 4.2 0 0 0 0-8.4z M16.2 7.8v5.1a3 3 0 0 0 5.3 1.9 M20 15.9A9 9 0 1 1 18.4 5.6
+   web         M14 5h5v5 M19 5l-8 8 M18 14v5H5V6h5
+   editar      M4 20l1-4 10.5-10.5 3 3-10.5 10.5z M14.5 6.5l3 3
+   eliminar    M4.5 6.5h15 M9.5 6.5V4.5h5v2 M6.5 6.5 7.5 20h9l1-13.5 M10 10v6.5 M14 10v6.5
+   caret       M7 10l5 5 5-5
+   sol         M12 6.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z M12 2v2 M12 20v2 M4.9 4.9l1.4 1.4 M17.7 17.7l1.4 1.4 M2 12h2 M20 12h2 M4.9 19.1l1.4-1.4 M17.7 6.3l1.4-1.4
+   luna        M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z
+   --------------------------------------------------------------------- */

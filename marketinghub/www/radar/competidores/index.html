@@ -1,267 +1,327 @@
-{% extends "templates/web.html" %}
-
-{% block navbar %}{% endblock %}
-{% block header %}{% endblock %}
-{% block footer %}{% endblock %}
-
-{% block style %}
-{{ super() }}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Competidores</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest"></script>
-<link rel="stylesheet" href="/radar/radar.css">
-<style>
-  .rd-comp-filter {
-    display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 12px;
-  }
-  .rd-comp-filter .rd-input { flex: 1; min-width: 200px; }
-  .rd-comp-filter .rd-select { min-width: 160px; flex: 0 0 auto; }
-  .rd-comp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
-  .rd-comp-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 18px;
-    box-shadow: var(--shadow-sm);
-    display: flex; flex-direction: column; gap: 8px;
-    transition: box-shadow .15s, transform .15s;
-  }
-  .rd-comp-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
-  .rd-comp-head {
-    display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
-  }
-  .rd-comp-name { font-size: 17px; font-weight: 700; color: var(--text); }
-  .rd-comp-cat { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .rd-comp-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: var(--text-2); }
-  .rd-comp-meta span { display: inline-flex; align-items: center; gap: 4px; }
-  .rd-comp-meta i { width: 14px; height: 14px; }
-  .rd-badge {
-    display: inline-block; padding: 3px 10px; border-radius: 999px;
-    font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
-  }
-  .rd-badge-directo   { background: var(--red-bg);    color: var(--red); }
-  .rd-badge-indirecto { background: var(--orange-bg); color: var(--orange); }
-  .rd-badge-referente { background: var(--purple-bg); color: var(--purple); }
-  .rd-badge-inactivo  { background: #e5e7eb;          color: #6b7280; }
-  .rd-comp-actions {
-    display: flex; gap: 6px; margin-top: 8px;
-    padding-top: 12px; border-top: 1px solid var(--border);
-  }
-</style>
-{% endblock %}
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/radar/competidores/competidores.css?v=cmp1">
+</head>
+<body class="cmp">
 
-{% block page_content %}
 {% if no_access %}
-<div class="rd-na-screen"><div class="rd-na-card">
-  <div class="rd-na-brand"><span class="rd-na-dot"></span><span>Radar · Acceso denegado</span></div>
-  <div class="rd-na-body">No tienes permiso.
-    <ul class="rd-na-roles">{% for r in required_roles %}<li><code>{{ r }}</code></li>{% endfor %}</ul>
+<div class="cmp-app" style="display:block">
+  <div class="cmp-empty" style="margin-top:80px">
+    <p>Competidores · Acceso denegado. Se requiere uno de estos roles: {{ required_roles|join(", ") }}.</p>
   </div>
-</div></div>
+</div>
 {% else %}
-<div class="rd-app">
-  <header class="rd-topbar">
-    <div class="rd-topbar-left">
-      <a href="/radar" class="rd-back"><i data-lucide="arrow-left"></i> Volver</a>
-      <div class="rd-logo"><span class="rd-logo-dot"></span><span>Radar · Competidores</span></div>
+
+<div class="cmp-app">
+
+  <!-- ============ CABECERA ============ -->
+  <header class="cmp-header">
+    <div class="cmp-header__left">
+      <a class="cmp-back" href="/radar"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>Volver</a>
+      <span class="cmp-div"></span>
+      <div class="cmp-title-group">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5a3.4 3.4 0 1 0 0 6.8A3.4 3.4 0 0 0 9 5z M3 20c1.2-3.2 3.6-4.5 6-4.5s4.8 1.3 6 4.5 M16.5 6.2a3 3 0 0 1 0 5.6 M21 19.5c-.8-2.2-2-3.2-3.5-3.7"/></svg>
+        <span class="cmp-title">Competidores</span>
+      </div>
     </div>
-    <div class="rd-topbar-right">
-      {% if can_edit %}
-      <button class="rd-btn" onclick="RadarComps.abrirModal()">
-        <i data-lucide="plus"></i> Nuevo competidor
-      </button>
-      {% endif %}
+    <div class="cmp-header__right">
+      <span class="cmp-counter">{{ mostrados }} de {{ total }}</span>
+      <button class="cmp-iconbtn" id="theme-toggle" title="Cambiar tema" type="button"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg></button>
+      {% if can_edit %}<button class="cmp-btn cmp-btn--primary" type="button" data-nuevo><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14 M5 12h14"/></svg>Nuevo competidor</button>{% endif %}
     </div>
   </header>
 
-  <main class="rd-main">
-    <div class="rd-hero">
-      <h1>👥 Competidores</h1>
-      <p class="rd-hero-sub">Las marcas que quieres monitorear. Marca cada uno como directo, indirecto o referente.</p>
-    </div>
+  <!-- ============ FILTROS ============ -->
+  <div class="cmp-toolbar">
+    <div class="cmp-toolbar__filters">
+      <div class="cmp-search">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M16.2 16.2 20.5 20.5"/></svg>
+        <input type="text" name="q" placeholder="Buscar por nombre…" value="{{ f_q|e }}">
+      </div>
 
-    <div class="rd-comp-filter">
-      <input type="text" id="rd-f-search" class="rd-input" placeholder="🔍 Buscar por nombre...">
-      <select id="rd-f-prioridad" class="rd-select">
-        <option value="">Todas las prioridades</option>
-        <option value="Directo">Directos</option>
-        <option value="Indirecto">Indirectos</option>
-        <option value="Referente">Referentes</option>
-      </select>
-      <select id="rd-f-cat" class="rd-select">
-        <option value="">Todas las categorías</option>
-      </select>
-    </div>
+      <div class="cmp-select{% if f_prioridad %} is-active{% endif %}">
+        <span class="cmp-select__icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5v17 M6.5 4.5h11l-2.2 3.8 2.2 3.7h-11"/></svg></span>
+        <select name="prioridad">
+          <option value="">Todas las prioridades</option>
+          {% for p in prioridades %}<option value="{{ p|e }}"{% if f_prioridad == p %} selected{% endif %}>{{ p|e }}</option>
+          {% endfor %}
+        </select>
+        <span class="cmp-select__caret"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg></span>
+      </div>
 
-    <div id="rd-comps-container">
-      <div class="rd-empty"><div class="rd-empty-title">Cargando…</div></div>
+      <div class="cmp-select{% if f_categoria %} is-active{% endif %}">
+        <span class="cmp-select__icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h7l9 9-6.5 6.5-9-9z M7.6 8.1h.01"/></svg></span>
+        <select name="categoria">
+          <option value="">Todas las categorías</option>
+          {% for c in categorias %}<option value="{{ c|e }}"{% if f_categoria == c %} selected{% endif %}>{{ c|e }}</option>
+          {% endfor %}
+        </select>
+        <span class="cmp-select__caret"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg></span>
+      </div>
+
+      <button class="cmp-btn cmp-btn--quiet{% if hay_filtros %} is-active{% endif %}" type="button" data-href="/radar/competidores">Limpiar</button>
     </div>
-  </main>
+  </div>
+
+  <!-- ============ CONTENIDO ============ -->
+  <div class="cmp-content">
+    <div class="cmp-wrap">
+      <p class="cmp-lede">Las marcas que monitorea el radar. Marca cada una como <strong>directo</strong>, indirecto o referente para priorizar el análisis.</p>
+
+      {% if competidores %}
+      <div class="cmp-grid">
+
+        {% for c in competidores %}
+        <article class="cmp-card">
+          <div class="cmp-card__body">
+            <div class="cmp-card__top">
+              <span class="cmp-card__id">
+                <span class="cmp-avatar{{ c.avatar_cls }}">{{ c.inicial|e }}</span>
+                <span class="cmp-card__names">
+                  <span class="cmp-card__name">{{ c.titulo|e }}</span>
+                  <span class="cmp-card__cat">{{ (c.categoria or "Sin categoría")|e }}</span>
+                </span>
+              </span>
+              <span class="cmp-prio{{ c.badge_cls }}">{{ c.prioridad_label }}</span>
+            </div>
+
+            <div class="cmp-meta">
+              <span class="cmp-meta__item"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s6.5-5.6 6.5-10.5a6.5 6.5 0 1 0-13 0C5.5 15.4 12 21 12 21z M12 8.2a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z"/></svg>{{ (c.pais or "—")|e }}</span>
+              <span class="cmp-meta__item"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7.8a4.2 4.2 0 1 0 0 8.4 4.2 4.2 0 0 0 0-8.4z M16.2 7.8v5.1a3 3 0 0 0 5.3 1.9 M20 15.9A9 9 0 1 1 18.4 5.6"/></svg>{{ c.cuentas }} cuenta{% if c.cuentas != 1 %}s{% endif %}</span>
+              {% if c.web %}<span class="cmp-meta__link" data-href="{{ c.web|e }}" data-blank="1"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5h5v5 M19 5l-8 8 M18 14v5H5V6h5"/></svg>Web</span>{% endif %}
+            </div>
+
+            <div class="cmp-stat">
+              <span class="cmp-stat__row">
+                <span>Virales 30 d</span>
+                <span class="cmp-stat__n{% if not c.virales %} cmp-stat__n--zero{% endif %}">{{ c.virales }}</span>
+              </span>
+              <span class="cmp-stat__track">
+                <span class="cmp-stat__fill{% if not c.virales %} cmp-stat__fill--zero{% endif %}" style="width:{{ c.virales_pct }}%"></span>
+              </span>
+            </div>
+          </div>
+
+          <div class="cmp-card__foot">
+            <span class="cmp-card__sync">{{ c.sync }}</span>
+            <span class="cmp-card__actions">
+              {% if can_edit %}
+              <button class="cmp-btn cmp-btn--sm" type="button" data-editar="{{ c.name|e }}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5z M14.5 6.5l3 3"/></svg>Editar</button>
+              <button class="cmp-del" type="button" title="Eliminar competidor" data-borrar="{{ c.name|e }}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15 M9.5 6.5V4.5h5v2 M6.5 6.5 7.5 20h9l1-13.5 M10 10v6.5 M14 10v6.5"/></svg></button>
+              {% endif %}
+            </span>
+          </div>
+        </article>
+        {% endfor %}
+
+        {% if can_edit %}
+        <button class="cmp-add" type="button" data-nuevo>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14 M5 12h14"/></svg>
+          <span>Añadir competidor</span>
+        </button>
+        {% endif %}
+      </div>
+      {% else %}
+      <div class="cmp-empty">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M16.2 16.2 20.5 20.5"/></svg>
+        <p>Ningún competidor coincide con los filtros.</p>
+        <button class="cmp-btn cmp-btn--primary" type="button" data-href="/radar/competidores">Limpiar filtros</button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
 </div>
 
-<script src="/radar/radar.js"></script>
-<script>
-  const CAN_EDIT = {{ 'true' if can_edit else 'false' }};
+{% if can_edit %}
+<!-- ============ EDITAR / NUEVO ============ -->
+<div class="cmp-overlay" id="dlg-editar" style="display:none">
+  <div class="cmp-dialog">
+    <div class="cmp-dialog__body">
+      <span class="cmp-dialog__icon" style="color:var(--accent);background:var(--accent-soft)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5z M14.5 6.5l3 3"/></svg></span>
+      <span class="cmp-dialog__text" style="flex:1">
+        <span class="cmp-dialog__title" id="ed-titulo">Nuevo competidor</span>
+        <span class="cmp-search" style="flex:none"><input type="text" id="ed-nombre" placeholder="Nombre comercial"></span>
+        <span class="cmp-select">
+          <select id="ed-prioridad">
+            {% for p in prioridades %}<option value="{{ p|e }}">{{ p|e }}</option>
+            {% endfor %}
+          </select>
+          <span class="cmp-select__caret"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg></span>
+        </span>
+        <span class="cmp-select">
+          <select id="ed-categoria">
+            <option value="">Sin categoría</option>
+            {% for c in categorias %}<option value="{{ c|e }}">{{ c|e }}</option>
+            {% endfor %}
+          </select>
+          <span class="cmp-select__caret"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg></span>
+        </span>
+        <span class="cmp-search" style="flex:none"><input type="text" id="ed-pais" placeholder="País"></span>
+        <span class="cmp-search" style="flex:none"><input type="text" id="ed-website" placeholder="https://…"></span>
+        <span class="cmp-dialog__desc" id="ed-error" style="color:var(--danger);display:none"></span>
+      </span>
+    </div>
+    <div class="cmp-dialog__foot">
+      <button class="cmp-btn" type="button" data-cerrar>Cancelar</button>
+      <button class="cmp-btn cmp-btn--primary" type="button" id="ed-guardar">Guardar</button>
+    </div>
+  </div>
+</div>
 
-  window.RadarComps = {
-    lista: [],
-    categorias: [],
-    async cargar() {
-      try {
-        [this.lista, this.categorias] = await Promise.all([
-          Radar.api('marketinghub.www.radar.competidores.index.listar'),
-          Radar.api('marketinghub.www.radar.competidores.index.listar_categorias'),
-        ]);
-      } catch (e) {
-        document.getElementById('rd-comps-container').innerHTML =
-          `<div class="rd-empty"><div class="rd-empty-title">Error</div><div class="rd-empty-sub">${Radar.escapeHtml(e.message)}</div></div>`;
-        return;
-      }
-      // poblar select de categorias
-      const selCat = document.getElementById('rd-f-cat');
-      selCat.innerHTML = '<option value="">Todas las categorías</option>' +
-        this.categorias.map(c => `<option value="${Radar.escapeHtml(c)}">${Radar.escapeHtml(c)}</option>`).join('');
-      this.render();
-    },
-    render() {
-      const q = document.getElementById('rd-f-search').value.toLowerCase().trim();
-      const prio = document.getElementById('rd-f-prioridad').value;
-      const cat = document.getElementById('rd-f-cat').value;
-      const filtrados = this.lista.filter(c =>
-        (!q || (c.nombre_comercial || '').toLowerCase().includes(q)) &&
-        (!prio || c.prioridad === prio) &&
-        (!cat || c.categoria === cat)
-      );
-      const cont = document.getElementById('rd-comps-container');
-      if (!filtrados.length) {
-        cont.innerHTML = `
-          <div class="rd-empty">
-            <div class="rd-empty-icon"><i data-lucide="users"></i></div>
-            <div class="rd-empty-title">${this.lista.length ? 'Ningún competidor coincide con los filtros' : 'Aún no tienes competidores'}</div>
-            ${!this.lista.length && CAN_EDIT ? '<button class="rd-btn" onclick="RadarComps.abrirModal()"><i data-lucide="plus"></i> Nuevo competidor</button>' : ''}
-          </div>`;
-        lucide.createIcons();
-        return;
-      }
-      cont.innerHTML = '<div class="rd-comp-grid">' + filtrados.map(c => {
-        const badgeCls = c.activo
-          ? `rd-badge-${(c.prioridad || 'indirecto').toLowerCase()}`
-          : 'rd-badge-inactivo';
-        const badgeText = c.activo ? (c.prioridad || 'Sin prioridad') : 'Inactivo';
-        return `
-          <div class="rd-comp-card">
-            <div class="rd-comp-head">
-              <div>
-                <div class="rd-comp-name">${Radar.escapeHtml(c.nombre_comercial)}</div>
-                <div class="rd-comp-cat">${Radar.escapeHtml(c.categoria || 'Sin categoría')}</div>
-              </div>
-              <span class="rd-badge ${badgeCls}">${Radar.escapeHtml(badgeText)}</span>
-            </div>
-            <div class="rd-comp-meta">
-              ${c.pais ? `<span><i data-lucide="map-pin"></i>${Radar.escapeHtml(c.pais)}</span>` : ''}
-              <span><i data-lucide="at-sign"></i>${c.cuentas} cuenta${c.cuentas === 1 ? '' : 's'}</span>
-              ${c.website ? `<span><a href="${Radar.escapeHtml(c.website)}" target="_blank" rel="noopener" style="color:var(--brand);text-decoration:none;"><i data-lucide="external-link"></i>Web</a></span>` : ''}
-            </div>
-            ${CAN_EDIT ? `
-            <div class="rd-comp-actions">
-              <button class="rd-btn rd-btn-secondary rd-btn-sm" onclick="RadarComps.editar('${Radar.escapeHtml(c.name)}')">
-                <i data-lucide="pencil"></i> Editar
-              </button>
-              <button class="rd-btn rd-btn-danger rd-btn-sm" onclick="RadarComps.borrar('${Radar.escapeHtml(c.name)}')">
-                <i data-lucide="trash-2"></i>
-              </button>
-            </div>` : ''}
-          </div>`;
-      }).join('') + '</div>';
-      lucide.createIcons();
-    },
-    abrirModal(c) {
-      const editing = !!c;
-      const catOpts = ['<option value="">— Sin categoría —</option>'].concat(
-        this.categorias.map(x => `<option value="${Radar.escapeHtml(x)}" ${c?.categoria === x ? 'selected' : ''}>${Radar.escapeHtml(x)}</option>`)
-      ).join('');
-      Radar.modal({
-        title: editing ? 'Editar competidor' : 'Nuevo competidor',
-        confirmText: editing ? 'Guardar' : 'Crear',
-        bodyHtml: `
-          <div class="rd-field">
-            <label for="rd-c-nombre">Nombre comercial <span style="color:var(--red)">*</span></label>
-            <input type="text" id="rd-c-nombre" class="rd-input" placeholder="Ej: Renzo Costa"
-                   value="${Radar.escapeHtml(c?.nombre_comercial || '')}" required autofocus>
-          </div>
-          <div class="rd-field">
-            <label for="rd-c-cat">Categoría</label>
-            <select id="rd-c-cat" class="rd-select">${catOpts}</select>
-          </div>
-          <div class="rd-field">
-            <label for="rd-c-prio">Prioridad</label>
-            <select id="rd-c-prio" class="rd-select">
-              <option value="Directo"    ${c?.prioridad === 'Directo'    ? 'selected' : ''}>Directo (mismo producto y público)</option>
-              <option value="Indirecto"  ${!c || c?.prioridad === 'Indirecto'  ? 'selected' : ''}>Indirecto (producto sustituto)</option>
-              <option value="Referente"  ${c?.prioridad === 'Referente'  ? 'selected' : ''}>Referente (inspiración)</option>
-            </select>
-          </div>
-          <div class="rd-field">
-            <label for="rd-c-pais">País</label>
-            <input type="text" id="rd-c-pais" class="rd-input" placeholder="Ej: Peru, Colombia"
-                   value="${Radar.escapeHtml(c?.pais || '')}">
-          </div>
-          <div class="rd-field">
-            <label for="rd-c-web">Website</label>
-            <input type="url" id="rd-c-web" class="rd-input" placeholder="https://..."
-                   value="${Radar.escapeHtml(c?.website || '')}">
-          </div>
-          <div class="rd-field">
-            <label class="rd-checkbox">
-              <input type="checkbox" id="rd-c-activo" ${!c || c?.activo ? 'checked' : ''}>
-              <span>Activo (monitorear)</span>
-            </label>
-          </div>
-          <div class="rd-field">
-            <label for="rd-c-notas">Notas estratégicas</label>
-            <textarea id="rd-c-notas" class="rd-textarea" placeholder="Qué hacen bien, qué copiar, qué evitar...">${Radar.escapeHtml(c?.notas_estrategicas || '')}</textarea>
-          </div>
-        `,
-        onConfirm: async () => {
-          const data = {
-            name: c?.name || '',
-            nombre_comercial: document.getElementById('rd-c-nombre').value.trim(),
-            categoria: document.getElementById('rd-c-cat').value,
-            prioridad: document.getElementById('rd-c-prio').value,
-            pais: document.getElementById('rd-c-pais').value.trim(),
-            website: document.getElementById('rd-c-web').value.trim(),
-            activo: document.getElementById('rd-c-activo').checked ? 1 : 0,
-            notas_estrategicas: document.getElementById('rd-c-notas').value.trim(),
-          };
-          if (!data.nombre_comercial) { Radar.toast('Nombre requerido', 'error'); return false; }
-          await Radar.api('marketinghub.www.radar.competidores.index.guardar', data);
-          Radar.toast(editing ? '✓ Actualizado' : '✓ Creado', 'success');
-          this.cargar();
-        }
+<!-- ============ CONFIRMACIÓN DE BORRADO ============ -->
+<div class="cmp-overlay" id="dlg-borrar" style="display:none">
+  <div class="cmp-dialog">
+    <div class="cmp-dialog__body">
+      <span class="cmp-dialog__icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15 M9.5 6.5V4.5h5v2 M6.5 6.5 7.5 20h9l1-13.5 M10 10v6.5 M14 10v6.5"/></svg></span>
+      <span class="cmp-dialog__text">
+        <span class="cmp-dialog__title" id="bo-titulo">Eliminar</span>
+        <span class="cmp-dialog__desc">Dejarás de recibir sus publicaciones y anuncios en el radar. El histórico ya analizado se conserva.</span>
+        <span class="cmp-dialog__desc" id="bo-error" style="color:var(--danger);display:none"></span>
+      </span>
+    </div>
+    <div class="cmp-dialog__foot">
+      <button class="cmp-btn" type="button" data-cerrar>Cancelar</button>
+      <button class="cmp-btn cmp-btn--danger" type="button" id="bo-confirmar">Eliminar</button>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="cmp-toast" id="toast" style="display:none"></div>
+
+<script>
+  (function () {
+    var API = '/api/method/marketinghub.www.radar.competidores.index.';
+    var CSRF = '{{ csrf_token }}';
+    var DATOS = {{ frappe.as_json(competidores) }};
+
+    // tema (persistido)
+    var body = document.body;
+    function setTema(t) { body.dataset.theme = t === 'dark' ? 'dark' : ''; }
+    try { setTema(localStorage.getItem('cmp-theme') || ''); } catch (e) {}
+    document.getElementById('theme-toggle').addEventListener('click', function () {
+      var t = body.dataset.theme === 'dark' ? '' : 'dark';
+      setTema(t);
+      try { localStorage.setItem('cmp-theme', t); } catch (e) {}
+    });
+
+    // elementos que navegan (no son <a>: el CSS pinta los enlaces con el acento)
+    document.querySelectorAll('[data-href]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        if (el.dataset.blank) window.open(el.dataset.href, '_blank', 'noopener');
+        else window.location.href = el.dataset.href;
       });
-    },
-    editar(name) { const c = this.lista.find(x => x.name === name); if (c) this.abrirModal(c); },
-    borrar(name) {
-      Radar.modal({
-        title: 'Borrar competidor', confirmText: 'Sí, borrar', danger: true,
-        bodyHtml: `<p>¿Seguro que quieres borrar <b>${Radar.escapeHtml(name)}</b>?</p>
-                   <p style="margin-top:8px;color:var(--text-2);font-size:13px;">Si tiene cuentas sociales, borra primero esas cuentas.</p>`,
-        onConfirm: async () => {
-          await Radar.api('marketinghub.www.radar.competidores.index.borrar', {name});
-          Radar.toast('✓ Borrado', 'success');
-          this.cargar();
-        }
+    });
+
+    // filtros → querystring
+    function aplicar(nombre, valor) {
+      var p = new URLSearchParams(window.location.search);
+      if (valor) p.set(nombre, valor); else p.delete(nombre);
+      window.location.search = p.toString();
+    }
+    document.querySelectorAll('.cmp-toolbar select').forEach(function (sel) {
+      sel.addEventListener('change', function () { aplicar(sel.name, sel.value); });
+    });
+    var buscador = document.querySelector('.cmp-toolbar input[name=q]');
+    if (buscador) buscador.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter') aplicar('q', buscador.value.trim());
+    });
+
+    function toast(msg) {
+      var t = document.getElementById('toast');
+      t.textContent = msg; t.style.display = '';
+      setTimeout(function () { t.style.display = 'none'; }, 3000);
+    }
+
+    function llamar(metodo, datos) {
+      return fetch(API + metodo, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': CSRF },
+        body: JSON.stringify(datos)
+      }).then(function (r) {
+        return r.json().then(function (j) {
+          if (!r.ok) throw new Error((j._server_messages && JSON.parse(j._server_messages)[0]) || j.exception || 'Error');
+          return j.message;
+        });
       });
     }
-  };
 
-  document.addEventListener('DOMContentLoaded', function() {
-    lucide.createIcons();
-    RadarComps.cargar();
-    document.getElementById('rd-f-search').addEventListener('input', () => RadarComps.render());
-    document.getElementById('rd-f-prioridad').addEventListener('change', () => RadarComps.render());
-    document.getElementById('rd-f-cat').addEventListener('change', () => RadarComps.render());
-  });
+    var edit = document.getElementById('dlg-editar');
+    var del = document.getElementById('dlg-borrar');
+    if (!edit) return;
+    var editando = null, borrando = null;
+
+    function abrirEditar(name) {
+      editando = name;
+      var c = DATOS.filter(function (x) { return x.name === name; })[0] || {};
+      document.getElementById('ed-titulo').textContent = name ? 'Editar «' + (c.titulo || name) + '»' : 'Nuevo competidor';
+      document.getElementById('ed-nombre').value = c.nombre_comercial || '';
+      document.getElementById('ed-prioridad').value = c.prioridad || 'Indirecto';
+      document.getElementById('ed-categoria').value = c.categoria || '';
+      document.getElementById('ed-pais').value = c.pais || '';
+      document.getElementById('ed-website').value = c.website || '';
+      document.getElementById('ed-error').style.display = 'none';
+      edit.style.display = '';
+    }
+
+    document.querySelectorAll('[data-nuevo]').forEach(function (b) {
+      b.addEventListener('click', function () { abrirEditar(null); });
+    });
+    document.querySelectorAll('[data-editar]').forEach(function (b) {
+      b.addEventListener('click', function () { abrirEditar(b.dataset.editar); });
+    });
+    document.querySelectorAll('[data-borrar]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        borrando = b.dataset.borrar;
+        document.getElementById('bo-titulo').textContent = 'Eliminar «' + borrando + '»';
+        document.getElementById('bo-error').style.display = 'none';
+        del.style.display = '';
+      });
+    });
+    document.querySelectorAll('[data-cerrar]').forEach(function (b) {
+      b.addEventListener('click', function () { edit.style.display = 'none'; del.style.display = 'none'; });
+    });
+
+    document.getElementById('ed-guardar').addEventListener('click', function () {
+      var err = document.getElementById('ed-error');
+      llamar('guardar', {
+        name: editando || '',
+        nombre_comercial: document.getElementById('ed-nombre').value.trim(),
+        prioridad: document.getElementById('ed-prioridad').value,
+        categoria: document.getElementById('ed-categoria').value,
+        pais: document.getElementById('ed-pais').value.trim(),
+        website: document.getElementById('ed-website').value.trim(),
+        activo: 1
+      }).then(function () {
+        toast('Competidor guardado.');
+        setTimeout(function () { window.location.reload(); }, 600);
+      }).catch(function (e) {
+        err.textContent = String(e.message).replace(/<[^>]*>/g, '');
+        err.style.display = '';
+      });
+    });
+
+    document.getElementById('bo-confirmar').addEventListener('click', function () {
+      var err = document.getElementById('bo-error');
+      llamar('borrar', { name: borrando }).then(function () {
+        toast('«' + borrando + '» eliminado del radar.');
+        setTimeout(function () { window.location.reload(); }, 600);
+      }).catch(function (e) {
+        err.textContent = String(e.message).replace(/<[^>]*>/g, '');
+        err.style.display = '';
+      });
+    });
+  })();
 </script>
+
 {% endif %}
-{% endblock %}
+
+</body>
+</html>
