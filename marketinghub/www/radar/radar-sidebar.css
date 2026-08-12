@@ -46,9 +46,12 @@ body[data-theme="dark"] .radx-side {
     --radx-accent-soft: rgba(0, 164, 124, .16);
 }
 
-/* El contenido de cada pagina se desplaza para dejarle sitio */
+/* El contenido de cada pagina se desplaza para dejarle sitio.
+   Va con !important porque las paginas que extienden templates/web.html
+   neutralizan los contenedores de Frappe con `html, body { padding:0 !important }`
+   y si no, el contenido quedaria debajo del sidebar. */
 body.radx-has-side {
-    padding-left: var(--radx-w, 222px);
+    padding-left: var(--radx-w, 222px) !important;
     transition: padding-left .15s ease;
 }
 
@@ -273,6 +276,6 @@ body.radx-collapsed .radx-foot {
     }
 
     body.radx-has-side {
-        padding-left: 56px;
+        padding-left: 56px !important;
     }
 }
