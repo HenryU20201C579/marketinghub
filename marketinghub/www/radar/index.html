@@ -41,81 +41,81 @@
       <div class="rad-navgroup">
         <div class="rad-navgroup__title">Contenido</div>
 
-        <a class="rad-nav is-active" href="/radar/publicaciones">
+        <div class="rad-nav is-active" data-href="/radar/publicaciones">
           <span class="rad-nav__label">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5s4.5 3.6 4.5 8a4.5 4.5 0 0 1-9 0c0-1.6.8-2.9 1.6-3.8 0 1.6.9 2.4 1.6 2.4 1 0 1.3-1 1.3-2.3 0-1.6-.5-3.1-1-4.3z M8 15.5a4 4 0 0 0 8 0"/></svg>
             <span>Publicaciones</span>
           </span>
           <span class="rad-nav__count rad-nav__count--accent">{{ counts.publicaciones or "" }}</span>
-        </a>
+        </div>
 
-        <a class="rad-nav" href="/radar/guiones">
+        <div class="rad-nav" data-href="/radar/guiones">
           <span class="rad-nav__label">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5z M14.5 6.5l3 3"/></svg>
             <span>Guiones</span>
           </span>
           <span class="rad-nav__count">{{ counts.guiones or "" }}</span>
-        </a>
+        </div>
 
-        <a class="rad-nav" href="/radar/comparativa">
+        <div class="rad-nav" data-href="/radar/comparativa">
           <span class="rad-nav__label">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15v13.5h-15z M8.5 3.5v4 M15.5 3.5v4 M4.5 11h15"/></svg>
             <span>Calendario pubs</span>
           </span>
           <span class="rad-nav__count"></span>
-        </a>
+        </div>
 
-        <a class="rad-nav" href="/radar/guiones?vista=calendario">
+        <div class="rad-nav" data-href="/radar/guiones?vista=calendario">
           <span class="rad-nav__label">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6.5h12 M8 12h12 M8 17.5h12 M4 6.5h.01 M4 12h.01 M4 17.5h.01"/></svg>
             <span>Agenda guiones</span>
           </span>
           <span class="rad-nav__count">{{ counts.guiones_semana or "" }}</span>
-        </a>
+        </div>
 
-        <a class="rad-nav" href="/radar/ads">
+        <div class="rad-nav" data-href="/radar/ads">
           <span class="rad-nav__label">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16v11H4z M4 10h16 M8 6.5v11"/></svg>
             <span>Ads Library</span>
           </span>
           <span class="rad-nav__count">{{ counts.ads or "" }}</span>
-        </a>
+        </div>
       </div>
 
       <div class="rad-navgroup">
         <div class="rad-navgroup__title">Configuración</div>
 
-        <a class="rad-nav" href="/radar/competidores">
+        <div class="rad-nav" data-href="/radar/competidores">
           <span class="rad-nav__label">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5v17 M6.5 4.5h11l-2.2 3.8 2.2 3.7h-11"/></svg>
             <span>Competidores</span>
           </span>
           <span class="rad-nav__count">{{ counts.competidores or "" }}</span>
-        </a>
+        </div>
 
-        <a class="rad-nav" href="/radar/cuentas">
+        <div class="rad-nav" data-href="/radar/cuentas">
           <span class="rad-nav__label">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7.8a4.2 4.2 0 1 0 0 8.4 4.2 4.2 0 0 0 0-8.4z M16.2 7.8v5.1a3 3 0 0 0 5.3 1.9 M20 15.9A9 9 0 1 1 18.4 5.6"/></svg>
             <span>Cuentas</span>
           </span>
           <span class="rad-nav__count">{{ counts.cuentas or "" }}</span>
-        </a>
+        </div>
 
-        <a class="rad-nav" href="/radar/categorias">
+        <div class="rad-nav" data-href="/radar/categorias">
           <span class="rad-nav__label">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h7l9 9-6.5 6.5-9-9z M7.6 8.1h.01"/></svg>
             <span>Categorías</span>
           </span>
           <span class="rad-nav__count">{{ counts.categorias or "" }}</span>
-        </a>
+        </div>
 
-        <a class="rad-nav" href="/radar/settings">
+        <div class="rad-nav" data-href="/radar/settings">
           <span class="rad-nav__label">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8z M19.4 14.2a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1v.2a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.8-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H3.4a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 2.7-1.1V3.4a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7h.2a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.4 1.1z"/></svg>
             <span>Ajustes</span>
           </span>
           <span class="rad-nav__count"></span>
-        </a>
+        </div>
       </div>
     </div>
 
