@@ -259,6 +259,157 @@
   }
 
   .rd-notas-modal-body textarea { min-height: 100px; }
+
+  /* ================================================================
+     SHOPIFY-STYLE OVERRIDE (paleta beige/verde teal)
+     Aplicado solo a esta página. Sobrescribe la paleta global azul.
+     ================================================================ */
+  :root {
+    --bg:            #faf9f5;   /* beige crema */
+    --bg-soft:       #f5f3ec;
+    --surface:       #ffffff;
+    --border:        #eeeae0;   /* borde cálido */
+    --border-strong: #e0dbcd;
+    --text:          #1a1a1a;
+    --text-2:        #616161;
+    --muted:         #8a8a8a;
+
+    --brand:         #008060;   /* Shopify teal */
+    --brand-bg:      #e7f3ec;
+    --brand-strong:  #005c48;
+
+    --green:         #3c6e3b;
+    --green-bg:      #d5e8ce;
+    --orange:        #b56816;
+    --orange-bg:     #f0e3b8;
+    --red:           #a93a3a;
+    --red-bg:        #f3d7d7;
+  }
+  body { background: var(--bg) !important; font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; }
+
+  /* Topbar */
+  .rd-app .rd-topbar {
+    background: var(--bg); border-bottom: 1px solid var(--border); padding: 12px 24px;
+  }
+  .rd-app .rd-back { color: var(--brand); font-weight: 600; }
+  .rd-app .rd-back:hover { background: var(--brand-bg); }
+  .rd-app .rd-topbar-title { font-weight: 600; font-size: 15px; color: var(--text); border-left: none; padding-left: 8px; }
+
+  /* Filterbar — chips redondeados con dropdown arrow */
+  .rd-filterbar {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: none; padding: 10px 12px; gap: 8px;
+  }
+  .rd-filterbar .rd-select,
+  .rd-filterbar .rd-input {
+    border: 1px solid var(--border) !important;
+    border-radius: 8px; padding: 7px 12px; font-size: 13px;
+    background: var(--surface) !important; color: var(--text);
+    min-height: 34px; font-family: inherit;
+    box-shadow: none;
+  }
+  .rd-filterbar .rd-select:hover, .rd-filterbar .rd-input:hover { border-color: var(--border-strong) !important; }
+  .rd-filterbar .rd-select:focus, .rd-filterbar .rd-input:focus {
+    outline: 2px solid var(--brand-bg); border-color: var(--brand) !important;
+  }
+  .rd-filterbar .rd-counter {
+    color: var(--muted); font-weight: 500; font-family: inherit;
+    font-variant-numeric: tabular-nums;
+  }
+  .rd-btn-clear {
+    background: transparent !important; color: var(--text-2) !important;
+    border: none !important; padding: 7px 12px;
+  }
+  .rd-btn-clear:hover { color: var(--text) !important; background: var(--bg-soft) !important; }
+
+  /* Botón CSV como acción secundaria */
+  .rd-btn-csv, .rd-btn-actualizar {
+    background: var(--surface); color: var(--text); border: 1px solid var(--border);
+    padding: 7px 14px; border-radius: 8px; font-weight: 500; font-size: 13px;
+    display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+    font-family: inherit;
+  }
+  .rd-btn-csv:hover, .rd-btn-actualizar:hover { border-color: var(--border-strong); background: var(--bg-soft); }
+  .rd-btn-csv i, .rd-btn-actualizar i { width: 14px; height: 14px; }
+
+  /* Tabla */
+  .rd-tblwrap {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: none; padding: 0; overflow: hidden;
+  }
+  .rd-tbl thead th {
+    background: var(--surface); color: var(--muted);
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em;
+    font-weight: 600; padding: 12px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .rd-tbl thead th.rd-sortable:hover { background: var(--bg-soft); color: var(--text); }
+  .rd-tbl thead th.rd-asc  .rd-sort-ico::after,
+  .rd-tbl thead th.rd-desc .rd-sort-ico::after { color: var(--brand); }
+  .rd-tbl tbody tr { border-bottom: 1px solid var(--border); }
+  .rd-tbl tbody tr:nth-child(even) td { background: transparent; }
+  .rd-tbl tbody tr:hover td { background: var(--bg-soft); }
+  .rd-tbl tbody tr.rd-row-viral td { background: #fff9f0; }
+  .rd-tbl tbody tr.rd-row-viral:hover td { background: #fff4e0 !important; }
+  .rd-tbl tbody tr.rd-row-viral td.rd-cell-comp,
+  .rd-tbl tbody tr.rd-row-viral td.rd-num { color: var(--text); }
+  .rd-tbl td {
+    padding: 12px 10px; font-size: 13.5px; color: var(--text);
+    border-top: none;
+  }
+  .rd-tbl td.rd-num { font-family: 'Inter', sans-serif; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* Estado pill (Nuevo, Analizada, etc.) */
+  .rd-pill {
+    padding: 3px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 500;
+    border: none;
+  }
+  .rd-pill-nuevo      { background: #e8e5dd; color: #4a4638; }
+  .rd-pill-analizada  { background: #d5e8ce; color: #3c6e3b; }
+  .rd-pill-guardado   { background: #d0e6f0; color: #2c5875; }
+  .rd-pill-descartado { background: #ececec; color: #6b6b6b; }
+
+  /* Botones de acciones — Guion outline + Analizar filled verde */
+  .rd-btn-analizar {
+    background: var(--brand); color: white; border: 1px solid var(--brand);
+    padding: 6px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+    font-family: inherit; transition: background .1s;
+  }
+  .rd-btn-analizar:hover { background: var(--brand-strong); color: white; border-color: var(--brand-strong); }
+  .rd-btn-analizar i { width: 12px; height: 12px; }
+  /* La variante "Guion" (naranja) → outline verde */
+  .rd-btn-analizar[title*="guión"], .rd-btn-analizar[title*="Guión"] {
+    background: transparent; color: var(--text); border-color: var(--border);
+  }
+  .rd-btn-analizar[title*="guión"]:hover, .rd-btn-analizar[title*="Guión"]:hover {
+    background: var(--bg-soft); color: var(--text); border-color: var(--border-strong);
+  }
+  .rd-row-viral .rd-btn-analizar { background: var(--brand); color: white; border-color: var(--brand); }
+
+  /* Tier badges (mantienen sus colores actuales que están OK) */
+  .rd-tier-badge { padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 500; }
+
+  /* Enlace hook con external icon */
+  .rd-hook-link {
+    color: var(--text); text-decoration: none; display: inline-flex; align-items: center; gap: 5px;
+  }
+  .rd-hook-link:hover { color: var(--brand); text-decoration: none; }
+  .rd-hook-link .rd-ext-ico { width: 12px; height: 12px; color: var(--muted); }
+
+  /* Engagement % pill */
+  .rd-eng-hi  { color: #3c6e3b; font-weight: 600; }
+  .rd-eng-mid { color: #b56816; font-weight: 600; }
+  .rd-eng-lo  { color: var(--muted); }
+
+  /* Checkbox al inicio de cada fila (visual) */
+  .rd-tbl thead th:first-child,
+  .rd-tbl tbody td:first-child { padding-left: 16px; padding-right: 6px; }
+  .rd-row-check {
+    width: 15px; height: 15px; border: 1.5px solid var(--border-strong);
+    border-radius: 3px; background: white; cursor: pointer;
+    accent-color: var(--brand);
+  }
 </style>
 {% endblock %}
 
@@ -323,7 +474,8 @@
       <table class="rd-tbl" id="rd-tbl">
         <thead>
           <tr>
-            <th class="rd-sortable rd-asc" data-sort="tier_orden" style="width: 180px;">Tier <span class="rd-sort-ico"></span></th>
+            <th style="width: 32px;"><input type="checkbox" class="rd-row-check" id="rd-check-all" title="Seleccionar todos"></th>
+            <th class="rd-sortable rd-asc" data-sort="tier_orden" style="width: 160px;">Tier <span class="rd-sort-ico"></span></th>
             <th style="width: 44px;">Plat</th>
             <th class="rd-sortable" data-sort="competidor">Competidor <span class="rd-sort-ico"></span></th>
             <th class="rd-sortable rd-col-fecha" data-sort="fecha_publicacion">Fecha <span class="rd-sort-ico"></span></th>
@@ -336,11 +488,11 @@
             <th class="rd-sortable" data-sort="engagement_pct" style="text-align:right;">Eng % <span class="rd-sort-ico"></span></th>
             <th class="rd-col-scrapeado" style="width: 110px;">Scrapeado</th>
             <th>Estado</th>
-            <th style="width: 96px;"></th>
+            <th style="width: 160px;">Acciones</th>
           </tr>
         </thead>
         <tbody id="rd-tbody">
-          <tr><td colspan="14" class="rd-empty-tbl">Cargando…</td></tr>
+          <tr><td colspan="15" class="rd-empty-tbl">Cargando…</td></tr>
         </tbody>
       </table>
     </div>
@@ -407,7 +559,7 @@
         this.lista = await Radar.api('marketinghub.www.radar.publicaciones.index.listar', args);
       } catch (e) {
         document.getElementById('rd-tbody').innerHTML =
-          `<tr><td colspan="14" class="rd-empty-tbl"><b>Error:</b> ${Radar.escapeHtml(e.message)}</td></tr>`;
+          `<tr><td colspan="15" class="rd-empty-tbl"><b>Error:</b> ${Radar.escapeHtml(e.message)}</td></tr>`;
         return;
       }
       document.getElementById('rd-count').textContent = `${this.lista.length} publicaciones total`;
@@ -453,7 +605,7 @@
 
       const tb = document.getElementById('rd-tbody');
       if (!items.length) {
-        tb.innerHTML = `<tr><td colspan="14" class="rd-empty-tbl">
+        tb.innerHTML = `<tr><td colspan="15" class="rd-empty-tbl">
           <div style="font-size:15px;font-weight:600;margin-bottom:6px;">Sin resultados</div>
           <div>Ningún post coincide con los filtros aplicados.</div>
         </td></tr>`;
@@ -495,6 +647,7 @@
 
       return `
         <tr class="${p.es_viral ? 'rd-row-viral' : ''}">
+          <td><input type="checkbox" class="rd-row-check" data-name="${Radar.escapeHtml(p.name)}"></td>
           <td>${tierCell}</td>
           <td><span class="rd-plat-chip rd-plat-${plat}">${plat_ini}</span></td>
           <td class="rd-cell-comp">${Radar.escapeHtml(p.competidor || '')}</td>
@@ -510,8 +663,8 @@
           <td><span class="rd-pill ${estCls}">${Radar.escapeHtml(p.estado || 'Nuevo')}</span></td>
           <td class="rd-actions">
             ${CAN_EDIT ? `
-              <button class="rd-btn-analizar" onclick="RadarPubs.hacerGuion('${Radar.escapeHtml(p.name)}')" title="Crear guión inspirado en este video" style="background:var(--orange-bg);color:#9a3412;border-color:#fed7aa;margin-right:4px;"><i data-lucide="pen-line"></i><span>Guión</span></button>
-              <button class="rd-btn-analizar" onclick="RadarPubs.analizar('${Radar.escapeHtml(p.name)}')" title="Analizar / editar estado"><i data-lucide="edit-3"></i><span>Analizar</span></button>
+              <button class="rd-btn-analizar" onclick="RadarPubs.hacerGuion('${Radar.escapeHtml(p.name)}')" title="Crear guión inspirado en este video" style="margin-right:4px;"><i data-lucide="pen-line"></i><span>Guion</span></button>
+              <button class="rd-btn-analizar" onclick="RadarPubs.analizar('${Radar.escapeHtml(p.name)}')" title="Analizar / editar estado"><i data-lucide="search"></i><span>Analizar</span></button>
             ` : ''}
           </td>
         </tr>`;
@@ -711,6 +864,16 @@
     document.querySelectorAll('.rd-tbl thead th.rd-sortable').forEach(th => {
       th.addEventListener('click', () => RadarPubs.ordenar(th.dataset.sort));
     });
+
+    // Checkbox master → marca/desmarca todas las filas
+    const chkAll = document.getElementById('rd-check-all');
+    if (chkAll) {
+      chkAll.addEventListener('change', function () {
+        document.querySelectorAll('#rd-tbody .rd-row-check').forEach(el => {
+          el.checked = chkAll.checked;
+        });
+      });
+    }
   });
 </script>
 {% endif %}
