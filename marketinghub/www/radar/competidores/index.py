@@ -79,6 +79,9 @@ def get_context(context):
 		c["sync"] = _hace(sync.get(c["name"]))
 
 	context.competidores = visibles
+	# el diálogo de edición necesita los datos en JS; `frappe.as_json` no está
+	# disponible dentro del sandbox de Jinja, así que se serializa aquí
+	context.competidores_json = frappe.as_json(visibles).replace("</", "<\\/")
 	context.total = len(todos)
 	context.mostrados = len(visibles)
 	context.categorias = listar_categorias()

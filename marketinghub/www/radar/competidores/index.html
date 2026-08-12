@@ -200,7 +200,7 @@
   (function () {
     var API = '/api/method/marketinghub.www.radar.competidores.index.';
     var CSRF = '{{ csrf_token }}';
-    var DATOS = {{ frappe.as_json(competidores) }};
+    var DATOS = {{ competidores_json }};
 
     // tema (persistido)
     var body = document.body;
