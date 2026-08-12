@@ -8,6 +8,21 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/radar/comparativa/calendario.css?v=cal2">
+<style>
+  /* Líneas de la rejilla: la mitad de gruesas (0.5px) y translúcidas, en vez
+     del 1px sólido var(--hair) del diseño. */
+  .dow { border-bottom-width:.5px; border-bottom-color:rgba(23,25,27,.10); }
+  .dow div { border-right-width:.5px; border-right-color:rgba(23,25,27,.07); }
+  .cell {
+    border-right-width:.5px; border-bottom-width:.5px;
+    border-right-color:rgba(23,25,27,.07); border-bottom-color:rgba(23,25,27,.07);
+  }
+  html[data-theme="dark"] .dow { border-bottom-color:rgba(255,255,255,.10); }
+  html[data-theme="dark"] .dow div { border-right-color:rgba(255,255,255,.07); }
+  html[data-theme="dark"] .cell {
+    border-right-color:rgba(255,255,255,.07); border-bottom-color:rgba(255,255,255,.07);
+  }
+</style>
 </head>
 <!-- este diseño trae su propio sidebar, así que no se inyecta el compartido -->
 <body data-radx-side="off">
