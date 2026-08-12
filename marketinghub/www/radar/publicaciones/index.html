@@ -285,7 +285,18 @@
     --red:           #a93a3a;
     --red-bg:        #f3d7d7;
   }
-  body { background: var(--bg) !important; font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; }
+  /* Fondo beige a TODOS los contenedores de Frappe */
+  body,
+  body .page-container,
+  body .page-content,
+  body .website-content,
+  body main.container,
+  body main,
+  body .page-content-wrapper,
+  body .rd-app {
+    background: var(--bg) !important;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; }
 
   /* Topbar */
   .rd-app .rd-topbar {
@@ -293,7 +304,29 @@
   }
   .rd-app .rd-back { color: var(--brand); font-weight: 600; }
   .rd-app .rd-back:hover { background: var(--brand-bg); }
-  .rd-app .rd-topbar-title { font-weight: 600; font-size: 15px; color: var(--text); border-left: none; padding-left: 8px; }
+  .rd-app .rd-topbar-title {
+    font-weight: 600; font-size: 15px; color: var(--text);
+    border-left: none; padding-left: 8px;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .rd-app .rd-topbar-title .rd-topbar-title-emoji {
+    display: inline-flex; align-items: center; color: var(--muted);
+  }
+  .rd-app .rd-topbar-title .rd-topbar-title-emoji i { width: 18px; height: 18px; }
+  .rd-app .rd-topbar-right { gap: 14px; display: flex; align-items: center; }
+  .rd-count-lbl {
+    color: var(--muted); font-size: 13px; font-weight: 400;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .rd-count-lbl i { width: 14px; height: 14px; }
+  .rd-theme-toggle {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid var(--border); background: var(--surface);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--text-2); cursor: pointer; padding: 0;
+  }
+  .rd-theme-toggle:hover { border-color: var(--border-strong); color: var(--text); }
+  .rd-theme-toggle i { width: 15px; height: 15px; }
 
   /* Filterbar — chips redondeados con dropdown arrow */
   .rd-filterbar {
@@ -371,21 +404,21 @@
 
   /* Botones de acciones — Guion outline + Analizar filled verde */
   .rd-btn-analizar {
-    background: var(--brand); color: white; border: 1px solid var(--brand);
+    background: var(--brand); color: white !important; border: 1px solid var(--brand);
     padding: 6px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 500;
     display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
-    font-family: inherit; transition: background .1s;
+    font-family: inherit; transition: background .1s, border-color .1s;
   }
-  .rd-btn-analizar:hover { background: var(--brand-strong); color: white; border-color: var(--brand-strong); }
+  .rd-btn-analizar:hover { background: var(--brand-strong) !important; border-color: var(--brand-strong) !important; }
   .rd-btn-analizar i { width: 12px; height: 12px; }
-  /* La variante "Guion" (naranja) → outline verde */
+  /* Guion → outline gris */
   .rd-btn-analizar[title*="guión"], .rd-btn-analizar[title*="Guión"] {
-    background: transparent; color: var(--text); border-color: var(--border);
+    background: var(--surface); color: var(--text) !important; border-color: var(--border);
   }
   .rd-btn-analizar[title*="guión"]:hover, .rd-btn-analizar[title*="Guión"]:hover {
-    background: var(--bg-soft); color: var(--text); border-color: var(--border-strong);
+    background: var(--bg-soft) !important; color: var(--text) !important; border-color: var(--border-strong) !important;
   }
-  .rd-row-viral .rd-btn-analizar { background: var(--brand); color: white; border-color: var(--brand); }
+  .rd-row-viral .rd-btn-analizar { background: var(--brand); color: white !important; border-color: var(--brand); }
 
   /* Tier badges (mantienen sus colores actuales que están OK) */
   .rd-tier-badge { padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 500; }
@@ -427,12 +460,15 @@
     <div class="rd-topbar-left">
       <a href="/radar" class="rd-back"><i data-lucide="arrow-left"></i> Volver</a>
       <div class="rd-topbar-title">
-        <span class="rd-topbar-title-emoji">📊</span>
+        <span class="rd-topbar-title-emoji"><i data-lucide="bar-chart-3"></i></span>
         <span>Publicaciones</span>
       </div>
     </div>
     <div class="rd-topbar-right">
-      <span id="rd-count" class="rd-user"></span>
+      <span id="rd-count" class="rd-count-lbl"></span>
+      <button class="rd-theme-toggle" title="Modo oscuro (próximamente)" aria-label="Toggle theme">
+        <i data-lucide="moon"></i>
+      </button>
     </div>
   </header>
 
@@ -440,7 +476,7 @@
     <!-- BARRA DE FILTROS -->
     <div class="rd-filterbar">
       <select id="rd-f-tier" class="rd-select" title="Tier mínimo">
-        <option value="">🏆 Todos los tiers</option>
+        <option value="">⭐ Todos los tiers</option>
       </select>
       <select id="rd-f-fecha" class="rd-select" title="Fecha">
         <option value="1">📅 Últimas 24h</option>
@@ -448,24 +484,24 @@
         <option value="30">📅 Últimos 30 días</option>
         <option value="">📅 Todos</option>
       </select>
-      <input type="text" id="rd-f-search" class="rd-input" placeholder="🔍 Buscar en título / caption...">
-      <select id="rd-f-comp" class="rd-select"><option value="">Todos los competidores</option></select>
+      <select id="rd-f-comp" class="rd-select"><option value="">👥 Todos los competidores</option></select>
       <select id="rd-f-plat" class="rd-select">
-        <option value="">Todas las plataformas</option>
+        <option value="">🌐 Todas las plataformas</option>
         <option value="Instagram">Instagram</option>
         <option value="TikTok">TikTok</option>
         <option value="Facebook">Facebook</option>
         <option value="YouTube">YouTube</option>
       </select>
       <select id="rd-f-estado" class="rd-select">
-        <option value="">Todos los estados</option>
+        <option value="">🏁 Todos los estados</option>
         {% for e in estados %}<option value="{{ e }}">{{ e }}</option>{% endfor %}
       </select>
+      <input type="text" id="rd-f-search" class="rd-input" placeholder="🔍 Buscar en título / caption...">
       <button class="rd-btn-clear" onclick="RadarPubs.limpiarFiltros()">Limpiar</button>
-      <button class="rd-btn-clear" onclick="RadarPubs.exportarCSV()" title="Descargar los resultados filtrados como CSV">
-        <i data-lucide="download" style="width:12px;height:12px;vertical-align:middle;"></i> CSV
-      </button>
       <div class="rd-spacer"></div>
+      <button class="rd-btn-csv" onclick="RadarPubs.exportarCSV()" title="Descargar los resultados filtrados como CSV">
+        <i data-lucide="download"></i> Exportar CSV
+      </button>
       <span class="rd-counter" id="rd-counter">0 / 0</span>
     </div>
 
@@ -499,7 +535,7 @@
   </main>
 </div>
 
-<script src="/radar/radar.js"></script>
+<script src="/radar/radar.js?v=shopify1"></script>
 <script>
   const CAN_EDIT = {{ 'true' if can_edit else 'false' }};
   const FORMATOS = {{ formatos|tojson }};
