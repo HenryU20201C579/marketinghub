@@ -41,7 +41,7 @@
       <div class="rad-navgroup">
         <div class="rad-navgroup__title">Contenido</div>
 
-        <a class="rad-nav" href="/radar/publicaciones">
+        <a class="rad-nav is-active" href="/radar/publicaciones">
           <span class="rad-nav__label">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5s4.5 3.6 4.5 8a4.5 4.5 0 0 1-9 0c0-1.6.8-2.9 1.6-3.8 0 1.6.9 2.4 1.6 2.4 1 0 1.3-1 1.3-2.3 0-1.6-.5-3.1-1-4.3z M8 15.5a4 4 0 0 0 8 0"/></svg>
             <span>Publicaciones</span>
@@ -157,10 +157,10 @@
         </div>
 
         <div class="rad-kpis__cta">
-          <a class="rad-btn rad-btn--primary" href="/radar/publicaciones?estado=Nuevo">
+          <button class="rad-btn rad-btn--primary" type="button" data-href="/radar/publicaciones?estado=Nuevo">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M16.2 16.2 20.5 20.5"/></svg>
             Analizar {{ kpis.nuevos }}
-          </a>
+          </button>
         </div>
       </div>
     </div>
@@ -220,7 +220,7 @@
             <div class="rad-card__body">
               {% for c in comps %}
               <div class="rad-comp">
-                <span class="rad-comp__name"><span class="rad-comp__dot" style="background:{{ c.color|e }}"></span>{{ c.competidor|e }}</span>
+                <span class="rad-comp__name"><span class="rad-comp__dot{% if not loop.first %} rad-comp__dot--accent{% endif %}"></span>{{ c.competidor|e }}</span>
                 <span class="rad-comp__track">
                   {% if c.virales %}<span class="rad-comp__viral" style="width:{{ c.pct_viral }}%">{{ c.virales }}</span>{% endif %}
                   {% if c.casi_virales %}<span class="rad-comp__casi" style="width:{{ c.pct_casi }}%">{{ c.casi_virales }}</span>{% endif %}
@@ -286,6 +286,11 @@
       b.addEventListener('click', function () {
         window.location.search = '?dias=' + b.dataset.dias;
       });
+    });
+
+    // Botones que navegan (se mantienen como <button> para conservar el estilo del diseño)
+    document.querySelectorAll('[data-href]').forEach(function (b) {
+      b.addEventListener('click', function () { window.location.href = b.dataset.href; });
     });
   })();
 </script>
