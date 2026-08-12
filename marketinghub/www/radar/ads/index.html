@@ -7,302 +7,275 @@
 {% block style %}
 {{ super() }}
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest"></script>
-<link rel="stylesheet" href="/radar/radar.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/radar/ads/ads-library.css?v=retro1">
 <style>
-  main.container.my-4,
-  body main.container,
-  .page-content-wrapper main.container {
+  /* Override Frappe containers */
+  html, body,
+  main.container.my-4, body main.container,
+  .page-content-wrapper main.container,
+  .page_content, .page-container, .page-content, .website-content {
     max-width: none !important; padding: 0 !important; margin: 0 !important;
+    background: var(--bg) !important;
   }
-  .page_content { padding: 0 !important; }
-  body { background: #fafbfc; }
 
-  /* Topbar */
-  .rd-topbar { padding: 10px 20px; }
-  .rd-topbar-title {
-    font-size: 15px; font-weight: 600; color: #111827;
-    display: flex; align-items: center; gap: 8px;
-    padding-left: 12px; margin-left: 4px;
-    border-left: 1px solid #eef1f5;
+  /* Modal reuse (Radar.modal API mapeada al estilo ads-*) */
+  .rd-modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    display: none; align-items: flex-start; justify-content: center;
+    padding: 48px 20px; z-index: 200;
   }
-  .rd-topbar-title .sub { font-size: 11.5px; color: #6b7280; font-weight: 400; }
-
-  .wrap { padding: 12px 20px 20px; }
-
-  /* Presión publicitaria */
-  .pressure { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
-  .pressure .card {
-    flex: 1 1 220px; min-width: 200px;
-    background: #fff; border: 1px solid #eef1f5; border-radius: 8px;
-    padding: 12px 14px;
+  .rd-modal-backdrop.rd-visible { display: flex; }
+  .rd-modal {
+    width: 600px; max-width: 94vw; border-radius: 12px;
+    background: var(--bg); border: 1px solid var(--line);
+    box-shadow: 0 30px 70px rgba(0,0,0,0.35); overflow: hidden;
+    display: flex; flex-direction: column;
+    max-height: calc(100vh - 80px);
   }
-  .pressure h4 {
-    font-size: 11px; font-weight: 600; color: #6b7280;
-    text-transform: uppercase; letter-spacing: .04em;
-    margin: 0 0 6px; display: flex; align-items: center; gap: 6px;
+  .rd-modal-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 12px 18px; border-bottom: 1px solid var(--line); background: var(--panel);
+    font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--muted);
   }
-  .pressure .n {
-    font-size: 22px; font-weight: 700; color: #111827;
-    font-family: 'JetBrains Mono', monospace;
+  .rd-modal-close {
+    width: 26px; height: 26px; border-radius: 7px; border: none;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; color: var(--muted); cursor: pointer;
   }
-  .pressure .sub { font-size: 11px; color: #6b7280; margin-top: 2px; }
-  .pressure .dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
-
-  /* Filtros */
-  .filters {
-    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-    background: #fff; border: 1px solid #eef1f5; border-radius: 8px;
-    padding: 8px 10px; margin-bottom: 10px;
-    position: sticky; top: 0; z-index: 10;
+  .rd-modal-close:hover { background: var(--raise); color: var(--text); }
+  .rd-modal-body { padding: 20px 24px; overflow-y: auto; }
+  .rd-modal-actions {
+    display: flex; justify-content: flex-end; gap: 10px;
+    padding: 12px 18px; border-top: 1px solid var(--line); background: var(--panel);
   }
-  .filters .search {
-    padding: 5px 10px; border: 1px solid #e5e7eb; border-radius: 5px;
-    font-size: 12px; width: 220px; font-family: inherit;
-  }
-  .filters select {
-    padding: 5px 10px; border: 1px solid #e5e7eb; border-radius: 5px;
-    font-size: 12px; background: #fff; color: #374151; font-family: inherit;
+  .rd-btn {
+    height: auto; padding: 9px 16px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--panel);
+    color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600;
     cursor: pointer;
   }
-  .filters .chip {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 5px 10px; border: 1px solid #e5e7eb; border-radius: 5px;
-    font-size: 12px; color: #374151; cursor: pointer; background: #fff;
-    font-family: inherit;
+  .rd-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .rd-btn.rd-btn-secondary { background: var(--panel); color: var(--text); }
+  .rd-btn:not(.rd-btn-secondary):not(.rd-btn-danger) {
+    background: var(--accent); border-color: transparent; color: var(--onaccent);
+    padding: 9px 18px;
   }
-  .filters .chip.on { background: #ecf3ff; color: #1f5eff; border-color: #bfdbfe; }
-  .filters .spacer { flex: 1; }
-  .filters .count { font-size: 11px; color: #6b7280; }
-  .filters .btn {
-    padding: 5px 12px; border: none; border-radius: 5px;
-    font-size: 12px; font-weight: 500; cursor: pointer;
-    font-family: inherit;
+  .rd-btn:not(.rd-btn-secondary):not(.rd-btn-danger):hover {
+    background: var(--accent-2); border-color: transparent; color: var(--onaccent);
   }
-  .filters .btn-p { background: #1f5eff; color: #fff; }
-  .filters .btn-p:hover { background: #1849cc; }
-  .filters .btn-o { background: #f59e0b; color: #fff; }
-  .filters .btn-o:hover { background: #d97706; }
 
-  /* Tabla */
-  .tbl-wrap {
-    background: #fff; border: 1px solid #eef1f5; border-radius: 8px;
-    overflow: hidden;
+  /* Toast */
+  .rd-toast {
+    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+    padding: 11px 20px; border-radius: 9px;
+    font-size: 13px; font-weight: 600;
+    color: var(--onaccent); background: var(--accent);
+    box-shadow: 0 14px 34px rgba(0,0,0,0.3);
+    display: flex; align-items: center; gap: 9px; z-index: 300;
+    opacity: 0; transition: opacity .2s;
   }
-  .tbl-scroll { overflow-x: auto; }
-  table.ads-tbl { width: 100%; border-collapse: collapse; }
-  .ads-tbl th {
-    background: #f9fafb; padding: 8px 10px; text-align: left;
-    font-size: 11px; font-weight: 600; color: #6b7280;
-    text-transform: uppercase; letter-spacing: .04em;
-    border-bottom: 1px solid #eef1f5; white-space: nowrap;
+  .rd-toast.rd-visible { opacity: 1; }
+  .rd-toast::before {
+    content: ""; width: 6px; height: 6px; border-radius: 999px;
+    background: var(--onaccent); opacity: 0.7;
   }
-  .ads-tbl th.sort { cursor: pointer; }
-  .ads-tbl th.sort:hover { color: #111827; }
-  .ads-tbl th.sort-desc::after { content: ' ↓'; color: #1f5eff; }
-  .ads-tbl th.sort-asc::after  { content: ' ↑'; color: #1f5eff; }
-  .ads-tbl td {
-    padding: 8px 10px; border-bottom: 1px solid #f3f4f6;
-    font-size: 12.5px; color: #111827; vertical-align: middle;
-  }
-  .ads-tbl tr:hover td { background: #fafbfc; }
-  .ads-tbl tr.long-runner td { background: #fef3c710; }
-  .ads-tbl tr.long-runner:hover td { background: #fef3c740; }
-  .ads-tbl tr.pausado td { color: #9ca3af; }
+  .rd-toast.rd-error { background: #d33; }
 
-  .dias { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
-  .badge {
-    display: inline-flex; align-items: center; gap: 3px;
-    padding: 2px 6px; border-radius: 3px; font-size: 10.5px; font-weight: 600;
-    white-space: nowrap;
-  }
-  .b-nuevo    { background: #dcfce7; color: #166534; }
-  .b-fresco   { background: #dbeafe; color: #1e40af; }
-  .b-test     { background: #fed7aa; color: #7c2d12; }
-  .b-ganador  { background: #fef3c7; color: #92400e; }
-  .b-top      { background: #fde68a; color: #78350f; }
-  .b-pausado  { background: #f3f4f6; color: #6b7280; }
-  .badge-active { background: #dcfce7; color: #16a34a; padding: 1px 5px; font-size: 9px; }
+  /* KPI clickable */
+  .ads-kpi { cursor: pointer; transition: transform .1s, box-shadow .1s; }
+  .ads-kpi:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
 
-  .comp-tag { display: inline-flex; align-items: center; gap: 5px; }
-  .comp-tag .dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
-
-  .fmt { font-size: 15px; }
-  .copy-cell {
-    max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .cta-pill {
-    background: #f0f7ff; color: #1f5eff; padding: 2px 6px;
-    border-radius: 3px; font-size: 10px; font-weight: 600;
-    font-family: 'JetBrains Mono', monospace; white-space: nowrap;
-  }
-  .landing {
-    color: #1f5eff; text-decoration: none; font-size: 11.5px;
-    max-width: 140px; display: inline-block;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    vertical-align: middle;
-  }
-  .landing:hover { text-decoration: underline; }
-  .plats {
-    font-size: 10px; color: #9ca3af;
-    font-family: 'JetBrains Mono', monospace;
-  }
-  .fecha { color: #6b7280; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
-  .row-actions {
-    display: inline-flex; gap: 4px;
-  }
-  .row-actions button {
-    background: transparent; border: 1px solid #e5e7eb;
-    padding: 3px 7px; border-radius: 4px; font-size: 11px;
-    cursor: pointer; color: #374151; font-family: inherit;
-  }
-  .row-actions button:hover { border-color: #1f5eff; color: #1f5eff; }
-
-  .empty {
-    padding: 60px 30px; text-align: center; color: #9ca3af; font-size: 13px;
-  }
-  .empty b { color: #374151; }
-
-  /* Modal detalle del ad */
-  .rd-modal { max-width: 780px !important; width: 90vw; }
-  .rd-modal-body { padding: 0 !important; }
-  .adm-body { display: grid; grid-template-columns: 280px 1fr; }
-  .adm-media {
+  /* Modal detalle específico del ad (video/imagen preview) */
+  .ads-modal-media {
     background: #0f172a; padding: 20px; display: flex; align-items: center;
-    justify-content: center; min-height: 400px;
+    justify-content: center; min-height: 300px; border-radius: 8px; margin-bottom: 14px;
   }
-  .adm-media video { width: 100%; max-height: 460px; border-radius: 4px; background: #000; }
-  .adm-media img { width: 100%; max-height: 460px; border-radius: 4px; }
-  .adm-media .noplay { color: #94a3b8; font-size: 12px; text-align: center; }
-  .adm-info { padding: 20px 24px; overflow-y: auto; max-height: 60vh; }
-  .adm-info h4 {
-    font-size: 11px; font-weight: 600; color: #6b7280;
-    text-transform: uppercase; letter-spacing: .04em;
-    margin: 14px 0 6px;
+  .ads-modal-media video, .ads-modal-media img {
+    max-width: 100%; max-height: 400px; border-radius: 4px;
   }
-  .adm-info h4:first-child { margin-top: 0; }
-  .adm-info .kv {
-    display: flex; justify-content: space-between;
-    padding: 4px 0; font-size: 12.5px;
-    border-bottom: 1px solid #f3f4f6;
+  .ads-modal-media .noplay { color: #94a3b8; font-size: 12px; }
+  .ads-modal-copy {
+    background: var(--raise); padding: 12px 14px; border-radius: 8px;
+    font-size: 13px; line-height: 1.5; color: var(--text);
+    white-space: pre-wrap; word-break: break-word; max-height: 180px; overflow-y: auto;
+    margin-bottom: 14px;
   }
-  .adm-info .kv .k { color: #6b7280; }
-  .adm-info .kv .v { color: #111827; font-weight: 500; }
-  .adm-info .copy-full {
-    background: #f9fafb; padding: 10px 12px; border-radius: 6px;
-    font-size: 13px; line-height: 1.5; color: #111827;
-    white-space: pre-wrap; word-break: break-word;
-    max-height: 200px; overflow-y: auto;
+
+  /* Estado vacío inline */
+  .ads-empty-inline {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 60px 20px; color: var(--muted); gap: 12px;
   }
-  .adm-actions {
-    display: flex; gap: 8px; margin-top: 16px; padding-top: 12px;
-    border-top: 1px solid #eef1f5;
-  }
-  .adm-actions a, .adm-actions button {
-    padding: 6px 12px; border: 1px solid #e5e7eb; border-radius: 5px;
-    font-size: 12px; font-weight: 500; cursor: pointer; text-decoration: none;
-    color: #374151; background: #fff; font-family: inherit;
-    display: inline-flex; align-items: center; gap: 4px;
-  }
-  .adm-actions a:hover, .adm-actions button:hover { border-color: #1f5eff; color: #1f5eff; }
-  .adm-actions .prim { background: #f59e0b; color: #fff; border-color: #f59e0b; }
-  .adm-actions .prim:hover { background: #d97706; border-color: #d97706; color: #fff; }
+  .ads-empty-inline .t { font-size: 15px; font-weight: 600; color: var(--text); }
 </style>
 {% endblock %}
 
 {% block page_content %}
 {% if no_access %}
-<div class="rd-na-screen">
-  <div class="rd-na-card">
-    <div class="rd-na-brand"><span class="rd-na-dot"></span><span>Radar · Ads Library · Acceso denegado</span></div>
-    <div class="rd-na-body">Sin permisos.</div>
+<div style="padding: 60px 20px; max-width: 500px; margin: 60px auto; text-align: center;
+            background: var(--panel); border: 1px solid var(--line); border-radius: 12px;">
+  <div style="font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 10px;">
+    Radar · Ads Library · Acceso denegado
   </div>
+  <div style="color: var(--muted); font-size: 13px;">Sin permisos.</div>
 </div>
 {% else %}
-<div class="rd-app">
-  <header class="rd-topbar">
-    <div class="rd-topbar-left">
-      <a href="/radar" class="rd-back"><i data-lucide="arrow-left"></i> Volver</a>
-      <div class="rd-topbar-title">
-        <span>Ads Library</span>
-        <span class="sub" id="rd-lastrun">–</span>
+
+<div class="ads-app">
+
+  <!-- ============ CABECERA ============ -->
+  <header class="ads-header">
+    <div class="ads-header__left">
+      <a class="ads-back" href="/radar">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+        Volver
+      </a>
+      <span class="ads-sep"></span>
+      <div class="ads-title-group">
+        <svg class="ads-title-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16v11H4z M4 10h16 M8 6.5v11"/></svg>
+        <span class="ads-title">Ads Library</span>
       </div>
     </div>
-    <div class="rd-topbar-right">
-      <span class="rd-user"><i data-lucide="user-round"></i> {{ usuario }}</span>
+    <div class="ads-header__right">
+      <span class="ads-user">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2z M4.5 20c1.5-3.6 4.3-5 7.5-5s6 1.4 7.5 5"/></svg>
+        {{ usuario }}
+      </span>
+      <button class="ads-icon-btn" id="theme-toggle" title="Cambiar tema" type="button">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
+      </button>
     </div>
   </header>
 
-  <div class="wrap">
-
-    <!-- Presión publicitaria -->
-    <section class="pressure" id="rd-pressure">
-      <div class="card"><h4>Cargando presión publicitaria…</h4></div>
-    </section>
-
-    <!-- Filtros -->
-    <div class="filters">
-      <input class="search" id="f-search" placeholder="Buscar en copy…">
-      <select id="f-comp"><option value="">Todos los competidores</option></select>
-      <select id="f-formato">
-        <option value="">Formato…</option>
-        <option value="Video">Video</option>
-        <option value="Imagen">Imagen</option>
-        <option value="Carrusel">Carrusel</option>
-      </select>
-      <select id="f-etiqueta">
-        <option value="">Etiqueta…</option>
-        <option value="Ganador top">Ganador top (60d+)</option>
-        <option value="Ganador">Ganador (30-59d)</option>
-        <option value="Test scale">Test scale (14-29d)</option>
-        <option value="Fresco">Fresco (7-13d)</option>
-        <option value="Nuevo">Nuevo (&lt;7d)</option>
-        <option value="Pausado">Pausado</option>
-      </select>
-      <span class="chip" id="f-30d">30d+ activos</span>
-      <span class="chip on" id="f-activos">Solo activos</span>
-      <div class="spacer"></div>
-      <span class="count" id="rd-count">–</span>
-      <button class="btn btn-p" id="btn-csv">Descargar CSV</button>
-      <button class="btn btn-o" id="btn-refresh">Actualizar</button>
-    </div>
-
-    <!-- Tabla -->
-    <div class="tbl-wrap">
-      <div class="tbl-scroll">
-        <table class="ads-tbl">
-          <thead>
-            <tr>
-              <th class="sort sort-desc" data-sort="dias_activo" style="width:60px;" title="Cuántos días lleva corriendo el ad (más días = más rentable)">Días activo</th>
-              <th>Estado</th>
-              <th>Marca</th>
-              <th>Formato</th>
-              <th class="sort" data-sort="fecha_inicio" title="Fecha en que Meta publicó el ad por primera vez">Publicado</th>
-              <th>Copy</th>
-              <th>CTA</th>
-              <th>Landing</th>
-              <th>Plataformas</th>
-              <th style="width:120px;">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="rd-tbody">
-            <tr><td colspan="10" class="empty">Cargando…</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
+  <!-- ============ KPIs (clickables para filtrar por competidor) ============ -->
+  <div class="ads-kpis" id="ads-kpis">
+    <div class="ads-empty-inline"><div>Cargando presión publicitaria…</div></div>
   </div>
+
+  <!-- ============ FILTROS ============ -->
+  <div class="ads-toolbar">
+    <div class="ads-toolbar__filters">
+
+      <div class="ads-search">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M16.2 16.2 20.5 20.5"/></svg>
+        <input type="text" id="ads-f-search" placeholder="Buscar en copy…">
+      </div>
+
+      <div class="ads-select">
+        <svg class="ads-select__icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5a3.4 3.4 0 1 0 0 6.8A3.4 3.4 0 0 0 9 5z M3 20c1.2-3.2 3.6-4.5 6-4.5s4.8 1.3 6 4.5 M16.5 6.2a3 3 0 0 1 0 5.6 M21 19.5c-.8-2.2-2-3.2-3.5-3.7"/></svg>
+        <select id="ads-f-comp">
+          <option value="">Todos los competidores</option>
+        </select>
+        <svg class="ads-select__caret" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>
+      </div>
+
+      <div class="ads-select">
+        <svg class="ads-select__icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16v13H4z M4 9.5h16 M10 13l4 2.5-4 2.5z"/></svg>
+        <select id="ads-f-formato">
+          <option value="">Formato…</option>
+          <option value="Video">Video</option>
+          <option value="Imagen">Imagen</option>
+          <option value="Carrusel">Carrusel</option>
+        </select>
+        <svg class="ads-select__caret" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>
+      </div>
+
+      <div class="ads-select">
+        <svg class="ads-select__icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h7l9 9-6.5 6.5-9-9z M7.6 8.1h.01"/></svg>
+        <select id="ads-f-etiqueta">
+          <option value="">Etiqueta…</option>
+          <option value="Ganador top">Ganador top (60d+)</option>
+          <option value="Ganador">Ganador (30-59d)</option>
+          <option value="Test scale">Test scale (14-29d)</option>
+          <option value="Fresco">Fresco (7-13d)</option>
+          <option value="Nuevo">Nuevo (&lt;7d)</option>
+          <option value="Pausado">Pausado</option>
+        </select>
+        <svg class="ads-select__caret" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>
+      </div>
+
+      <button class="ads-toggle" id="ads-t-30d" type="button">
+        <span class="ads-toggle__box">
+          <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
+        </span>
+        30d+ activos
+      </button>
+
+      <button class="ads-toggle is-on" id="ads-t-activos" type="button">
+        <span class="ads-toggle__box">
+          <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
+        </span>
+        Solo activos
+      </button>
+
+      <button class="ads-btn ads-btn--quiet" id="ads-limpiar" type="button">Limpiar</button>
+    </div>
+
+    <div class="ads-toolbar__actions">
+      <span class="ads-summary" id="ads-summary">–</span>
+      <button class="ads-btn" id="ads-csv" type="button">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11 M8 11l4 4 4-4 M4.5 19.5h15"/></svg>
+        Descargar CSV
+      </button>
+      <button class="ads-btn ads-btn--primary" id="ads-refresh" type="button">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7 M20 4.5V10h-5.5"/></svg>
+        Actualizar
+      </button>
+    </div>
+  </div>
+
+  <!-- ============ TABLA ============ -->
+  <div class="ads-tablewrap">
+    <div class="ads-table">
+
+      <!-- cabecera -->
+      <div class="ads-row ads-head" id="ads-head">
+        <div class="ads-head__cell ads-head__cell--center ads-head__cell--sortable is-sorted" data-sort="dias_activo">Días activo <span class="ads-sort-dir">↓</span></div>
+        <div class="ads-head__cell">Estado</div>
+        <div class="ads-head__cell ads-head__cell--sortable" data-sort="competidor">Marca</div>
+        <div class="ads-head__cell ads-head__cell--sortable" data-sort="formato">Formato</div>
+        <div class="ads-head__cell ads-head__cell--sortable" data-sort="fecha_inicio">Publicado</div>
+        <div class="ads-head__cell">Copy</div>
+        <div class="ads-head__cell">CTA</div>
+        <div class="ads-head__cell">Landing</div>
+        <div class="ads-head__cell">Plataformas</div>
+        <div class="ads-head__cell ads-head__cell--end">Acciones</div>
+      </div>
+
+      <!-- filas (JS) -->
+      <div id="ads-body">
+        <div class="ads-empty-inline"><div class="t">Cargando…</div></div>
+      </div>
+
+    </div>
+  </div>
+
 </div>
 
-<script src="/radar/radar.js?v=3"></script>
-<script src="/radar/ads.v3.js"></script>
+<script src="/radar/radar.js?v=retro2"></script>
+<script src="/radar/ads.v3.js?v=retro1"></script>
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    if (window.lucide) lucide.createIcons();
+  // Aplica clase .ads al body real de Frappe (para que las variables CSS apliquen)
+  document.body.classList.add('ads');
+
+  // Toggle tema
+  document.addEventListener('DOMContentLoaded', function () {
+    const tt = document.getElementById('theme-toggle');
+    if (tt) tt.addEventListener('click', function () {
+      const b = document.body;
+      b.dataset.theme = b.dataset.theme === 'dark' ? '' : 'dark';
+      try { localStorage.setItem('ads-theme', b.dataset.theme || ''); } catch(e){}
+    });
+    try {
+      const saved = localStorage.getItem('ads-theme');
+      if (saved) document.body.dataset.theme = saved;
+    } catch(e){}
     if (window.RadarAds) RadarAds.init({{ can_edit | tojson }});
   });
 </script>
+
 {% endif %}
 {% endblock %}
