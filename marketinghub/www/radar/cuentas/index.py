@@ -54,7 +54,8 @@ def get_context(context):
 	tope = max([c["n_publicaciones"] for c in todas] + [1])
 	for c in todas:
 		marca = c.get("competidor") or ""
-		c["handle_txt"] = c.get("handle") or "—"
+		handle = (c.get("handle") or "").strip()
+		c["handle_txt"] = ("@" + handle.lstrip("@")) if handle else "—"
 		c["marca"] = marca
 		c["inicial"] = (marca[:2] or "··").upper()
 		c["cls"] = CLASE_PLATAFORMA.get(c.get("plataforma"), "")
@@ -87,7 +88,12 @@ def get_context(context):
 	)
 	ultimos = [c.get("ultimo_scrapeo") for c in visibles if c.get("ultimo_scrapeo")]
 	context.ultimo_global = _hace(max(ultimos)) if ultimos else "—"
-	context.plataformas = list(PLATAFORMAS)
+	# solo las plataformas que tienen alguna cuenta, más la filtrada si acaso
+	con_cuentas = [p for p in PLATAFORMAS if any(c.get("plataforma") == p for c in todas)]
+	if context.f_plataforma and context.f_plataforma not in con_cuentas:
+		con_cuentas.append(context.f_plataforma)
+	context.plataformas = con_cuentas
+	context.plataformas_alta = list(PLATAFORMAS)
 	context.competidores = listar_competidores()
 	try:
 		context.csrf_token = frappe.local.session.data.csrf_token
