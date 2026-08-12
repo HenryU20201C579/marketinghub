@@ -87,14 +87,16 @@ def get_context(context):
 			stats = json.loads(s.ultima_corrida_stats)
 		except Exception:
 			stats = {}
+	# ojo: no usar "update"/"insert" como claves — en Jinja `corrida.update`
+	# resuelve el método del dict, no el valor
 	context.corrida = {
 		"cuando": frappe.utils.format_datetime(s.ultima_corrida, "dd/MM HH:mm") if s.ultima_corrida else "—",
 		"estado": {"ok": "Correcta", "warn": "Con avisos", "error": "Con errores"}.get(
 			s.ultima_corrida_estado or "", "Sin datos"),
-		"insert": int(stats.get("insert") or 0),
-		"update": int(stats.get("update") or 0),
-		"skip": int(stats.get("skip") or 0),
-		"error": int(stats.get("error") or 0),
+		"insertados": int(stats.get("insert") or 0),
+		"actualizados": int(stats.get("update") or 0),
+		"saltados": int(stats.get("skip") or 0),
+		"errores": int(stats.get("error") or 0),
 		"duracion": f"{float(s.ultima_corrida_duracion or 0):.0f} s",
 		"mensaje": s.ultima_corrida_mensaje or "Sin registro de la última corrida.",
 	}
@@ -104,8 +106,11 @@ def get_context(context):
 		context.csrf_token = ""
 
 
+VACIAS = {"de", "del", "la", "el", "y", "en"}
+
+
 def _iniciales(nombre):
-	partes = (nombre or "").split()
+	partes = [p for p in (nombre or "").split() if p.lower() not in VACIAS]
 	if not partes:
 		return "··"
 	if len(partes) == 1:

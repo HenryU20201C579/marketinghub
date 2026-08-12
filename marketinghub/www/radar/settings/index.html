@@ -169,10 +169,10 @@
             <span class="cfg-status">{{ corrida.estado }}</span>
           </div>
           <div class="cfg-stats">
-            <div class="cfg-stat"><span class="cfg-stat__k">Insertados</span><span class="cfg-stat__v{% if corrida.insert %} cfg-stat__v--ok{% endif %}">{{ corrida.insert }}</span></div>
-            <div class="cfg-stat"><span class="cfg-stat__k">Actualizados</span><span class="cfg-stat__v{% if corrida.update %} cfg-stat__v--ok{% endif %}">{{ corrida.update }}</span></div>
-            <div class="cfg-stat"><span class="cfg-stat__k">Saltados</span><span class="cfg-stat__v">{{ corrida.skip }}</span></div>
-            <div class="cfg-stat"><span class="cfg-stat__k">Errores</span><span class="cfg-stat__v">{{ corrida.error }}</span></div>
+            <div class="cfg-stat"><span class="cfg-stat__k">Insertados</span><span class="cfg-stat__v{% if corrida.insertados %} cfg-stat__v--ok{% endif %}">{{ corrida.insertados }}</span></div>
+            <div class="cfg-stat"><span class="cfg-stat__k">Actualizados</span><span class="cfg-stat__v{% if corrida.actualizados %} cfg-stat__v--ok{% endif %}">{{ corrida.actualizados }}</span></div>
+            <div class="cfg-stat"><span class="cfg-stat__k">Saltados</span><span class="cfg-stat__v">{{ corrida.saltados }}</span></div>
+            <div class="cfg-stat"><span class="cfg-stat__k">Errores</span><span class="cfg-stat__v">{{ corrida.errores }}</span></div>
           </div>
           <div class="cfg-card__log">{{ corrida.cuando }} · {{ corrida.duracion }} · {{ corrida.mensaje|e }}</div>
         </section>
