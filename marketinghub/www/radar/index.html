@@ -1,40 +1,26 @@
-{% extends "templates/web.html" %}
-
-{% block navbar %}{% endblock %}
-{% block header %}{% endblock %}
-{% block footer %}{% endblock %}
-
-{% block style %}
-{{ super() }}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/radar/radar-retro.css?v=retro1">
-<style>
-  html, body,
-  main.container.my-4, body main.container,
-  .page-content-wrapper main.container,
-  .page_content, .page-container, .page-content, .website-content {
-    max-width: none !important; padding: 0 !important; margin: 0 !important;
-    background: var(--bg) !important;
-  }
-</style>
-{% endblock %}
+<link rel="stylesheet" href="/radar/radar-os.css?v=os1">
+</head>
+<body class="rad">
 
-{% block page_content %}
 {% if no_access %}
-<div style="padding: 60px 20px; max-width: 500px; margin: 60px auto; text-align: center;
-            background: #fff; border: 1px solid #ddd; border-radius: 12px;">
-  <div style="font-size: 15px; font-weight: 700; margin-bottom: 10px;">
-    Radar de Competencia · Acceso denegado
-  </div>
-  <div style="color: #666; font-size: 13px;">
-    Se requieren los roles:
-    <ul style="margin: 10px 0; list-style: none; padding: 0;">
-      {% for r in required_roles %}
-      <li><code style="background: #eee; padding: 2px 8px; border-radius: 4px;">{{ r }}</code></li>
-      {% endfor %}
-    </ul>
+<div class="rad-app" style="display:block">
+  <div class="rad-card" style="max-width:460px;margin:80px auto;padding:28px;text-align:center">
+    <div style="font-size:15px;font-weight:700;margin-bottom:10px">Radar · Acceso denegado</div>
+    <div style="font-size:13px;color:var(--muted)">
+      Se requiere uno de estos roles:
+      <ul style="margin:10px 0 0;list-style:none;padding:0">
+        {% for r in required_roles %}<li><code>{{ r }}</code></li>{% endfor %}
+      </ul>
+    </div>
   </div>
 </div>
 {% else %}
@@ -48,19 +34,19 @@
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M12 11.4a.6.6 0 1 0 0 1.2.6.6 0 0 0 0-1.2z"/></svg>
         <span class="rad-brand__name">Radar</span>
       </span>
-      <span class="rad-side__date" id="rad-fecha">–</span>
+      <span class="rad-side__date">{{ fecha_hoy }}</span>
     </div>
 
     <div class="rad-side__body">
       <div class="rad-navgroup">
         <div class="rad-navgroup__title">Contenido</div>
 
-        <a class="rad-nav is-active" href="/radar/publicaciones">
+        <a class="rad-nav" href="/radar/publicaciones">
           <span class="rad-nav__label">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5s4.5 3.6 4.5 8a4.5 4.5 0 0 1-9 0c0-1.6.8-2.9 1.6-3.8 0 1.6.9 2.4 1.6 2.4 1 0 1.3-1 1.3-2.3 0-1.6-.5-3.1-1-4.3z M8 15.5a4 4 0 0 0 8 0"/></svg>
             <span>Publicaciones</span>
           </span>
-          <span class="rad-nav__count rad-nav__count--accent" data-count="publicaciones">–</span>
+          <span class="rad-nav__count rad-nav__count--accent">{{ counts.publicaciones or "" }}</span>
         </a>
 
         <a class="rad-nav" href="/radar/guiones">
@@ -68,7 +54,7 @@
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5z M14.5 6.5l3 3"/></svg>
             <span>Guiones</span>
           </span>
-          <span class="rad-nav__count" data-count="guiones"></span>
+          <span class="rad-nav__count">{{ counts.guiones or "" }}</span>
         </a>
 
         <a class="rad-nav" href="/radar/comparativa">
@@ -84,7 +70,7 @@
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6.5h12 M8 12h12 M8 17.5h12 M4 6.5h.01 M4 12h.01 M4 17.5h.01"/></svg>
             <span>Agenda guiones</span>
           </span>
-          <span class="rad-nav__count"></span>
+          <span class="rad-nav__count">{{ counts.guiones_semana or "" }}</span>
         </a>
 
         <a class="rad-nav" href="/radar/ads">
@@ -92,7 +78,7 @@
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16v11H4z M4 10h16 M8 6.5v11"/></svg>
             <span>Ads Library</span>
           </span>
-          <span class="rad-nav__count" data-count="ads"></span>
+          <span class="rad-nav__count">{{ counts.ads or "" }}</span>
         </a>
       </div>
 
@@ -104,7 +90,7 @@
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5v17 M6.5 4.5h11l-2.2 3.8 2.2 3.7h-11"/></svg>
             <span>Competidores</span>
           </span>
-          <span class="rad-nav__count" data-count="competidores"></span>
+          <span class="rad-nav__count">{{ counts.competidores or "" }}</span>
         </a>
 
         <a class="rad-nav" href="/radar/cuentas">
@@ -112,7 +98,7 @@
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7.8a4.2 4.2 0 1 0 0 8.4 4.2 4.2 0 0 0 0-8.4z M16.2 7.8v5.1a3 3 0 0 0 5.3 1.9 M20 15.9A9 9 0 1 1 18.4 5.6"/></svg>
             <span>Cuentas</span>
           </span>
-          <span class="rad-nav__count" data-count="cuentas"></span>
+          <span class="rad-nav__count">{{ counts.cuentas or "" }}</span>
         </a>
 
         <a class="rad-nav" href="/radar/categorias">
@@ -120,7 +106,7 @@
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h7l9 9-6.5 6.5-9-9z M7.6 8.1h.01"/></svg>
             <span>Categorías</span>
           </span>
-          <span class="rad-nav__count" data-count="categorias"></span>
+          <span class="rad-nav__count">{{ counts.categorias or "" }}</span>
         </a>
 
         <a class="rad-nav" href="/radar/settings">
@@ -136,7 +122,7 @@
     <div class="rad-side__foot">
       <button class="rad-themebtn" id="theme-toggle" type="button">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
-        <span id="rad-theme-label">Tema oscuro</span>
+        <span id="theme-label">Tema oscuro</span>
       </button>
     </div>
   </aside>
@@ -147,7 +133,7 @@
     <div class="rad-topbar">
       <div class="rad-kpis">
         <div class="rad-kpi">
-          <span class="rad-kpi__value" data-kpi="publicaciones">–</span>
+          <span class="rad-kpi__value">{{ kpis.publicaciones }}</span>
           <span class="rad-kpi__label">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h7l4.5 4.5v12h-11.5z M13.5 3.5V8H18"/></svg>
             <span>Publicaciones</span>
@@ -155,7 +141,7 @@
         </div>
 
         <div class="rad-kpi">
-          <span class="rad-kpi__value rad-kpi__value--muted" data-kpi="virales_hoy">–</span>
+          <span class="rad-kpi__value rad-kpi__value--muted">{{ kpis.virales_hoy }}</span>
           <span class="rad-kpi__label">
             <svg class="is-top" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5s4.5 3.6 4.5 8a4.5 4.5 0 0 1-9 0c0-1.6.8-2.9 1.6-3.8 0 1.6.9 2.4 1.6 2.4 1 0 1.3-1 1.3-2.3 0-1.6-.5-3.1-1-4.3z M8 15.5a4 4 0 0 0 8 0"/></svg>
             <span>Virales hoy</span>
@@ -163,7 +149,7 @@
         </div>
 
         <div class="rad-kpi">
-          <span class="rad-kpi__value rad-kpi__value--accent" data-kpi="nuevos">–</span>
+          <span class="rad-kpi__value rad-kpi__value--accent">{{ kpis.nuevos }}</span>
           <span class="rad-kpi__label">
             <svg class="is-accent" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v4 M12 16.5v4 M3.5 12h4 M16.5 12h4 M6 6l2.5 2.5 M15.5 15.5 18 18 M18 6l-2.5 2.5 M8.5 15.5 6 18"/></svg>
             <span>Sin analizar</span>
@@ -173,7 +159,7 @@
         <div class="rad-kpis__cta">
           <a class="rad-btn rad-btn--primary" href="/radar/publicaciones?estado=Nuevo">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M16.2 16.2 20.5 20.5"/></svg>
-            <span id="rad-cta-analizar">Analizar</span>
+            Analizar {{ kpis.nuevos }}
           </a>
         </div>
       </div>
@@ -189,17 +175,34 @@
               <svg class="is-top" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 14.6 9l6 .9-4.3 4.2 1 6-5.3-2.8-5.3 2.8 1-6L3.4 9.9l6-.9z"/></svg>
               Top 10 virales
             </span>
-            <div class="rad-seg" id="rad-top-range">
-              <button class="rad-seg__item" type="button" data-dias="7">Semana</button>
-              <button class="rad-seg__item is-on" type="button" data-dias="30">Mes</button>
+            <div class="rad-seg">
+              <button class="rad-seg__item{% if dias == 7 %} is-on{% endif %}" type="button" data-dias="7">Semana</button>
+              <button class="rad-seg__item{% if dias != 7 %} is-on{% endif %}" type="button" data-dias="30">Mes</button>
             </div>
           </div>
 
-          <div id="rad-top-list"></div>
+          {% for p in top %}
+          <a class="rad-viral" href="{{ (p.url_publicacion or '/radar/publicaciones')|e }}"{% if p.url_publicacion %} target="_blank" rel="noopener"{% endif %}>
+            <span class="rad-viral__rank{% if loop.index <= 3 %} rad-viral__rank--top{% endif %}">{{ loop.index }}</span>
+            <span class="rad-viral__bar{{ p.bar_cls }}"></span>
+            <span class="rad-viral__text">
+              <span class="rad-viral__title">{{ p.titulo|e }}</span>
+              <span class="rad-viral__meta">{{ p.meta|e }}</span>
+            </span>
+            <span class="rad-viral__nums">
+              <span class="rad-viral__views">{{ p.vistas_fmt }}</span>
+              <span class="rad-viral__eng{{ p.eng_cls }}">{{ p.eng_fmt }} eng</span>
+            </span>
+          </a>
+          {% else %}
+          <div style="padding:28px 18px;text-align:center;font-size:12px;color:var(--muted)">
+            Sin publicaciones en el período.
+          </div>
+          {% endfor %}
 
           <div class="rad-card__foot">
-            <span id="rad-top-foot">–</span>
-            <a href="/radar/publicaciones">Ver todas →</a>
+            <span>{{ top|length }} de {{ kpis.publicaciones }} publicaciones · orden por vistas</span>
+            <a href="/radar/publicaciones">Ver las {{ kpis.publicaciones }} →</a>
           </div>
         </section>
 
@@ -214,8 +217,25 @@
               </span>
               <span class="rad-card__sub">últimos 30 días</span>
             </div>
-            <div class="rad-card__body" id="rad-vpc-body">
-              <div style="text-align:center;color:var(--muted);font-size:12px;padding:16px;">Cargando…</div>
+            <div class="rad-card__body">
+              {% for c in comps %}
+              <div class="rad-comp">
+                <span class="rad-comp__name"><span class="rad-comp__dot" style="background:{{ c.color|e }}"></span>{{ c.competidor|e }}</span>
+                <span class="rad-comp__track">
+                  {% if c.virales %}<span class="rad-comp__viral" style="width:{{ c.pct_viral }}%">{{ c.virales }}</span>{% endif %}
+                  {% if c.casi_virales %}<span class="rad-comp__casi" style="width:{{ c.pct_casi }}%">{{ c.casi_virales }}</span>{% endif %}
+                </span>
+                <span class="rad-comp__sum">{{ c.virales }} · {{ c.casi_virales }} · {{ c.bajo }}</span>
+              </div>
+              {% else %}
+              <div style="text-align:center;font-size:12px;color:var(--muted);padding:8px">Sin datos en el período.</div>
+              {% endfor %}
+
+              <div class="rad-legend">
+                <span class="rad-legend__item"><span class="rad-legend__sw" style="background:var(--top)"></span>Viral (Dragón · Cetro · Hachón)</span>
+                <span class="rad-legend__item"><span class="rad-legend__sw" style="background:var(--accent-soft)"></span>Casi viral (tier 6-7)</span>
+                <span class="rad-legend__item"><span class="rad-legend__sw" style="background:var(--raise)"></span>Bajo (tier 8-10)</span>
+              </div>
             </div>
           </section>
 
@@ -227,8 +247,16 @@
               </span>
               <span class="rad-card__sub">últimos 90 días</span>
             </div>
-            <div class="rad-card__body" style="gap:8px" id="rad-dow-body">
-              <div style="text-align:center;color:var(--muted);font-size:12px;padding:16px;">Cargando…</div>
+            <div class="rad-card__body" style="gap:8px">
+              {% for d in dow %}
+              <div class="rad-day">
+                <span class="rad-day__label{{ d.label_cls }}">{{ d.nombre }}</span>
+                <span class="rad-day__track"><span class="rad-day__fill{{ d.fill_cls }}" style="width:{{ d.width }}%"></span></span>
+                <span class="rad-day__n">{{ d.count }}</span>
+              </div>
+              {% endfor %}
+
+              {% if nota %}<p class="rad-note">{{ nota }}</p>{% endif %}
             </div>
           </section>
         </div>
@@ -237,48 +265,32 @@
   </main>
 </div>
 
-<script src="/radar/radar.js?v=retro3"></script>
 <script>
-  document.body.classList.add('rad');
-  document.addEventListener('DOMContentLoaded', function () {
-    // Fecha DD/MM
-    const hoy = new Date();
-    const dd = String(hoy.getDate()).padStart(2,'0');
-    const mm = String(hoy.getMonth()+1).padStart(2,'0');
-    const el = document.getElementById('rad-fecha');
-    if (el) el.textContent = `${dd}/${mm}`;
-
-    // Marcar el link activo en el sidebar según ruta
-    const path = window.location.pathname;
-    document.querySelectorAll('.rad-nav').forEach(a => {
-      a.classList.remove('is-active');
-      const href = a.getAttribute('href') || '';
-      if (href === '/radar' && path === '/radar') a.classList.add('is-active');
-      // En dashboard ninguno debe estar activo — dejar el default
-    });
-    // En dashboard limpio: sin nav activo (evitar el default en Publicaciones)
-    document.querySelectorAll('.rad-nav.is-active').forEach(a => a.classList.remove('is-active'));
-
-    // Toggle tema
-    const tt = document.getElementById('theme-toggle');
-    const themeLabel = document.getElementById('rad-theme-label');
+  (function () {
+    // Tema (persistido en localStorage)
+    var body = document.body;
+    var label = document.getElementById('theme-label');
     function setTema(t) {
-      if (t === 'dark') { document.body.dataset.theme = 'dark'; themeLabel.textContent = 'Tema claro'; }
-      else              { document.body.dataset.theme = '';     themeLabel.textContent = 'Tema oscuro'; }
+      body.dataset.theme = t === 'dark' ? 'dark' : '';
+      label.textContent = t === 'dark' ? 'Tema claro' : 'Tema oscuro';
     }
-    if (tt) tt.addEventListener('click', function () {
-      const c = document.body.dataset.theme === 'dark' ? '' : 'dark';
-      setTema(c);
-      try { localStorage.setItem('rad-theme', c); } catch(e){}
+    try { setTema(localStorage.getItem('rad-theme') || ''); } catch (e) {}
+    document.getElementById('theme-toggle').addEventListener('click', function () {
+      var t = body.dataset.theme === 'dark' ? '' : 'dark';
+      setTema(t);
+      try { localStorage.setItem('rad-theme', t); } catch (e) {}
     });
-    try {
-      const saved = localStorage.getItem('rad-theme');
-      if (saved) setTema(saved);
-    } catch(e){}
 
-    if (window.RadarDash) RadarDash.init();
-  });
+    // Rango Semana / Mes → recarga con ?dias=
+    document.querySelectorAll('.rad-seg__item').forEach(function (b) {
+      b.addEventListener('click', function () {
+        window.location.search = '?dias=' + b.dataset.dias;
+      });
+    });
+  })();
 </script>
 
 {% endif %}
-{% endblock %}
+
+</body>
+</html>
