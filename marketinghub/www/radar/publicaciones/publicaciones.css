@@ -8,6 +8,7 @@
    ========================================================================== */
 
 /* ---------- 1. Tokens ---------- */
+:root,
 .pub {
   --bg:#F1F2F3;
   --panel:#FFFFFF;
@@ -49,20 +50,21 @@
 }
 
 /* ---------- 2. Base ---------- */
-.pub {
+body.pub, .pub {
   margin:0;
-  font-family:"Public Sans", system-ui, sans-serif;
-  background:var(--bg);
+  font-family:"Public Sans", system-ui, sans-serif !important;
+  background:var(--bg) !important;
   color:var(--text);
   -webkit-font-smoothing:antialiased;
 }
-.pub a { color:var(--accent); text-decoration:none; }
-.pub a:hover { color:var(--accent-2); text-decoration:underline; }
-.pub ::placeholder { color:var(--faint); }
-.pub select { appearance:none; -webkit-appearance:none; }
-.pub ::-webkit-scrollbar { width:10px; height:10px; }
-.pub ::-webkit-scrollbar-track { background:transparent; }
-.pub ::-webkit-scrollbar-thumb { background:var(--line); border-radius:10px; }
+body.pub *, .pub * { font-family: "Public Sans", system-ui, sans-serif !important; }
+body.pub a, .pub a { color:var(--accent); text-decoration:none; }
+body.pub a:hover, .pub a:hover { color:var(--accent-2); text-decoration:underline; }
+body.pub ::placeholder, .pub ::placeholder { color:var(--faint); }
+body.pub select, .pub select { appearance:none; -webkit-appearance:none; }
+body.pub ::-webkit-scrollbar, .pub ::-webkit-scrollbar { width:10px; height:10px; }
+body.pub ::-webkit-scrollbar-track, .pub ::-webkit-scrollbar-track { background:transparent; }
+body.pub ::-webkit-scrollbar-thumb, .pub ::-webkit-scrollbar-thumb { background:var(--line); border-radius:10px; }
 
 .pub-app {
   height:100vh; min-height:620px; overflow:hidden; box-sizing:border-box;

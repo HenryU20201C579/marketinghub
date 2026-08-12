@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/radar/publicaciones/publicaciones.css">
+<link rel="stylesheet" href="/radar/publicaciones/publicaciones.css?v=retro2">
 <style>
   /* Override Frappe containers */
   html, body,
@@ -128,7 +128,6 @@
   </div>
 </div>
 {% else %}
-<body class="pub">
 
 <div class="pub-app">
 
@@ -266,7 +265,7 @@
 
 </div>
 
-<script src="/radar/radar.js?v=retro1"></script>
+<script src="/radar/radar.js?v=retro2"></script>
 <script>
   const CAN_EDIT = {{ 'true' if can_edit else 'false' }};
   const FORMATOS = {{ formatos|tojson }};
@@ -614,6 +613,10 @@
     },
   };
 
+  // CRITICAL: aplicar la clase .pub al body REAL de Frappe (no puedo poner
+  // <body> anidado dentro del template porque Frappe ya renderizó el suyo)
+  document.body.classList.add('pub');
+
   document.addEventListener('DOMContentLoaded', async function() {
     // Poblar dropdowns
     try {
@@ -712,6 +715,5 @@
   });
 </script>
 
-</body>
 {% endif %}
 {% endblock %}
