@@ -1,284 +1,386 @@
-{% extends "templates/web.html" %}
-
-{% block navbar %}{% endblock %}
-{% block header %}{% endblock %}
-{% block footer %}{% endblock %}
-
-{% block style %}
-{{ super() }}
+<!DOCTYPE html>
+<html lang="es" data-theme="light" data-side="on">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ads Library · Radar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/radar/ads/ads-library.css?v=retro1">
-<link rel="stylesheet" href="/radar/radar-sidebar.css?v=1">
+<link rel="stylesheet" href="/radar/ads/ads-library.css?v=ads2">
 <style>
-  /* Override Frappe containers */
-  html, body,
-  main.container.my-4, body main.container,
-  .page-content-wrapper main.container,
-  .page_content, .page-container, .page-content, .website-content {
-    max-width: none !important; padding: 0 !important; margin: 0 !important;
-    background: var(--bg) !important;
-  }
-
-  /* Modal reuse (Radar.modal API mapeada al estilo ads-*) */
-  .rd-modal-backdrop {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
-    display: none; align-items: flex-start; justify-content: center;
-    padding: 48px 20px; z-index: 200;
-  }
-  .rd-modal-backdrop.rd-visible { display: flex; }
-  .rd-modal {
-    width: 600px; max-width: 94vw; border-radius: 12px;
-    background: var(--bg); border: 1px solid var(--line);
-    box-shadow: 0 30px 70px rgba(0,0,0,0.35); overflow: hidden;
-    display: flex; flex-direction: column;
-    max-height: calc(100vh - 80px);
-  }
-  .rd-modal-head {
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    padding: 12px 18px; border-bottom: 1px solid var(--line); background: var(--panel);
-    font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
-    text-transform: uppercase; color: var(--muted);
-  }
-  .rd-modal-close {
-    width: 26px; height: 26px; border-radius: 7px; border: none;
-    display: flex; align-items: center; justify-content: center;
-    background: transparent; color: var(--muted); cursor: pointer;
-  }
-  .rd-modal-close:hover { background: var(--raise); color: var(--text); }
-  .rd-modal-body { padding: 20px 24px; overflow-y: auto; }
-  .rd-modal-actions {
-    display: flex; justify-content: flex-end; gap: 10px;
-    padding: 12px 18px; border-top: 1px solid var(--line); background: var(--panel);
-  }
-  .rd-btn {
-    height: auto; padding: 9px 16px; border-radius: 8px;
-    border: 1px solid var(--line); background: var(--panel);
-    color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600;
-    cursor: pointer;
-  }
-  .rd-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .rd-btn.rd-btn-secondary { background: var(--panel); color: var(--text); }
-  .rd-btn:not(.rd-btn-secondary):not(.rd-btn-danger) {
-    background: var(--accent); border-color: transparent; color: var(--onaccent);
-    padding: 9px 18px;
-  }
-  .rd-btn:not(.rd-btn-secondary):not(.rd-btn-danger):hover {
-    background: var(--accent-2); border-color: transparent; color: var(--onaccent);
-  }
-
-  /* Toast */
-  .rd-toast {
-    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
-    padding: 11px 20px; border-radius: 9px;
-    font-size: 13px; font-weight: 600;
-    color: var(--onaccent); background: var(--accent);
-    box-shadow: 0 14px 34px rgba(0,0,0,0.3);
-    display: flex; align-items: center; gap: 9px; z-index: 300;
-    opacity: 0; transition: opacity .2s;
-  }
-  .rd-toast.rd-visible { opacity: 1; }
-  .rd-toast::before {
-    content: ""; width: 6px; height: 6px; border-radius: 999px;
-    background: var(--onaccent); opacity: 0.7;
-  }
-  .rd-toast.rd-error { background: #d33; }
-
-  /* KPI clickable */
-  .ads-kpi { cursor: pointer; transition: transform .1s, box-shadow .1s; }
-  .ads-kpi:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
-
-  /* Modal detalle específico del ad (video/imagen preview) */
-  .ads-modal-media {
-    background: #0f172a; padding: 20px; display: flex; align-items: center;
-    justify-content: center; min-height: 300px; border-radius: 8px; margin-bottom: 14px;
-  }
-  .ads-modal-media video, .ads-modal-media img {
-    max-width: 100%; max-height: 400px; border-radius: 4px;
-  }
-  .ads-modal-media .noplay { color: #94a3b8; font-size: 12px; }
-  .ads-modal-copy {
-    background: var(--raise); padding: 12px 14px; border-radius: 8px;
-    font-size: 13px; line-height: 1.5; color: var(--text);
-    white-space: pre-wrap; word-break: break-word; max-height: 180px; overflow-y: auto;
-    margin-bottom: 14px;
-  }
-
-  /* Estado vacío inline */
-  .ads-empty-inline {
-    display: flex; flex-direction: column; align-items: center;
-    padding: 60px 20px; color: var(--muted); gap: 12px;
-  }
-  .ads-empty-inline .t { font-size: 15px; font-weight: 600; color: var(--text); }
+  /* las filas y celdas del diseño son <button>: sin este reseteo se ve el
+     borde outset del navegador y las líneas salen gruesas */
+  .th, .tr, .act, .chk, .clear { border-color:transparent; }
+  .empty[hidden] { display:none; }
 </style>
-{% endblock %}
+</head>
+<!-- este diseño trae su propio sidebar, así que no se inyecta el compartido -->
+<body data-radx-side="off">
 
-{% block page_content %}
 {% if no_access %}
-<div style="padding: 60px 20px; max-width: 500px; margin: 60px auto; text-align: center;
-            background: var(--panel); border: 1px solid var(--line); border-radius: 12px;">
-  <div style="font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 10px;">
-    Radar · Ads Library · Acceso denegado
-  </div>
-  <div style="color: var(--muted); font-size: 13px;">Sin permisos.</div>
-</div>
+<div class="app"><div class="main"><div class="empty" style="margin-top:80px">
+  <span>Ads Library · Acceso denegado. Se requiere uno de estos roles: {{ required_roles|join(", ") }}.</span>
+</div></div></div>
 {% else %}
 
-<div class="ads-app">
+<div class="app">
 
-  <!-- ============ CABECERA ============ -->
-  <header class="ads-header">
-    <div class="ads-header__left">
-      <a class="ads-back" href="/radar">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
-        Volver
-      </a>
-      <span class="ads-sep"></span>
-      <div class="ads-title-group">
-        <svg class="ads-title-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16v11H4z M4 10h16 M8 6.5v11"/></svg>
-        <span class="ads-title">Ads Library</span>
-      </div>
-    </div>
-    <div class="ads-header__right">
-      <span class="ads-user">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2z M4.5 20c1.5-3.6 4.3-5 7.5-5s6 1.4 7.5 5"/></svg>
-        {{ usuario }}
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="side">
+    <div class="side-top">
+      <span class="brand">
+        <span class="mark" style="background:var(--accent-soft);border:1px solid var(--accent)"><svg class="ico" viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.4"/></svg></span>
+        <span class="txt">Radar</span>
       </span>
-      <button class="ads-icon-btn" id="theme-toggle" title="Cambiar tema" type="button">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
+      <button class="iconbtn" data-side-toggle title="Ocultar sidebar">
+        <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M14 6l-6 6 6 6"/></svg>
       </button>
     </div>
-  </header>
+    <nav class="side-nav">
+      <div class="nav-group">Contenido</div>
+      <button class="nav-item" data-href="/radar/publicaciones"><svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M3.5 20.5h17M7.5 20.5v-6.5M12.5 20.5v-11M17.5 20.5v-4"/></svg><span class="lbl">Publicaciones</span><span class="badge tnum">{{ contadores.publicaciones or "" }}</span></button>
+      <button class="nav-item" data-href="/radar/guiones"><svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5zM14.5 6.5l3 3"/></svg><span class="lbl">Guiones</span><span class="badge tnum">{{ contadores.guiones or "" }}</span></button>
+      <button class="nav-item" data-href="/radar/comparativa"><svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M4.5 6.5h15v13.5h-15zM8.5 3.5v4M15.5 3.5v4M4.5 11h15"/></svg><span class="lbl">Calendario pubs</span><span class="badge"></span></button>
+      <button class="nav-item" data-href="/radar/guiones?vista=calendario"><svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M4 6.5h16M4 12h16M4 17.5h16"/></svg><span class="lbl">Agenda guiones</span><span class="badge"></span></button>
+      <button class="nav-item active" data-href="/radar/ads"><svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M3.5 6.5h17v11h-17zM3.5 10.5h17"/></svg><span class="lbl">Ads Library</span><span class="badge tnum">{{ contadores.ads or "" }}</span></button>
+      <div class="nav-group">Configuración</div>
+      <button class="nav-item" data-href="/radar/competidores"><svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M9 5a3.4 3.4 0 1 0 0 6.8A3.4 3.4 0 0 0 9 5zM3 20c1.2-3.2 3.6-4.5 6-4.5s4.8 1.3 6 4.5M16.5 6.2a3 3 0 0 1 0 5.6M21 19.5c-.8-2.2-2-3.2-3.5-3.7"/></svg><span class="lbl">Competidores</span><span class="badge tnum">{{ contadores.competidores or "" }}</span></button>
+      <button class="nav-item" data-href="/radar/cuentas"><svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17zM3.5 12h17M12 3.5c2.4 2.4 2.4 14.2 0 17M12 3.5c-2.4 2.4-2.4 14.2 0 17"/></svg><span class="lbl">Cuentas</span><span class="badge tnum">{{ contadores.cuentas or "" }}</span></button>
+      <button class="nav-item" data-href="/radar/categorias"><svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M4 11.5 11.5 4H20v8.5L12.5 20zM15.5 8.5h.01"/></svg><span class="lbl">Categorías</span><span class="badge tnum">{{ contadores.categorias or "" }}</span></button>
+      <button class="nav-item" data-href="/radar/settings"><svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8zM19.4 14.2a1.6 1.6 0 0 0 .3 1.8 2 2 0 1 1-2.8 2.8 1.6 1.6 0 0 0-2.7 1.1 2 2 0 1 1-4 0 1.6 1.6 0 0 0-2.8-1.1 2 2 0 1 1-2.8-2.8 1.6 1.6 0 0 0-1.1-2.7 2 2 0 1 1 0-4 1.6 1.6 0 0 0 1.1-2.8 2 2 0 1 1 2.8-2.8 1.6 1.6 0 0 0 2.7-1.1 2 2 0 1 1 4 0 1.6 1.6 0 0 0 2.7 1.1 2 2 0 1 1 2.8 2.8 1.6 1.6 0 0 0 1.1 2.7 2 2 0 1 1 0 4z"/></svg><span class="lbl">Ajustes</span><span class="badge"></span></button>
+    </nav>
+    <div class="side-foot">
+      <div class="run"><span>Última corrida</span><span class="tnum" style="color:var(--muted)">{{ ultima_corrida }}</span></div>
+      <button class="theme-btn" id="theme">
+        <svg class="ico" viewBox="0 0 24 24" width="14" height="14"><path id="themePath" d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
+        <span class="txt" id="themeLabel">Tema oscuro</span>
+      </button>
+    </div>
+  </aside>
 
-  <!-- ============ KPIs (clickables para filtrar por competidor) ============ -->
-  <div class="ads-kpis" id="ads-kpis">
-    <div class="ads-empty-inline"><div>Cargando presión publicitaria…</div></div>
-  </div>
-
-  <!-- ============ FILTROS ============ -->
-  <div class="ads-toolbar">
-    <div class="ads-toolbar__filters">
-
-      <div class="ads-search">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M16.2 16.2 20.5 20.5"/></svg>
-        <input type="text" id="ads-f-search" placeholder="Buscar en copy…">
-      </div>
-
-      <div class="ads-select">
-        <svg class="ads-select__icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5a3.4 3.4 0 1 0 0 6.8A3.4 3.4 0 0 0 9 5z M3 20c1.2-3.2 3.6-4.5 6-4.5s4.8 1.3 6 4.5 M16.5 6.2a3 3 0 0 1 0 5.6 M21 19.5c-.8-2.2-2-3.2-3.5-3.7"/></svg>
-        <select id="ads-f-comp">
-          <option value="">Todos los competidores</option>
-        </select>
-        <svg class="ads-select__caret" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>
-      </div>
-
-      <div class="ads-select">
-        <svg class="ads-select__icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16v13H4z M4 9.5h16 M10 13l4 2.5-4 2.5z"/></svg>
-        <select id="ads-f-formato">
-          <option value="">Formato…</option>
-          <option value="Video">Video</option>
-          <option value="Imagen">Imagen</option>
-          <option value="Carrusel">Carrusel</option>
-        </select>
-        <svg class="ads-select__caret" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>
-      </div>
-
-      <div class="ads-select">
-        <svg class="ads-select__icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h7l9 9-6.5 6.5-9-9z M7.6 8.1h.01"/></svg>
-        <select id="ads-f-etiqueta">
-          <option value="">Etiqueta…</option>
-          <option value="Ganador top">Ganador top (60d+)</option>
-          <option value="Ganador">Ganador (30-59d)</option>
-          <option value="Test scale">Test scale (14-29d)</option>
-          <option value="Fresco">Fresco (7-13d)</option>
-          <option value="Nuevo">Nuevo (&lt;7d)</option>
-          <option value="Pausado">Pausado</option>
-        </select>
-        <svg class="ads-select__caret" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>
-      </div>
-
-      <button class="ads-toggle" id="ads-t-30d" type="button">
-        <span class="ads-toggle__box">
-          <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-l">
+        <button class="hamb" data-side-toggle title="Mostrar u ocultar sidebar">
+          <svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M4 5h16v14H4zM9.5 5v14"/></svg>
+        </button>
+        <span class="page-title">
+          <svg class="ico" viewBox="0 0 24 24" width="17" height="17"><path d="M3.5 6.5h17v11h-17zM3.5 10.5h17"/></svg>
+          Ads Library
         </span>
-        30d+ activos
-      </button>
+        <span class="sub"><span class="tnum" id="shown">0</span> de <span class="tnum" id="total">0</span> ads · <span class="tnum" id="prom">0</span> d promedio</span>
+      </div>
+      <div class="topbar-r">
+        <button class="btn" id="csv">
+          <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M12 4v11M8 11l4 4 4-4M4.5 19.5h15"/></svg>Descargar CSV
+        </button>
+        {% if can_edit %}<button class="btn primary" id="upd">
+          <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4h-4"/></svg>Actualizar
+        </button>{% endif %}
+      </div>
+    </header>
 
-      <button class="ads-toggle is-on" id="ads-t-activos" type="button">
-        <span class="ads-toggle__box">
-          <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
-        </span>
-        Solo activos
-      </button>
+    <div class="kpis" id="kpis"></div>
 
-      <button class="ads-btn ads-btn--quiet" id="ads-limpiar" type="button">Limpiar</button>
+    <div class="filters">
+      <div class="searchbox">
+        <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM16.2 16.2 20.5 20.5"/></svg>
+        <input type="search" id="q" placeholder="Buscar en copy...">
+      </div>
+      <div class="pick" data-filter>
+        <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M9 5a3.4 3.4 0 1 0 0 6.8A3.4 3.4 0 0 0 9 5zM3 20c1.2-3.2 3.6-4.5 6-4.5s4.8 1.3 6 4.5M16.5 6.2a3 3 0 0 1 0 5.6M21 19.5c-.8-2.2-2-3.2-3.5-3.7"/></svg>
+        <select id="f-marca" data-default="todas">
+          <option value="todas">Todos los competidores</option>
+          {% for c in competidores %}<option value="{{ c|e }}">{{ c|e }}</option>
+          {% endfor %}
+        </select>
+        <svg class="ico caret" viewBox="0 0 24 24" width="12" height="12"><path d="M7 10l5 5 5-5"/></svg>
+      </div>
+      <div class="pick" data-filter>
+        <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M3.5 6.5h17v11h-17zM3.5 10.5h17"/></svg>
+        <select id="f-formato" data-default="todos">
+          <option value="todos">Todos los formatos</option>
+          {% for f in formatos %}<option value="{{ f|e }}">{{ f|e }}</option>
+          {% endfor %}
+        </select>
+        <svg class="ico caret" viewBox="0 0 24 24" width="12" height="12"><path d="M7 10l5 5 5-5"/></svg>
+      </div>
+      <div class="pick" data-filter>
+        <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M4 11.5 11.5 4H20v8.5L12.5 20zM15.5 8.5h.01"/></svg>
+        <select id="f-etiqueta" data-default="todas">
+          <option value="todas">Todas las etiquetas</option>
+          {% for e in etiquetas %}<option value="{{ e|e }}">{{ e|e }}</option>
+          {% endfor %}
+        </select>
+        <svg class="ico caret" viewBox="0 0 24 24" width="12" height="12"><path d="M7 10l5 5 5-5"/></svg>
+      </div>
+      <button class="chk" id="c30" role="checkbox" aria-checked="false">
+        <span class="box"><svg class="ico" viewBox="0 0 24 24" width="9" height="9"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span>30d+ activos
+      </button>
+      <button class="chk" id="cact" role="checkbox" aria-checked="true">
+        <span class="box"><svg class="ico" viewBox="0 0 24 24" width="9" height="9"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span>Solo activos
+      </button>
+      <button class="clear" id="clear">Limpiar</button>
+      <span class="hint" id="hint">Clic en el encabezado para ordenar</span>
     </div>
 
-    <div class="ads-toolbar__actions">
-      <span class="ads-summary" id="ads-summary">–</span>
-      <button class="ads-btn" id="ads-csv" type="button">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11 M8 11l4 4 4-4 M4.5 19.5h15"/></svg>
-        Descargar CSV
-      </button>
-      <button class="ads-btn ads-btn--primary" id="ads-refresh" type="button">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.4-5.7 M20 4.5V10h-5.5"/></svg>
-        Actualizar
-      </button>
+    <div class="tablewrap">
+      <div class="thead">
+        <button class="th sortable c on" data-sort="dias"><span>Días act.</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg></button>
+        <button class="th sortable" data-sort="estado"><span>Estado</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg></button>
+        <button class="th sortable" data-sort="marca"><span>Marca</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg></button>
+        <button class="th sortable" data-sort="formato"><span>Formato</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg></button>
+        <button class="th sortable c" data-sort="pub"><span>Publicado</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg></button>
+        <button class="th sortable" data-sort="copy"><span>Copy</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg></button>
+        <div class="th c"><span>CTA</span></div>
+        <button class="th sortable" data-sort="landing"><span>Landing</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg></button>
+        <div class="th c"><span></span></div>
+      </div>
+      <div id="rows"></div>
+      <div class="empty" id="empty" hidden>
+        <svg class="ico" viewBox="0 0 24 24" width="24" height="24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM16.2 16.2 20.5 20.5"/></svg>
+        <span>Ningún ad coincide con los filtros.</span>
+      </div>
+    </div>
+
+    <div class="footbar">
+      <span><span id="counter">0</span> de <span id="total2">0</span> ads · orden por <span id="sortLabel">días act.</span></span>
+      <div class="sums">
+        <span>Activos: <strong id="sumA">0</strong></span>
+        <span>Ganadores: <strong class="hot" id="sumG">0</strong></span>
+        <span>Días máx.: <strong id="maxD">0</strong></span>
+      </div>
     </div>
   </div>
-
-  <!-- ============ TABLA ============ -->
-  <div class="ads-tablewrap">
-    <div class="ads-table">
-
-      <!-- cabecera -->
-      <div class="ads-row ads-head" id="ads-head">
-        <div class="ads-head__cell ads-head__cell--center ads-head__cell--sortable is-sorted" data-sort="dias_activo">Días activo <span class="ads-sort-dir">↓</span></div>
-        <div class="ads-head__cell">Estado</div>
-        <div class="ads-head__cell ads-head__cell--sortable" data-sort="competidor">Marca</div>
-        <div class="ads-head__cell ads-head__cell--sortable" data-sort="formato">Formato</div>
-        <div class="ads-head__cell ads-head__cell--sortable" data-sort="fecha_inicio">Publicado</div>
-        <div class="ads-head__cell">Copy</div>
-        <div class="ads-head__cell">CTA</div>
-        <div class="ads-head__cell">Landing</div>
-        <div class="ads-head__cell">Plataformas</div>
-        <div class="ads-head__cell ads-head__cell--end">Acciones</div>
-      </div>
-
-      <!-- filas (JS) -->
-      <div id="ads-body">
-        <div class="ads-empty-inline"><div class="t">Cargando…</div></div>
-      </div>
-
-    </div>
-  </div>
-
 </div>
 
-<script src="/radar/radar.js?v=retro2"></script>
-<script src="/radar/ads.retro.js"></script>
-<script>
-  // Aplica clase .ads al body real de Frappe (para que las variables CSS apliquen)
-  document.body.classList.add('ads');
+<div class="toast" id="toast"></div>
 
-  // Toggle tema
-  document.addEventListener('DOMContentLoaded', function () {
-    const tt = document.getElementById('theme-toggle');
-    if (tt) tt.addEventListener('click', function () {
-      const b = document.body;
-      b.dataset.theme = b.dataset.theme === 'dark' ? '' : 'dark';
-      try { localStorage.setItem('ads-theme', b.dataset.theme || ''); } catch(e){}
-    });
-    try {
-      const saved = localStorage.getItem('ads-theme');
-      if (saved) document.body.dataset.theme = saved;
-    } catch(e){}
-    if (window.RadarAds) RadarAds.init({{ can_edit | tojson }});
+<script>
+(function(){
+  var root = document.documentElement;
+  var API = '/api/method/marketinghub.';
+  var CSRF = '{{ csrf_token }}';
+  var PUEDE_EDITAR = {{ 'true' if can_edit else 'false' }};
+
+  /* tema */
+  var SUN = "M12 6.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z M12 2v2 M12 20v2 M4.9 4.9l1.4 1.4 M17.7 17.7l1.4 1.4 M2 12h2 M20 12h2 M4.9 19.1l1.4-1.4 M17.7 6.3l1.4-1.4";
+  var MOON = "M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z";
+  function setTheme(t){
+    root.setAttribute('data-theme', t);
+    document.getElementById('themePath').setAttribute('d', t === 'dark' ? SUN : MOON);
+    document.getElementById('themeLabel').textContent = t === 'dark' ? 'Tema claro' : 'Tema oscuro';
+    try{ localStorage.setItem('radar-theme', t); }catch(e){}
+  }
+  var st=null; try{ st = localStorage.getItem('radar-theme'); }catch(e){}
+  setTheme(st || 'light');
+  document.getElementById('theme').addEventListener('click', function(){
+    setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
   });
+
+  /* sidebar */
+  function setSide(v){ root.setAttribute('data-side', v); try{ localStorage.setItem('radar-side', v); }catch(e){} }
+  var ss=null; try{ ss = localStorage.getItem('radar-side'); }catch(e){}
+  setSide(ss || 'on');
+  document.querySelectorAll('[data-side-toggle]').forEach(function(b){
+    b.addEventListener('click', function(){ setSide(root.getAttribute('data-side') === 'on' ? 'off' : 'on'); });
+  });
+  document.querySelectorAll('.nav-item[data-href]').forEach(function(b){
+    b.addEventListener('click', function(){ window.location.href = b.dataset.href; });
+  });
+
+  /* datos */
+  var DATA = {{ filas_json }};
+  var FMT = {
+    Carrusel:"M8 6.5h8v11H8zM5 8.5v7M19 8.5v7",
+    Video:"M4.5 7h11v10h-11zM15.5 11l4-2.5v7L15.5 13z",
+    Imagen:"M4 6h16v12H4zM4 15l4.5-4 4 3.5L15.5 12 20 16",
+    Otro:"M4 6h16v12H4z"
+  };
+  var sort = {k:"dias", dir:-1};
+
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function toast(m){
+    var t = document.getElementById('toast');
+    t.textContent = m; t.classList.add('on');
+    clearTimeout(toast._t); toast._t = setTimeout(function(){ t.classList.remove('on'); }, 2800);
+  }
+  function v(id){ return document.getElementById(id).value; }
+  function on(id){ return document.getElementById(id).getAttribute('aria-checked') === 'true'; }
+
+  function filtered(){
+    var q = v('q').trim().toLowerCase(), marca = v('f-marca'), fmt = v('f-formato'), et = v('f-etiqueta');
+    return DATA.filter(function(d){
+      return (marca === 'todas' || d.marca === marca)
+        && (fmt === 'todos' || d.formato === fmt)
+        && (et === 'todas' || d.etiqueta === et)
+        && (!on('cact') || d.activo)
+        && (!on('c30') || d.dias >= 30)
+        && (!q || (d.copy + ' ' + d.marca + ' ' + d.landing).toLowerCase().indexOf(q) > -1);
+    });
+  }
+
+  function renderKpis(){
+    var marcas = [];
+    DATA.forEach(function(d){ if(d.marca && marcas.indexOf(d.marca) < 0) marcas.push(d.marca); });
+    var cards = marcas.slice(0, 2).map(function(m){
+      var ads = DATA.filter(function(d){ return d.marca === m; });
+      return {k:m, ic:'tag', cls:'a', v:ads.length,
+        s:ads.filter(function(d){return d.activo;}).length + ' activos · ' + ads.filter(function(d){return d.ganador;}).length + ' ganadores'};
+    });
+    cards.push({k:'Ganadores (30d+)', ic:'trophy', cls:'t',
+      v:DATA.filter(function(d){ return d.ganador && d.dias >= 30; }).length, s:'de ' + DATA.length + ' ads en total'});
+    cards.push({k:'Nuevos esta semana', ic:'spark', cls:'a',
+      v:DATA.filter(function(d){ return d.dias <= 7; }).length, s:'creados hace menos de 7 días'});
+    var D = {
+      tag:"M4 11.5 11.5 4H20v8.5L12.5 20zM15.5 8.5h.01",
+      trophy:"M8 4.5h8v3.5a4 4 0 0 1-8 0zM8 5.5H5.5V7a2.5 2.5 0 0 0 2.5 2.5M16 5.5h2.5V7A2.5 2.5 0 0 1 16 9.5M10 12h4l.5 4h-5zM8.5 19.5h7",
+      spark:"M12 3.5v3M12 17.5v3M4.5 12h3M16.5 12h3M6.8 6.8l2.1 2.1M15.1 15.1l2.1 2.1M17.2 6.8l-2.1 2.1M8.9 15.1l-2.1 2.1"
+    };
+    document.getElementById('kpis').innerHTML = cards.map(function(c){
+      return '<article class="kpi"><span class="k"><svg class="ico ' + c.cls + '" viewBox="0 0 24 24" width="12" height="12"><path d="' + D[c.ic] + '"/></svg><span>' + esc(c.k) + '</span></span>'
+        + '<span class="v ' + c.cls + '">' + c.v + '</span><span class="s">' + esc(c.s) + '</span></article>';
+    }).join('');
+  }
+
+  function render(){
+    var rows = filtered().slice(), k = sort.k, dir = sort.dir;
+    rows.sort(function(a,b){
+      var x = a[k], y = b[k];
+      if(k === 'pub'){ x = a.iso; y = b.iso; }
+      if(k === 'estado'){ x = a.ganador ? 1 : 0; y = b.ganador ? 1 : 0; }
+      if(typeof x === 'string') return String(x).localeCompare(String(y)) * dir;
+      return (x - y) * dir;
+    });
+
+    var marcas = [];
+    DATA.forEach(function(d){ if(d.marca && marcas.indexOf(d.marca) < 0) marcas.push(d.marca); });
+
+    document.getElementById('rows').innerHTML = rows.map(function(d){
+      return '<div class="tr" data-id="' + esc(d.id) + '">'
+        + '<div class="td c"><span class="dias"><b class="' + (d.dias >= 180 ? 'hot' : '') + '">' + d.dias + '</b><i>d</i></span></div>'
+        + '<div class="td" style="gap:6px"><span class="chip ' + (d.ganador ? 'win' : '') + '">' + esc(d.etiqueta) + '</span>'
+          + '<span class="dot ' + (d.activo ? '' : 'off') + '" title="' + (d.activo ? 'Activo' : 'Inactivo') + '"></span></div>'
+        + '<div class="td" style="gap:7px"><span class="mark ' + (marcas.indexOf(d.marca) === 0 ? '' : 'e') + '">' + esc((d.marca || '?')[0]) + '</span><span class="name">' + esc(d.marca) + '</span></div>'
+        + '<div class="td"><span class="fmt"><svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="' + (FMT[d.formato] || FMT.Otro) + '"/></svg><span>' + esc(d.formato) + '</span></span></div>'
+        + '<div class="td c tnum" style="color:var(--muted)">' + esc(d.pub) + '</div>'
+        + '<div class="td"><span class="copy" title="' + esc(d.copy) + '"><span>' + esc(d.copy) + '</span>'
+          + '<svg class="ico" viewBox="0 0 24 24" width="11" height="11"><path d="M14 5h5v5M19 5l-8 8M18 14v5H5V6h5"/></svg></span></div>'
+        + '<div class="td c"><span class="cta">' + esc(d.cta) + '</span></div>'
+        + '<div class="td"><span class="land">' + esc(d.landing) + '</span></div>'
+        + '<div class="td last">'
+          + '<button class="act" data-ver title="Ver anuncio en Meta Ads Library"><svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.6"/></svg></button>'
+          + (PUEDE_EDITAR ? '<button class="act go" data-guion title="Crear guion"><svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5zM14.5 6.5l3 3"/></svg></button>' : '')
+        + '</div>'
+      + '</div>';
+    }).join('');
+
+    document.getElementById('empty').hidden = rows.length > 0;
+    document.getElementById('shown').textContent = rows.length;
+    document.getElementById('total').textContent = DATA.length;
+    document.getElementById('total2').textContent = DATA.length;
+    document.getElementById('counter').textContent = rows.length;
+    document.getElementById('prom').textContent = DATA.length ? Math.round(DATA.reduce(function(a,b){ return a + b.dias; }, 0) / DATA.length) : 0;
+    document.getElementById('sumA').textContent = rows.filter(function(d){ return d.activo; }).length;
+    document.getElementById('sumG').textContent = rows.filter(function(d){ return d.ganador; }).length;
+    document.getElementById('maxD').textContent = rows.length ? Math.max.apply(null, rows.map(function(d){ return d.dias; })) : 0;
+
+    document.querySelectorAll('.th.sortable').forEach(function(th){
+      var isOn = th.dataset.sort === k;
+      th.classList.toggle('on', isOn);
+      th.querySelector('path').setAttribute('d', dir === 1 ? 'M6 14l6-5 6 5' : 'M6 10l6 5 6-5');
+      if(isOn) document.getElementById('sortLabel').textContent = th.textContent.trim().toLowerCase();
+    });
+    document.querySelectorAll('[data-filter]').forEach(function(p){
+      var s = p.querySelector('select');
+      p.classList.toggle('on', s.value !== s.dataset.default);
+    });
+    var dirty = v('q') || v('f-marca') !== 'todas' || v('f-formato') !== 'todos' || v('f-etiqueta') !== 'todas' || on('c30') || !on('cact');
+    document.getElementById('hint').textContent = dirty ? 'Filtros activos' : 'Clic en el encabezado para ordenar';
+  }
+
+  function llamar(metodo, datos){
+    return fetch(API + metodo, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'X-Frappe-CSRF-Token': CSRF },
+      body: JSON.stringify(datos || {})
+    }).then(function(r){
+      return r.json().then(function(j){
+        if(!r.ok) throw new Error((j._server_messages && JSON.parse(j._server_messages)[0]) || j.exception || 'Error');
+        return j.message;
+      });
+    });
+  }
+  function fila(id){ return DATA.filter(function(d){ return d.id === id; })[0]; }
+
+  document.querySelectorAll('.filters select, #q').forEach(function(el){
+    el.addEventListener('input', render); el.addEventListener('change', render);
+  });
+  ['c30','cact'].forEach(function(id){
+    document.getElementById(id).addEventListener('click', function(){
+      this.setAttribute('aria-checked', this.getAttribute('aria-checked') !== 'true'); render();
+    });
+  });
+  document.getElementById('clear').addEventListener('click', function(){
+    document.querySelectorAll('.filters select').forEach(function(s){ s.value = s.dataset.default; });
+    document.getElementById('q').value = '';
+    document.getElementById('c30').setAttribute('aria-checked','false');
+    document.getElementById('cact').setAttribute('aria-checked','true');
+    render();
+  });
+  document.querySelectorAll('.th.sortable').forEach(function(th){
+    th.addEventListener('click', function(){
+      var key = th.dataset.sort;
+      sort = {k:key, dir: sort.k === key ? -sort.dir : (key === 'dias' || key === 'pub' || key === 'estado' ? -1 : 1)};
+      render();
+    });
+  });
+  document.getElementById('rows').addEventListener('click', function(e){
+    var tr = e.target.closest('.tr'); if(!tr) return;
+    var d = fila(tr.dataset.id); if(!d) return;
+    if(e.target.closest('[data-ver]') || e.target.closest('.copy')){
+      if(d.url) window.open(d.url, '_blank', 'noopener');
+      else toast('Este anuncio no tiene id de la biblioteca.');
+      return;
+    }
+    if(e.target.closest('[data-guion]')){
+      llamar('www.radar.ads.index.crear_guion_desde_ad', { ad_name: d.id })
+        .then(function(){ toast('Guion creado desde el ad.'); })
+        .catch(function(err){ toast(String(err.message).replace(/<[^>]*>/g, '')); });
+    }
+  });
+  document.getElementById('csv').addEventListener('click', function(){
+    var rows = filtered();
+    var out = [['Días activo','Etiqueta','Activo','Marca','Formato','Publicado','Copy','CTA','Landing','URL']];
+    rows.forEach(function(d){
+      out.push([d.dias, d.etiqueta, d.activo ? 'Sí' : 'No', d.marca, d.formato, d.pub, d.copy, d.cta, d.landing, d.url]);
+    });
+    var csv = out.map(function(f){
+      return f.map(function(x){ return '"' + String(x).replace(/"/g,'""') + '"'; }).join(',');
+    }).join('\n');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8'}));
+    a.download = 'ads-library.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('Descargadas ' + rows.length + ' ads en CSV.');
+  });
+  var upd = document.getElementById('upd');
+  if(upd) upd.addEventListener('click', function(){
+    upd.disabled = true;
+    toast('Actualizando desde Meta Ads Library…');
+    llamar('api.radar_ads_scraper.ejecutar_scrape_ads_ahora')
+      .then(function(){ toast('Scrape terminado. Recargando…'); setTimeout(function(){ window.location.reload(); }, 1200); })
+      .catch(function(err){ upd.disabled = false; toast(String(err.message).replace(/<[^>]*>/g, '')); });
+  });
+
+  renderKpis(); render();
+})();
 </script>
 
-<script src="/radar/radar-sidebar.js?v=1"></script>
-
 {% endif %}
-{% endblock %}
+
+</body>
+</html>

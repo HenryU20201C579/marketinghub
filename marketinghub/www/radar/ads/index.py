@@ -25,7 +25,77 @@ def get_context(context):
 	context.no_access = not _has_role(VIEW_ROLES)
 	context.required_roles = list(VIEW_ROLES)
 	context.can_edit = _has_role(ANALISTA_ROLES)
+
 	context.usuario = frappe.session.user
+	if context.no_access:
+		return
+
+	filas = [_fila(a) for a in listar()]
+	context.filas_json = frappe.as_json(filas).replace("</", "<\\/")
+	context.total = len(filas)
+	context.competidores = [c for c in obtener_competidores() if any(f["marca"] == c for f in filas)]
+	context.formatos = sorted({f["formato"] for f in filas if f["formato"]})
+	context.etiquetas = sorted({f["etiqueta"] for f in filas if f["etiqueta"]})
+	try:
+		from marketinghub.www.radar.index import obtener_contadores
+		context.contadores = obtener_contadores()
+	except Exception:
+		context.contadores = {}
+	context.ultima_corrida = _ultima_corrida()
+	try:
+		context.csrf_token = frappe.local.session.data.csrf_token
+	except Exception:
+		context.csrf_token = ""
+
+
+# El diseño solo dibuja icono para estos tres formatos
+GANADORAS = ("Ganador", "Ganador top")
+
+
+def _fila(a):
+	iso = a.get("fecha_inicio") or ""
+	landing = (a.get("landing_url") or "").split("://", 1)[-1]
+	if landing.startswith("www."):
+		landing = landing[4:]
+	archive = a.get("ad_archive_id") or ""
+	return {
+		"id": a["name"],
+		"dias": int(a.get("dias_activo") or 0),
+		"etiqueta": a.get("etiqueta_ganador") or "Sin etiqueta",
+		"ganador": (a.get("etiqueta_ganador") or "") in GANADORAS,
+		"activo": bool(a.get("esta_activo")),
+		"marca": a.get("competidor") or "",
+		"formato": a.get("formato") or "Otro",
+		"pub": f"{iso[8:10]}/{iso[5:7]}/{iso[2:4]}" if len(iso) == 10 else "—",
+		"iso": iso,
+		"copy": _limpiar(a.get("copy_texto"))[:160] or a["name"],
+		"cta": a.get("cta_type") or "—",
+		"landing": landing.rstrip("/")[:60] or "—",
+		"url": f"https://www.facebook.com/ads/library/?id={archive}" if archive else "",
+	}
+
+
+def _limpiar(texto):
+	import re
+	texto = re.sub(r"\s+", " ", texto or "")
+	return texto.strip()
+
+
+def _ultima_corrida():
+	from datetime import datetime
+	try:
+		s = frappe.get_cached_doc("Radar Settings")
+		if not s.ultima_corrida:
+			return "—"
+		from frappe.utils import get_datetime
+		minutos = int((datetime.now() - get_datetime(s.ultima_corrida)).total_seconds() // 60)
+		if minutos < 60:
+			return f"hace {max(minutos, 1)} min"
+		if minutos < 60 * 24:
+			return f"hace {minutos // 60} h"
+		return f"hace {minutos // (60 * 24)} d"
+	except Exception:
+		return "—"
 
 
 # =============== LISTA ===============
