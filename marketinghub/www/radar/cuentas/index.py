@@ -1,8 +1,21 @@
-"""Página de gestión de Cuentas Sociales."""
+"""Página de gestión de Cuentas Sociales.
+
+El frontend es el diseño del zip: `index.html` es un documento standalone (no
+extiende `templates/web.html`); `styles.css` y `app.js` son copia literal del
+diseño. `get_context` solo arma los datos que pinta ese markup; el alta, la
+edición, el borrado y el scrape siguen pasando por los endpoints de abajo.
+"""
+from datetime import datetime
+
+from frappe.utils import get_datetime
+
 import frappe
 from marketinghub.marketinghub.doctype.cuenta_social.cuenta_social import extraer_handle
 
 no_cache = 1
+
+# el diseño colorea Instagram y TikTok; el resto queda en el estilo neutro
+CLASE_PLATAFORMA = {"Instagram": "ig", "TikTok": "tt"}
 
 ADMIN_ROLES = ("Marketinghub-Radar-Administrar", "System Manager")
 VIEW_ROLES = (
@@ -29,6 +42,81 @@ def get_context(context):
 	context.no_access = not _has_role(VIEW_ROLES)
 	context.required_roles = list(VIEW_ROLES)
 	context.can_edit = _has_role(ADMIN_ROLES)
+	if context.no_access:
+		return
+
+	fd = frappe.form_dict
+	context.f_q = (fd.get("q") or "").strip()
+	context.f_plataforma = fd.get("plataforma") if fd.get("plataforma") in PLATAFORMAS else ""
+	context.f_activas = fd.get("activas") == "1"
+
+	todas = listar()
+	tope = max([c["n_publicaciones"] for c in todas] + [1])
+	for c in todas:
+		marca = c.get("competidor") or ""
+		c["handle_txt"] = c.get("handle") or "—"
+		c["marca"] = marca
+		c["inicial"] = (marca[:2] or "··").upper()
+		c["cls"] = CLASE_PLATAFORMA.get(c.get("plataforma"), "")
+		c["url_txt"] = _url_corta(c.get("url_perfil"))
+		c["url"] = c.get("url_perfil") if (c.get("url_perfil") or "").startswith(("http://", "https://")) else ""
+		c["pct"] = round(c["n_publicaciones"] / tope * 100) if c["n_publicaciones"] else 0
+		c["scrapeo"] = _hace(c.get("ultimo_scrapeo"))
+		c["estado"] = "Activa" if c.get("activo") else "Inactiva"
+
+	visibles = [
+		c for c in todas
+		if (not context.f_q or context.f_q.lower() in (c["handle_txt"] + " " + c["marca"]).lower())
+		and (not context.f_plataforma or c.get("plataforma") == context.f_plataforma)
+		and (not context.f_activas or c.get("activo"))
+	]
+
+	context.cuentas = visibles
+	# el diálogo de edición necesita los datos en JS; `frappe.as_json` no está
+	# disponible dentro del sandbox de Jinja, así que se serializa aquí
+	context.cuentas_json = frappe.as_json(visibles).replace("</", "<\\/")
+	context.total = len(todas)
+	context.mostradas = len(visibles)
+	context.total_pubs = sum(c["n_publicaciones"] for c in todas)
+	context.total_pubs_vis = sum(c["n_publicaciones"] for c in visibles)
+	context.activas = sum(1 for c in visibles if c.get("activo"))
+	context.por_plataforma = " · ".join(
+		f"{sum(1 for c in visibles if c.get('plataforma') == p)} {sigla}"
+		for p, sigla in (("Instagram", "IG"), ("TikTok", "TT"))
+		if any(c.get("plataforma") == p for c in visibles)
+	)
+	ultimos = [c.get("ultimo_scrapeo") for c in visibles if c.get("ultimo_scrapeo")]
+	context.ultimo_global = _hace(max(ultimos)) if ultimos else "—"
+	context.plataformas = list(PLATAFORMAS)
+	context.competidores = listar_competidores()
+	try:
+		context.csrf_token = frappe.local.session.data.csrf_token
+	except Exception:
+		context.csrf_token = ""
+
+
+def _url_corta(url):
+	"""https://www.instagram.com/apolusso.pe/ -> instagram.com/apolusso.pe"""
+	if not url:
+		return "—"
+	corta = url.split("://", 1)[-1]
+	if corta.startswith("www."):
+		corta = corta[4:]
+	return corta.rstrip("/")
+
+
+def _hace(cuando):
+	"""'hace 7 h' / 'hace 2 d', como en el diseño."""
+	if not cuando:
+		return "—"
+	if isinstance(cuando, str):
+		cuando = get_datetime(cuando)
+	minutos = int((datetime.now() - cuando).total_seconds() // 60)
+	if minutos < 60:
+		return f"hace {max(minutos, 1)} min"
+	if minutos < 60 * 24:
+		return f"hace {minutos // 60} h"
+	return f"hace {minutos // (60 * 24)} d"
 
 
 @frappe.whitelist()

@@ -1,296 +1,283 @@
-{% extends "templates/web.html" %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Radar · Cuentas Sociales</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/radar/cuentas/styles.css?v=xls1" />
+</head>
+<body>
 
-{% block navbar %}{% endblock %}
-{% block header %}{% endblock %}
-{% block footer %}{% endblock %}
-
-{% block style %}
-{{ super() }}
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest"></script>
-<link rel="stylesheet" href="/radar/radar.css">
-<style>
-  .rd-plat-badge {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 3px 10px; border-radius: 999px;
-    font-size: 11px; font-weight: 700;
-  }
-  .rd-plat-instagram { background: linear-gradient(45deg, #f09433, #dc2743); color: white; }
-  .rd-plat-tiktok    { background: #000000; color: white; }
-  .rd-plat-facebook  { background: #1877f2; color: white; }
-  .rd-plat-youtube   { background: #ff0000; color: white; }
-
-  .rd-cta-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
-  .rd-cta-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow-sm);
-    display: flex; flex-direction: column; gap: 8px;
-    transition: box-shadow .15s, transform .15s;
-  }
-  .rd-cta-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
-  .rd-cta-inactive { opacity: 0.6; }
-  .rd-cta-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-  .rd-cta-handle { font-size: 17px; font-weight: 700; color: var(--text); }
-  .rd-cta-competidor { font-size: 12px; color: var(--muted); }
-  .rd-cta-url {
-    font-size: 12px; color: var(--brand);
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    text-decoration: none;
-  }
-  .rd-cta-metrics {
-    display: flex; gap: 20px; padding-top: 10px;
-    border-top: 1px solid var(--border);
-  }
-  .rd-cta-metric { display: flex; flex-direction: column; gap: 2px; }
-  .rd-cta-metric-val { font-size: 15px; font-weight: 700; color: var(--text); }
-  .rd-cta-metric-lbl { font-size: 11px; color: var(--muted); }
-  .rd-cta-actions { display: flex; gap: 6px; padding-top: 10px; border-top: 1px solid var(--border); }
-
-  .rd-url-check {
-    font-size: 12px; margin-top: 4px; padding: 6px 10px; border-radius: 6px;
-    display: none;
-  }
-  .rd-url-check.rd-ok { display: block; background: var(--green-bg); color: var(--green); }
-  .rd-url-check.rd-bad { display: block; background: var(--red-bg); color: var(--red); }
-</style>
-{% endblock %}
-
-{% block page_content %}
 {% if no_access %}
-<div class="rd-na-screen"><div class="rd-na-card">
-  <div class="rd-na-brand"><span class="rd-na-dot"></span><span>Radar · Acceso denegado</span></div>
-  <div class="rd-na-body">No tienes permiso.
-    <ul class="rd-na-roles">{% for r in required_roles %}<li><code>{{ r }}</code></li>{% endfor %}</ul>
-  </div>
-</div></div>
+<div class="page">
+  <div class="wrap"><div class="card" style="padding:28px;text-align:center">
+    Cuentas Sociales · Acceso denegado. Se requiere uno de estos roles: {{ required_roles|join(", ") }}.
+  </div></div>
+</div>
 {% else %}
-<div class="rd-app">
-  <header class="rd-topbar">
-    <div class="rd-topbar-left">
-      <a href="/radar" class="rd-back"><i data-lucide="arrow-left"></i> Volver</a>
-      <div class="rd-logo"><span class="rd-logo-dot"></span><span>Radar · Cuentas Sociales</span></div>
+
+<div class="page" style="--cols:var(--cols-acc)">
+
+  <header class="topbar">
+    <a class="back" href="/radar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Volver</a>
+    <div class="divider"></div>
+    <div class="title">
+      <span class="logo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3.5 9h17M3.5 15h17M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg></span>
+      Radar · Cuentas Sociales
     </div>
-    <div class="rd-topbar-right">
-      {% if can_edit %}
-      <button class="rd-btn" onclick="RadarCtas.abrirModal()">
-        <i data-lucide="plus"></i> Nueva cuenta
-      </button>
-      {% endif %}
-    </div>
+    <div class="spacer"></div>
+    <div class="meta">{{ total }} cuenta{% if total != 1 %}s{% endif %} · <b>{{ total_pubs }} publicaciones</b></div>
+    <button class="btn icon" title="Cambiar tema" onclick="toggleTheme()">
+      <svg id="iconMoon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg id="iconSun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:none"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M2 12h2.4M19.6 12H22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/></svg>
+    </button>
+    {% if can_edit %}<button class="btn primary" data-nueva><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Nueva cuenta</button>{% endif %}
   </header>
 
-  <main class="rd-main">
-    <div class="rd-hero">
-      <h1>📱 Cuentas Sociales</h1>
-      <p class="rd-hero-sub">Los perfiles de tus competidores en Instagram, TikTok, Facebook y YouTube. Pega la URL y el sistema hace el resto.</p>
+  <div class="toolbar">
+    <div class="search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input placeholder="Buscar cuenta o marca…" id="q" value="{{ f_q|e }}" />
     </div>
-    <div id="rd-ctas-container">
-      <div class="rd-empty"><div class="rd-empty-title">Cargando…</div></div>
+    <button class="btn{% if not f_plataforma %} soft{% endif %}" data-plataforma="">Todas las plataformas</button>
+    {% for p in plataformas %}<button class="btn{% if f_plataforma == p %} soft{% endif %}" data-plataforma="{{ p|e }}">{{ p|e }}</button>
+    {% endfor %}
+    <label class="check"><input type="checkbox" id="activas"{% if f_activas %} checked{% endif %} />Solo activas</label>
+    <div class="spacer"></div>
+    {% if can_edit %}<button class="btn" id="actualizar-todas"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5A8.5 8.5 0 1 1 17.4 6M20 4v4.5h-4.5"/></svg>Actualizar todas</button>{% endif %}
+    <div class="meta num">{{ mostradas }} / {{ total }}</div>
+  </div>
+
+  <div class="wrap">
+    <div class="card">
+      <div class="scroll">
+        <div class="grid">
+          <div class="thead">
+            <div class="pl"><input type="checkbox" id="check-todas" /></div>
+            <div>Cuenta ↑</div>
+            <div>Plataforma</div>
+            <div>URL</div>
+            <div class="right">Publicaciones</div>
+            <div>Último scrapeo</div>
+            <div>Estado</div>
+            <div class="right">Acciones</div>
+          </div>
+
+          {% for c in cuentas %}
+          <div class="tr">
+            <div class="pl"><input type="checkbox" /></div>
+            <div class="acc">
+              <span class="avatar {{ c.cls }}">{{ c.inicial|e }}</span>
+              <span class="acc-txt"><span class="acc-handle">{{ c.handle_txt|e }}</span><span class="acc-brand">{{ c.marca|e }}</span></span>
+            </div>
+            <div><span class="pill {{ c.cls }}"><span class="dot"></span>{{ c.plataforma|e }}</span></div>
+            <div class="url">{% if c.url %}<a href="{{ c.url|e }}" target="_blank" rel="noopener">{{ c.url_txt|e }}</a>{% else %}<span class="empty">{{ c.url_txt|e }}</span>{% endif %}</div>
+            <div class="bar"><div class="track"><div class="fill" style="width:{{ c.pct }}%"></div></div><span class="badge{% if not c.n_publicaciones %} off{% endif %} num">{{ c.n_publicaciones }}</span></div>
+            <div class="date"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3.2 2"/></svg>{{ c.scrapeo }}</div>
+            <div><span class="pill{% if c.activo %} ok{% endif %}">{% if c.activo %}<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>{% endif %}{{ c.estado }}</span></div>
+            <div class="actions">
+              {% if can_edit %}
+              <button class="btn sm" data-editar="{{ c.name|e }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Editar</button>
+              <button class="btn sm primary" data-scrapear="{{ c.name|e }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5A8.5 8.5 0 1 1 17.4 6M20 4v4.5h-4.5"/></svg>Actualizar</button>
+              <button class="btn sm icon" data-borrar="{{ c.name|e }}" data-usos="{{ c.n_publicaciones }}"><svg class="danger" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg></button>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+
+          {% if can_edit %}
+          <div class="addrow">
+            <div></div>
+            <button data-nueva><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Pegar URL y añadir cuenta</button>
+          </div>
+          {% endif %}
+
+          <div class="tfoot">
+            <div></div>
+            <div class="strong">Total</div>
+            <div class="meta">{{ por_plataforma }}</div>
+            <div></div>
+            <div class="right strong num">{{ total_pubs_vis }}</div>
+            <div class="meta">{{ ultimo_global }}</div>
+            <div class="meta">{{ activas }} activa{% if activas != 1 %}s{% endif %}</div>
+            <div></div>
+          </div>
+        </div>
+      </div>
     </div>
-  </main>
+  </div>
 </div>
 
-<script src="/radar/radar.js"></script>
+{% if can_edit %}
+<!-- Diálogos: el diseño no trae modal, así que se componen con .card y .btn -->
+<div id="overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:24px">
+  <div class="card" id="dlg-editar" style="display:none;width:440px;max-width:94vw;padding:20px">
+    <div style="font-size:16px;font-weight:700;margin-bottom:14px" id="ed-titulo">Nueva cuenta</div>
+    <select id="ed-competidor" style="height:36px;width:100%;padding:0 10px;margin-bottom:10px;border:1px solid var(--border);border-radius:8px;font:inherit;font-size:13px;color:var(--text);background:var(--input-bg)">
+      {% for c in competidores %}<option value="{{ c|e }}">{{ c|e }}</option>
+      {% endfor %}
+    </select>
+    <select id="ed-plataforma" style="height:36px;width:100%;padding:0 10px;margin-bottom:10px;border:1px solid var(--border);border-radius:8px;font:inherit;font-size:13px;color:var(--text);background:var(--input-bg)">
+      {% for p in plataformas %}<option value="{{ p|e }}">{{ p|e }}</option>
+      {% endfor %}
+    </select>
+    <input id="ed-url" placeholder="https://www.instagram.com/marca/" style="height:36px;width:100%;padding:0 12px;border:1px solid var(--border);border-radius:8px;font:inherit;font-size:13px;color:var(--text);background:var(--input-bg)" />
+    <label class="check" style="margin-top:10px;width:100%"><input type="checkbox" id="ed-activo" checked />Activa</label>
+    <div id="ed-error" class="meta" style="color:var(--danger-fg);margin-top:10px;display:none"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+      <button class="btn" data-cerrar>Cancelar</button>
+      <button class="btn primary" id="ed-guardar">Guardar</button>
+    </div>
+  </div>
+
+  <div class="card" id="dlg-borrar" style="display:none;width:420px;max-width:94vw;padding:20px">
+    <div style="font-size:16px;font-weight:700;margin-bottom:10px" id="bo-titulo">Eliminar</div>
+    <div class="meta" id="bo-desc"></div>
+    <div id="bo-error" class="meta" style="color:var(--danger-fg);margin-top:10px;display:none"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+      <button class="btn" data-cerrar>Cancelar</button>
+      <button class="btn primary" id="bo-confirmar" style="background:var(--danger-fg);box-shadow:none">Eliminar</button>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script src="/radar/cuentas/app.js?v=xls1"></script>
 <script>
-  const CAN_EDIT = {{ 'true' if can_edit else 'false' }};
+  (function () {
+    var API = '/api/method/marketinghub.www.radar.cuentas.index.';
+    var CSRF = '{{ csrf_token }}';
+    var DATOS = {{ cuentas_json }};
 
-  function fmtNum(n) {
-    if (!n) return '0';
-    if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
-    if (n >= 1000) return (n/1000).toFixed(1) + 'k';
-    return n.toLocaleString('es-PE');
-  }
-  function fmtUltimo(s) {
-    if (!s) return 'nunca';
-    try {
-      const d = new Date(s.replace(' ', 'T'));
-      const diffH = (new Date() - d) / 3600000;
-      if (diffH < 1)  return 'hace ' + Math.max(1, Math.round(diffH*60)) + ' min';
-      if (diffH < 24) return 'hace ' + Math.round(diffH) + ' h';
-      if (diffH < 48) return 'ayer';
-      const dias = Math.round(diffH / 24);
-      if (dias < 30) return 'hace ' + dias + ' d';
-      return d.toLocaleDateString('es-PE', {day:'2-digit', month:'short'});
-    } catch(e) { return '—'; }
-  }
+    function aplicar(nombre, valor) {
+      var p = new URLSearchParams(window.location.search);
+      if (valor) p.set(nombre, valor); else p.delete(nombre);
+      window.location.search = p.toString();
+    }
+    document.querySelectorAll('[data-plataforma]').forEach(function (b) {
+      b.addEventListener('click', function () { aplicar('plataforma', b.dataset.plataforma); });
+    });
+    var q = document.getElementById('q');
+    q.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') aplicar('q', q.value.trim()); });
+    document.getElementById('activas').addEventListener('change', function () {
+      aplicar('activas', this.checked ? '1' : '');
+    });
 
-  window.RadarCtas = {
-    lista: [],
-    competidores: [],
-    async cargar() {
-      try {
-        [this.lista, this.competidores] = await Promise.all([
-          Radar.api('marketinghub.www.radar.cuentas.index.listar'),
-          Radar.api('marketinghub.www.radar.cuentas.index.listar_competidores'),
-        ]);
-      } catch (e) {
-        document.getElementById('rd-ctas-container').innerHTML =
-          `<div class="rd-empty"><div class="rd-empty-title">Error</div><div class="rd-empty-sub">${Radar.escapeHtml(e.message)}</div></div>`;
-        return;
-      }
-      this.render();
-    },
-    render() {
-      const cont = document.getElementById('rd-ctas-container');
-      if (!this.lista.length) {
-        cont.innerHTML = `
-          <div class="rd-empty">
-            <div class="rd-empty-icon"><i data-lucide="at-sign"></i></div>
-            <div class="rd-empty-title">Aún no tienes cuentas sociales</div>
-            <div class="rd-empty-sub">Agrega la primera cuenta para empezar a monitorear.</div>
-            ${CAN_EDIT ? '<button class="rd-btn" onclick="RadarCtas.abrirModal()"><i data-lucide="plus"></i> Nueva cuenta</button>' : ''}
-          </div>`;
-        lucide.createIcons();
-        return;
-      }
-      cont.innerHTML = '<div class="rd-cta-grid">' + this.lista.map(c => `
-        <div class="rd-cta-card ${c.activo ? '' : 'rd-cta-inactive'}">
-          <div class="rd-cta-head">
-            <div>
-              <div class="rd-cta-handle">@${Radar.escapeHtml(c.handle || '?')}</div>
-              <div class="rd-cta-competidor">${Radar.escapeHtml(c.competidor || 'Sin competidor')}</div>
-            </div>
-            <span class="rd-plat-badge rd-plat-${(c.plataforma || '').toLowerCase()}">
-              ${Radar.escapeHtml(c.plataforma || '?')}
-            </span>
-          </div>
-          ${c.url_perfil ? `<a href="${Radar.escapeHtml(c.url_perfil)}" target="_blank" rel="noopener" class="rd-cta-url">${Radar.escapeHtml(c.url_perfil)}</a>` : ''}
-          <div class="rd-cta-metrics">
-            <div class="rd-cta-metric">
-              <div class="rd-cta-metric-val">${fmtNum(c.n_publicaciones || 0)}</div>
-              <div class="rd-cta-metric-lbl">Publicaciones</div>
-            </div>
-            <div class="rd-cta-metric">
-              <div class="rd-cta-metric-val" style="font-size:11px;">${fmtUltimo(c.ultimo_scrapeo)}</div>
-              <div class="rd-cta-metric-lbl">Último scrapeo</div>
-            </div>
-            <div class="rd-cta-metric">
-              <div class="rd-cta-metric-val">${c.activo ? '✓' : '⏸'}</div>
-              <div class="rd-cta-metric-lbl">${c.activo ? 'Activa' : 'Pausada'}</div>
-            </div>
-          </div>
-          ${CAN_EDIT ? `
-          <div class="rd-cta-actions">
-            <button class="rd-btn rd-btn-secondary rd-btn-sm" onclick="RadarCtas.editar('${Radar.escapeHtml(c.name)}')">
-              <i data-lucide="pencil"></i> Editar
-            </button>
-            <button class="rd-btn rd-btn-secondary rd-btn-sm" onclick="RadarCtas.scrapear('${Radar.escapeHtml(c.name)}')" title="Forzar scrape ahora">
-              <i data-lucide="refresh-cw"></i> Actualizar
-            </button>
-            <button class="rd-btn rd-btn-danger rd-btn-sm" onclick="RadarCtas.borrar('${Radar.escapeHtml(c.name)}')">
-              <i data-lucide="trash-2"></i>
-            </button>
-          </div>` : ''}
-        </div>`).join('') + '</div>';
-      lucide.createIcons();
-    },
-    abrirModal(c) {
-      const editing = !!c;
-      const compOpts = ['<option value="">— Elegir competidor —</option>'].concat(
-        this.competidores.map(x => `<option value="${Radar.escapeHtml(x)}" ${c?.competidor === x ? 'selected' : ''}>${Radar.escapeHtml(x)}</option>`)
-      ).join('');
-      const platOpts = ['Instagram', 'TikTok', 'Facebook', 'YouTube'].map(p =>
-        `<option value="${p}" ${c?.plataforma === p ? 'selected' : ''}>${p}</option>`
-      ).join('');
-      Radar.modal({
-        title: editing ? 'Editar cuenta social' : 'Nueva cuenta social',
-        confirmText: editing ? 'Guardar' : 'Crear',
-        bodyHtml: `
-          <div class="rd-field">
-            <label>Competidor <span style="color:var(--red)">*</span></label>
-            <select id="rd-cta-comp" class="rd-select" required>${compOpts}</select>
-          </div>
-          <div class="rd-field">
-            <label>Plataforma <span style="color:var(--red)">*</span></label>
-            <select id="rd-cta-plat" class="rd-select" required>
-              <option value="">— Elegir plataforma —</option>${platOpts}
-            </select>
-          </div>
-          <div class="rd-field">
-            <label>URL del perfil <span style="color:var(--red)">*</span></label>
-            <input type="url" id="rd-cta-url" class="rd-input"
-                   placeholder="https://www.instagram.com/lizarasocueros/"
-                   value="${Radar.escapeHtml(c?.url_perfil || '')}" required>
-            <div class="rd-hint">Pega la URL completa del perfil. El handle se saca automáticamente.</div>
-            <div class="rd-url-check" id="rd-cta-check"></div>
-          </div>
-          <div class="rd-field">
-            <label class="rd-checkbox">
-              <input type="checkbox" id="rd-cta-activo" ${!c || c?.activo ? 'checked' : ''}>
-              <span>Activa (monitorear con el scraper)</span>
-            </label>
-          </div>
-        `,
-        onConfirm: async () => {
-          const data = {
-            name: c?.name || '',
-            competidor: document.getElementById('rd-cta-comp').value,
-            plataforma: document.getElementById('rd-cta-plat').value,
-            url_perfil: document.getElementById('rd-cta-url').value.trim(),
-            activo: document.getElementById('rd-cta-activo').checked ? 1 : 0,
-          };
-          if (!data.competidor) { Radar.toast('Elige un competidor', 'error'); return false; }
-          if (!data.plataforma) { Radar.toast('Elige una plataforma', 'error'); return false; }
-          if (!data.url_perfil) { Radar.toast('Pega la URL del perfil', 'error'); return false; }
-          await Radar.api('marketinghub.www.radar.cuentas.index.guardar', data);
-          Radar.toast(editing ? '✓ Actualizada' : '✓ Creada', 'success');
-          this.cargar();
-        }
-      });
+    var todas = document.getElementById('check-todas');
+    todas.addEventListener('change', function () {
+      document.querySelectorAll('.tr input[type=checkbox]').forEach(function (c) { c.checked = todas.checked; });
+    });
 
-      // validacion en vivo del URL
-      const urlInput = document.getElementById('rd-cta-url');
-      const platSel = document.getElementById('rd-cta-plat');
-      const check = document.getElementById('rd-cta-check');
-      async function revisar() {
-        const url = urlInput.value.trim();
-        const plat = platSel.value;
-        check.className = 'rd-url-check';
-        check.textContent = '';
-        if (!url || !plat) return;
-        try {
-          const r = await Radar.api('marketinghub.www.radar.cuentas.index.validar_url', {url, plataforma: plat});
-          if (r.valida) {
-            check.classList.add('rd-ok');
-            check.textContent = `✓ Handle detectado: @${r.handle}`;
-          } else {
-            check.classList.add('rd-bad');
-            check.textContent = `⚠ No pude extraer el handle. Verifica que la URL sea de ${plat}.`;
-          }
-        } catch (e) {}
-      }
-      urlInput.addEventListener('blur', revisar);
-      platSel.addEventListener('change', revisar);
-      if (urlInput.value) revisar();
-    },
-    editar(name) { const c = this.lista.find(x => x.name === name); if (c) this.abrirModal(c); },
-    async scrapear(name) {
-      try {
-        const r = await Radar.api('marketinghub.www.radar.cuentas.index.scrapear_ahora', {cuenta_social: name});
-        Radar.toast('✓ ' + (r.mensaje || 'Scrape encolado'), 'success');
-      } catch (e) {
-        Radar.toast('Error: ' + e.message, 'error');
-      }
-    },
-    borrar(name) {
-      Radar.modal({
-        title: 'Borrar cuenta social', confirmText: 'Sí, borrar', danger: true,
-        bodyHtml: `<p>¿Seguro? <b>${Radar.escapeHtml(name)}</b></p>
-                   <p style="margin-top:8px;color:var(--text-2);font-size:13px;">Si tiene publicaciones, no se podrá borrar. En ese caso, desactiva la cuenta.</p>`,
-        onConfirm: async () => {
-          await Radar.api('marketinghub.www.radar.cuentas.index.borrar', {name});
-          Radar.toast('✓ Borrada', 'success');
-          this.cargar();
-        }
+    function llamar(metodo, datos) {
+      return fetch(API + metodo, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': CSRF },
+        body: JSON.stringify(datos)
+      }).then(function (r) {
+        return r.json().then(function (j) {
+          if (!r.ok) throw new Error((j._server_messages && JSON.parse(j._server_messages)[0]) || j.exception || 'Error');
+          return j.message;
+        });
       });
     }
-  };
 
-  document.addEventListener('DOMContentLoaded', function() {
-    lucide.createIcons();
-    RadarCtas.cargar();
-  });
+    // scrapeo: el endpoint encola la corrida del scraper
+    function scrapear(name, btn) {
+      var texto = btn.innerHTML;
+      btn.disabled = true;
+      llamar('scrapear_ahora', { cuenta_social: name })
+        .then(function (r) { btn.innerHTML = 'Encolado'; setTimeout(function () { btn.innerHTML = texto; btn.disabled = false; }, 4000); })
+        .catch(function (e) { alert(String(e.message).replace(/<[^>]*>/g, '')); btn.disabled = false; });
+    }
+    document.querySelectorAll('[data-scrapear]').forEach(function (b) {
+      b.addEventListener('click', function () { scrapear(b.dataset.scrapear, b); });
+    });
+    var todasBtn = document.getElementById('actualizar-todas');
+    if (todasBtn && DATOS.length) {
+      todasBtn.addEventListener('click', function () { scrapear(DATOS[0].name, todasBtn); });
+    }
+
+    var overlay = document.getElementById('overlay');
+    if (!overlay) return;
+    var edit = document.getElementById('dlg-editar');
+    var del = document.getElementById('dlg-borrar');
+    var editando = null, borrando = null;
+
+    function abrir(cual) {
+      overlay.style.display = 'flex';
+      edit.style.display = cual === 'edit' ? '' : 'none';
+      del.style.display = cual === 'del' ? '' : 'none';
+    }
+    function cerrar() { overlay.style.display = 'none'; }
+    document.querySelectorAll('[data-cerrar]').forEach(function (b) { b.addEventListener('click', cerrar); });
+    overlay.addEventListener('click', function (ev) { if (ev.target === overlay) cerrar(); });
+
+    document.querySelectorAll('[data-nueva]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        editando = null;
+        document.getElementById('ed-titulo').textContent = 'Nueva cuenta';
+        document.getElementById('ed-url').value = '';
+        document.getElementById('ed-activo').checked = true;
+        document.getElementById('ed-error').style.display = 'none';
+        abrir('edit');
+      });
+    });
+    document.querySelectorAll('[data-editar]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        editando = b.dataset.editar;
+        var c = DATOS.filter(function (x) { return x.name === editando; })[0] || {};
+        document.getElementById('ed-titulo').textContent = 'Editar «' + (c.handle_txt || editando) + '»';
+        document.getElementById('ed-competidor').value = c.competidor || '';
+        document.getElementById('ed-plataforma').value = c.plataforma || '';
+        document.getElementById('ed-url').value = c.url_perfil || '';
+        document.getElementById('ed-activo').checked = !!c.activo;
+        document.getElementById('ed-error').style.display = 'none';
+        abrir('edit');
+      });
+    });
+    document.querySelectorAll('[data-borrar]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        borrando = b.dataset.borrar;
+        var usos = parseInt(b.dataset.usos, 10) || 0;
+        document.getElementById('bo-titulo').textContent = 'Eliminar «' + borrando + '»';
+        document.getElementById('bo-desc').textContent = usos
+          ? 'Tiene ' + usos + ' publicación' + (usos === 1 ? '' : 'es') + ' asociada' + (usos === 1 ? '' : 's') + '. En vez de borrarla puedes desactivarla desde Editar.'
+          : 'No tiene publicaciones asociadas. Esta acción no se puede deshacer.';
+        document.getElementById('bo-error').style.display = 'none';
+        abrir('del');
+      });
+    });
+
+    document.getElementById('ed-guardar').addEventListener('click', function () {
+      var err = document.getElementById('ed-error');
+      llamar('guardar', {
+        name: editando || '',
+        competidor: document.getElementById('ed-competidor').value,
+        plataforma: document.getElementById('ed-plataforma').value,
+        url_perfil: document.getElementById('ed-url').value.trim(),
+        activo: document.getElementById('ed-activo').checked ? 1 : 0
+      }).then(function () { window.location.reload(); })
+        .catch(function (e) {
+          err.textContent = String(e.message).replace(/<[^>]*>/g, '');
+          err.style.display = '';
+        });
+    });
+
+    document.getElementById('bo-confirmar').addEventListener('click', function () {
+      var err = document.getElementById('bo-error');
+      llamar('borrar', { name: borrando }).then(function () { window.location.reload(); })
+        .catch(function (e) {
+          err.textContent = String(e.message).replace(/<[^>]*>/g, '');
+          err.style.display = '';
+        });
+    });
+  })();
 </script>
+
 {% endif %}
-{% endblock %}
+
+</body>
+</html>
