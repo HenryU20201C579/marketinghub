@@ -57,6 +57,7 @@ def get_context(context):
 		return
 
 	filas = [_fila(p) for p in listar(limite=1000)]
+	_marcar_destacados(filas)
 	context.filas_json = frappe.as_json(filas).replace("</", "<\\/")
 	context.total = len(filas)
 	opciones = opciones_filtros()
@@ -90,7 +91,7 @@ def _fila(p):
 		"id": p["name"],
 		"tier": p.get("tier") or "Sin tier",
 		"orden": int(p.get("tier_orden") or 99),
-		"top": bool(p.get("es_viral")) or (int(p.get("tier_orden") or 99) <= 5),
+		"top": False,  # lo decide _marcar_destacados con el conjunto completo
 		"plat": REDES.get(plataforma, (plataforma or "--")[:2].upper()),
 		"plat_nombre": plataforma,
 		"comp": p.get("competidor") or "",
@@ -109,6 +110,13 @@ def _fila(p):
 		"estado": p.get("estado") or "Nuevo",
 		"cls": ESTADO_CLASE.get(p.get("estado") or "Nuevo", ""),
 	}
+
+
+def _marcar_destacados(filas):
+	"""El diseño resalta en dorado los dos mejores tiers presentes."""
+	ordenes = sorted({f["orden"] for f in filas if f["orden"] < 99})[:2]
+	for f in filas:
+		f["top"] = f["orden"] in ordenes
 
 
 def _limpiar(texto):

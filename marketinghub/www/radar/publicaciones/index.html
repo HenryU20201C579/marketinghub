@@ -8,6 +8,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/radar/publicaciones/publicaciones.css?v=pub1">
+<style>
+  /* el diseño declara .empty{display:flex}, que pisa el atributo [hidden] y
+     deja el mensaje "ninguna publicación coincide" siempre visible */
+  .empty[hidden] { display:none; }
+</style>
 </head>
 <!-- este diseño trae su propio sidebar, así que no se inyecta el compartido -->
 <body data-radx-side="off">
