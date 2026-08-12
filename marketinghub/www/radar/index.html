@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/radar/radar-os.css?v=os1">
+<link rel="stylesheet" href="/radar/radar-sidebar.css?v=1">
 </head>
 <body class="rad">
 
@@ -27,105 +28,6 @@
 
 <div class="rad-app">
 
-  <!-- ============ SIDEBAR ============ -->
-  <aside class="rad-side">
-    <div class="rad-side__top">
-      <span class="rad-brand">
-        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M12 11.4a.6.6 0 1 0 0 1.2.6.6 0 0 0 0-1.2z"/></svg>
-        <span class="rad-brand__name">Radar</span>
-      </span>
-      <span class="rad-side__date">{{ fecha_hoy }}</span>
-    </div>
-
-    <div class="rad-side__body">
-      <div class="rad-navgroup">
-        <div class="rad-navgroup__title">Contenido</div>
-
-        <div class="rad-nav is-active" data-href="/radar/publicaciones">
-          <span class="rad-nav__label">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5s4.5 3.6 4.5 8a4.5 4.5 0 0 1-9 0c0-1.6.8-2.9 1.6-3.8 0 1.6.9 2.4 1.6 2.4 1 0 1.3-1 1.3-2.3 0-1.6-.5-3.1-1-4.3z M8 15.5a4 4 0 0 0 8 0"/></svg>
-            <span>Publicaciones</span>
-          </span>
-          <span class="rad-nav__count rad-nav__count--accent">{{ counts.publicaciones or "" }}</span>
-        </div>
-
-        <div class="rad-nav" data-href="/radar/guiones">
-          <span class="rad-nav__label">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5z M14.5 6.5l3 3"/></svg>
-            <span>Guiones</span>
-          </span>
-          <span class="rad-nav__count">{{ counts.guiones or "" }}</span>
-        </div>
-
-        <div class="rad-nav" data-href="/radar/comparativa">
-          <span class="rad-nav__label">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15v13.5h-15z M8.5 3.5v4 M15.5 3.5v4 M4.5 11h15"/></svg>
-            <span>Calendario pubs</span>
-          </span>
-          <span class="rad-nav__count"></span>
-        </div>
-
-        <div class="rad-nav" data-href="/radar/guiones?vista=calendario">
-          <span class="rad-nav__label">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6.5h12 M8 12h12 M8 17.5h12 M4 6.5h.01 M4 12h.01 M4 17.5h.01"/></svg>
-            <span>Agenda guiones</span>
-          </span>
-          <span class="rad-nav__count">{{ counts.guiones_semana or "" }}</span>
-        </div>
-
-        <div class="rad-nav" data-href="/radar/ads">
-          <span class="rad-nav__label">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16v11H4z M4 10h16 M8 6.5v11"/></svg>
-            <span>Ads Library</span>
-          </span>
-          <span class="rad-nav__count">{{ counts.ads or "" }}</span>
-        </div>
-      </div>
-
-      <div class="rad-navgroup">
-        <div class="rad-navgroup__title">Configuración</div>
-
-        <div class="rad-nav" data-href="/radar/competidores">
-          <span class="rad-nav__label">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5v17 M6.5 4.5h11l-2.2 3.8 2.2 3.7h-11"/></svg>
-            <span>Competidores</span>
-          </span>
-          <span class="rad-nav__count">{{ counts.competidores or "" }}</span>
-        </div>
-
-        <div class="rad-nav" data-href="/radar/cuentas">
-          <span class="rad-nav__label">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7.8a4.2 4.2 0 1 0 0 8.4 4.2 4.2 0 0 0 0-8.4z M16.2 7.8v5.1a3 3 0 0 0 5.3 1.9 M20 15.9A9 9 0 1 1 18.4 5.6"/></svg>
-            <span>Cuentas</span>
-          </span>
-          <span class="rad-nav__count">{{ counts.cuentas or "" }}</span>
-        </div>
-
-        <div class="rad-nav" data-href="/radar/categorias">
-          <span class="rad-nav__label">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h7l9 9-6.5 6.5-9-9z M7.6 8.1h.01"/></svg>
-            <span>Categorías</span>
-          </span>
-          <span class="rad-nav__count">{{ counts.categorias or "" }}</span>
-        </div>
-
-        <div class="rad-nav" data-href="/radar/settings">
-          <span class="rad-nav__label">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8z M19.4 14.2a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1v.2a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.8-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H3.4a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 2.7-1.1V3.4a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7h.2a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.4 1.1z"/></svg>
-            <span>Ajustes</span>
-          </span>
-          <span class="rad-nav__count"></span>
-        </div>
-      </div>
-    </div>
-
-    <div class="rad-side__foot">
-      <button class="rad-themebtn" id="theme-toggle" type="button">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
-        <span id="theme-label">Tema oscuro</span>
-      </button>
-    </div>
-  </aside>
 
   <!-- ============ MAIN ============ -->
   <main class="rad-main">
@@ -157,6 +59,9 @@
         </div>
 
         <div class="rad-kpis__cta">
+          <button class="rad-iconbtn" id="theme-toggle" type="button" title="Cambiar tema" aria-label="Cambiar tema">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
+          </button>
           <button class="rad-btn rad-btn--primary" type="button" data-href="/radar/publicaciones?estado=Nuevo">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M16.2 16.2 20.5 20.5"/></svg>
             Analizar {{ kpis.nuevos }}
@@ -269,10 +174,10 @@
   (function () {
     // Tema (persistido en localStorage)
     var body = document.body;
-    var label = document.getElementById('theme-label');
+    var btnTema = document.getElementById('theme-toggle');
     function setTema(t) {
       body.dataset.theme = t === 'dark' ? 'dark' : '';
-      label.textContent = t === 'dark' ? 'Tema claro' : 'Tema oscuro';
+      btnTema.title = t === 'dark' ? 'Tema claro' : 'Tema oscuro';
     }
     try { setTema(localStorage.getItem('rad-theme') || ''); } catch (e) {}
     document.getElementById('theme-toggle').addEventListener('click', function () {
@@ -298,6 +203,8 @@
     });
   })();
 </script>
+
+<script src="/radar/radar-sidebar.js?v=1"></script>
 
 {% endif %}
 

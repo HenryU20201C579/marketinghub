@@ -132,7 +132,12 @@
 .rad-kpi__label svg { flex:none; color:var(--muted); }
 .rad-kpi__label svg.is-top { color:var(--top); }
 .rad-kpi__label svg.is-accent { color:var(--accent); }
-.rad-kpis__cta { flex:none; display:flex; align-items:center; padding:12px 16px; }
+.rad-kpis__cta { flex:none; display:flex; align-items:center; gap:10px; padding:12px 16px; }
+.rad-iconbtn {
+  width:34px; height:34px; flex:none; border-radius:8px; border:1px solid var(--line); background:var(--bg);
+  display:flex; align-items:center; justify-content:center; color:var(--muted); cursor:pointer;
+}
+.rad-iconbtn:hover { border-color:var(--accent); color:var(--accent); }
 
 .rad-content { flex:1; min-height:0; overflow:auto; padding:16px 20px 24px; }
 .rad-cols { display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }

@@ -1,0 +1,278 @@
+/* Sidebar compartido del modulo Radar.
+   Se inyecta desde radar-sidebar.js en todas las paginas de /radar/*, que son
+   documentos independientes con su propio CSS. Por eso va en posicion fija y
+   con tokens propios (--radx-*): no depende de las variables de cada pagina.
+   Soporta los dos mecanismos de tema del modulo: data-theme en <html>
+   (categorias, cuentas) y en <body> (el resto). */
+
+.radx-side {
+    --radx-panel: #F7F7F4;
+    --radx-bg: #E9EAE6;
+    --radx-line: #D2D3CD;
+    --radx-hair: #E2E3DE;
+    --radx-text: #17191B;
+    --radx-muted: #4E5358;
+    --radx-faint: #61666B;
+    --radx-accent: #008060;
+    --radx-accent-soft: rgba(0, 128, 96, .12);
+
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 900;
+    width: var(--radx-w, 222px);
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    background: var(--radx-panel);
+    border-right: 1px solid var(--radx-line);
+    color: var(--radx-text);
+    font-family: "Public Sans", system-ui, -apple-system, sans-serif;
+    font-size: 13px;
+    transition: width .15s ease;
+}
+
+html[data-theme="dark"] .radx-side,
+body[data-theme="dark"] .radx-side {
+    --radx-panel: #151616;
+    --radx-bg: #0C0D0D;
+    --radx-line: #2E3030;
+    --radx-hair: #232424;
+    --radx-text: #E4E5E5;
+    --radx-muted: #A8AAAA;
+    --radx-faint: #8C8E8E;
+    --radx-accent: #00A47C;
+    --radx-accent-soft: rgba(0, 164, 124, .16);
+}
+
+/* El contenido de cada pagina se desplaza para dejarle sitio */
+body.radx-has-side {
+    padding-left: var(--radx-w, 222px);
+    transition: padding-left .15s ease;
+}
+
+body.radx-collapsed {
+    --radx-w: 56px;
+}
+
+.radx-side *,
+.radx-side *::before,
+.radx-side *::after {
+    box-sizing: border-box;
+}
+
+.radx-side a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.radx-side a:hover {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* ---------- cabecera ---------- */
+.radx-top {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 16px 12px 14px 16px;
+    border-bottom: 1px solid var(--radx-hair);
+}
+
+.radx-brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+}
+
+.radx-brand svg {
+    flex: none;
+    color: var(--radx-accent);
+}
+
+.radx-toggle {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 7px;
+    border: 1px solid var(--radx-line);
+    background: var(--radx-panel);
+    color: var(--radx-muted);
+    cursor: pointer;
+}
+
+.radx-toggle:hover {
+    color: var(--radx-accent);
+    border-color: var(--radx-accent);
+}
+
+/* ---------- navegacion ---------- */
+.radx-body {
+    flex: 1;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 14px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.radx-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.radx-group__title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--radx-faint);
+    padding: 4px 10px 6px;
+    white-space: nowrap;
+}
+
+.radx-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--radx-muted);
+    cursor: pointer;
+}
+
+.radx-nav:hover {
+    background: var(--radx-bg);
+    color: var(--radx-text);
+}
+
+.radx-nav.is-active {
+    background: var(--radx-accent-soft);
+    color: var(--radx-text);
+    font-weight: 600;
+}
+
+.radx-nav.is-active svg {
+    color: var(--radx-accent);
+}
+
+.radx-nav__label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.radx-nav__label svg {
+    flex: none;
+}
+
+.radx-nav__label span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.radx-nav__count {
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--radx-faint);
+}
+
+.radx-nav.is-active .radx-nav__count {
+    color: var(--radx-accent);
+}
+
+/* ---------- pie ---------- */
+.radx-foot {
+    flex: none;
+    padding: 12px;
+    border-top: 1px solid var(--radx-hair);
+}
+
+.radx-themebtn {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--radx-muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.radx-themebtn:hover {
+    background: var(--radx-bg);
+    color: var(--radx-text);
+}
+
+/* ---------- estado colapsado ---------- */
+body.radx-collapsed .radx-side {
+    align-items: stretch;
+}
+
+body.radx-collapsed .radx-top {
+    justify-content: center;
+    padding: 16px 8px 14px;
+}
+
+body.radx-collapsed .radx-brand,
+body.radx-collapsed .radx-group__title,
+body.radx-collapsed .radx-nav__label span,
+body.radx-collapsed .radx-nav__count,
+body.radx-collapsed .radx-themebtn span {
+    display: none;
+}
+
+body.radx-collapsed .radx-body {
+    padding: 14px 8px;
+}
+
+body.radx-collapsed .radx-nav,
+body.radx-collapsed .radx-themebtn {
+    justify-content: center;
+    padding: 9px 0;
+}
+
+body.radx-collapsed .radx-group {
+    gap: 4px;
+}
+
+body.radx-collapsed .radx-foot {
+    padding: 10px 8px;
+}
+
+/* En pantallas estrechas arranca colapsado (lo fuerza el JS) */
+@media (max-width: 860px) {
+    .radx-side {
+        --radx-w: 56px;
+    }
+
+    body.radx-has-side {
+        padding-left: 56px;
+    }
+}
