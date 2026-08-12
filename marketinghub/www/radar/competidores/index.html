@@ -1,328 +1,436 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="light" data-side="on">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Competidores</title>
+<title>Competidores · Radar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/radar/competidores/competidores.css?v=cmp1">
-<link rel="stylesheet" href="/radar/radar-sidebar.css?v=1">
+<link rel="stylesheet" href="/radar/competidores/competidores.css?v=cmp2">
+<style>
+  /* filas y controles del diseño son <button>: sin esto se ve el borde
+     outset del navegador y las líneas salen gruesas */
+  .th, .tr, .act, .addrow, .clear { border-color:transparent; }
+  .empty[hidden] { display:none; }
+</style>
 </head>
-<body class="cmp">
+<!-- este diseño trae su propio sidebar, así que no se inyecta el compartido -->
+<body data-radx-side="off">
 
 {% if no_access %}
-<div class="cmp-app" style="display:block">
-  <div class="cmp-empty" style="margin-top:80px">
-    <p>Competidores · Acceso denegado. Se requiere uno de estos roles: {{ required_roles|join(", ") }}.</p>
-  </div>
-</div>
+<div class="app"><div class="main"><div class="empty" style="margin-top:80px">
+  <span>Competidores · Acceso denegado. Se requiere uno de estos roles: {{ required_roles|join(", ") }}.</span>
+</div></div></div>
 {% else %}
 
-<div class="cmp-app">
+<div class="app">
 
-  <!-- ============ CABECERA ============ -->
-  <header class="cmp-header">
-    <div class="cmp-header__left">
-      <a class="cmp-back" href="/radar"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>Volver</a>
-      <span class="cmp-div"></span>
-      <div class="cmp-title-group">
-        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5a3.4 3.4 0 1 0 0 6.8A3.4 3.4 0 0 0 9 5z M3 20c1.2-3.2 3.6-4.5 6-4.5s4.8 1.3 6 4.5 M16.5 6.2a3 3 0 0 1 0 5.6 M21 19.5c-.8-2.2-2-3.2-3.5-3.7"/></svg>
-        <span class="cmp-title">Competidores</span>
-      </div>
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="side">
+    <div class="side-top">
+      <span class="brand">
+        <span class="logo"><svg class="ico" viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.4"/></svg></span>
+        <span class="txt">Radar</span>
+      </span>
+      <button class="iconbtn" data-side-toggle title="Ocultar sidebar">
+        <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M14 6l-6 6 6 6"/></svg>
+      </button>
     </div>
-    <div class="cmp-header__right">
-      <span class="cmp-counter">{{ mostrados }} de {{ total }}</span>
-      <button class="cmp-iconbtn" id="theme-toggle" title="Cambiar tema" type="button"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg></button>
-      {% if can_edit %}<button class="cmp-btn cmp-btn--primary" type="button" data-nuevo><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14 M5 12h14"/></svg>Nuevo competidor</button>{% endif %}
+    <nav class="side-nav">
+      <div class="nav-group">Contenido</div>
+      <button class="nav-item" data-href="/radar/publicaciones"><svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M3.5 20.5h17M7.5 20.5v-6.5M12.5 20.5v-11M17.5 20.5v-4"/></svg><span class="lbl">Publicaciones</span><span class="badge tnum">{{ contadores.publicaciones or "" }}</span></button>
+      <button class="nav-item" data-href="/radar/guiones"><svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5zM14.5 6.5l3 3"/></svg><span class="lbl">Guiones</span><span class="badge tnum">{{ contadores.guiones or "" }}</span></button>
+      <button class="nav-item" data-href="/radar/comparativa"><svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M4.5 6.5h15v13.5h-15zM8.5 3.5v4M15.5 3.5v4M4.5 11h15"/></svg><span class="lbl">Calendario pubs</span><span class="badge"></span></button>
+      <button class="nav-item" data-href="/radar/guiones?vista=calendario"><svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M4 6.5h16M4 12h16M4 17.5h16"/></svg><span class="lbl">Agenda guiones</span><span class="badge"></span></button>
+      <button class="nav-item" data-href="/radar/ads"><svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M3.5 6.5h17v11h-17zM3.5 10.5h17"/></svg><span class="lbl">Ads Library</span><span class="badge tnum">{{ contadores.ads or "" }}</span></button>
+      <div class="nav-group">Configuración</div>
+      <button class="nav-item active" data-href="/radar/competidores"><svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M9 5a3.4 3.4 0 1 0 0 6.8A3.4 3.4 0 0 0 9 5zM3 20c1.2-3.2 3.6-4.5 6-4.5s4.8 1.3 6 4.5M16.5 6.2a3 3 0 0 1 0 5.6M21 19.5c-.8-2.2-2-3.2-3.5-3.7"/></svg><span class="lbl">Competidores</span><span class="badge tnum">{{ contadores.competidores or "" }}</span></button>
+      <button class="nav-item" data-href="/radar/cuentas"><svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17zM3.5 12h17M12 3.5c2.4 2.4 2.4 14.2 0 17M12 3.5c-2.4 2.4-2.4 14.2 0 17"/></svg><span class="lbl">Cuentas</span><span class="badge tnum">{{ contadores.cuentas or "" }}</span></button>
+      <button class="nav-item" data-href="/radar/categorias"><svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M4 11.5 11.5 4H20v8.5L12.5 20zM15.5 8.5h.01"/></svg><span class="lbl">Categorías</span><span class="badge tnum">{{ contadores.categorias or "" }}</span></button>
+      <button class="nav-item" data-href="/radar/settings"><svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8zM19.4 14.2a1.6 1.6 0 0 0 .3 1.8 2 2 0 1 1-2.8 2.8 1.6 1.6 0 0 0-2.7 1.1 2 2 0 1 1-4 0 1.6 1.6 0 0 0-2.8-1.1 2 2 0 1 1-2.8-2.8 1.6 1.6 0 0 0-1.1-2.7 2 2 0 1 1 0-4 1.6 1.6 0 0 0 1.1-2.8 2 2 0 1 1 2.8-2.8 1.6 1.6 0 0 0 2.7-1.1 2 2 0 1 1 4 0 1.6 1.6 0 0 0 2.7 1.1 2 2 0 1 1 2.8 2.8 1.6 1.6 0 0 0 1.1 2.7 2 2 0 1 1 0 4z"/></svg><span class="lbl">Ajustes</span><span class="badge"></span></button>
+    </nav>
+    <div class="side-foot">
+      <div class="run"><span>Última corrida</span><span class="tnum" style="color:var(--muted)">{{ ultima_corrida }}</span></div>
+      <button class="theme-btn" id="theme">
+        <svg class="ico" viewBox="0 0 24 24" width="14" height="14"><path id="themePath" d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
+        <span class="txt" id="themeLabel">Tema oscuro</span>
+      </button>
     </div>
-  </header>
+  </aside>
 
-  <!-- ============ FILTROS ============ -->
-  <div class="cmp-toolbar">
-    <div class="cmp-toolbar__filters">
-      <div class="cmp-search">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M16.2 16.2 20.5 20.5"/></svg>
-        <input type="text" name="q" placeholder="Buscar por nombre…" value="{{ f_q|e }}">
-      </div>
-
-      <div class="cmp-select{% if f_prioridad %} is-active{% endif %}">
-        <span class="cmp-select__icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5v17 M6.5 4.5h11l-2.2 3.8 2.2 3.7h-11"/></svg></span>
-        <select name="prioridad">
-          <option value="">Todas las prioridades</option>
-          {% for p in prioridades %}<option value="{{ p|e }}"{% if f_prioridad == p %} selected{% endif %}>{{ p|e }}</option>
-          {% endfor %}
-        </select>
-        <span class="cmp-select__caret"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg></span>
-      </div>
-
-      <div class="cmp-select{% if f_categoria %} is-active{% endif %}">
-        <span class="cmp-select__icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h7l9 9-6.5 6.5-9-9z M7.6 8.1h.01"/></svg></span>
-        <select name="categoria">
-          <option value="">Todas las categorías</option>
-          {% for c in categorias %}<option value="{{ c|e }}"{% if f_categoria == c %} selected{% endif %}>{{ c|e }}</option>
-          {% endfor %}
-        </select>
-        <span class="cmp-select__caret"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg></span>
-      </div>
-
-      <button class="cmp-btn cmp-btn--quiet{% if hay_filtros %} is-active{% endif %}" type="button" data-href="/radar/competidores">Limpiar</button>
-    </div>
-  </div>
-
-  <!-- ============ CONTENIDO ============ -->
-  <div class="cmp-content">
-    <div class="cmp-wrap">
-      <p class="cmp-lede">Las marcas que monitorea el radar. Marca cada una como <strong>directo</strong>, indirecto o referente para priorizar el análisis.</p>
-
-      {% if competidores %}
-      <div class="cmp-grid">
-
-        {% for c in competidores %}
-        <article class="cmp-card">
-          <div class="cmp-card__body">
-            <div class="cmp-card__top">
-              <span class="cmp-card__id">
-                <span class="cmp-avatar{{ c.avatar_cls }}">{{ c.inicial|e }}</span>
-                <span class="cmp-card__names">
-                  <span class="cmp-card__name">{{ c.titulo|e }}</span>
-                  <span class="cmp-card__cat">{{ (c.categoria or "Sin categoría")|e }}</span>
-                </span>
-              </span>
-              <span class="cmp-prio{{ c.badge_cls }}">{{ c.prioridad_label }}</span>
-            </div>
-
-            <div class="cmp-meta">
-              <span class="cmp-meta__item"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s6.5-5.6 6.5-10.5a6.5 6.5 0 1 0-13 0C5.5 15.4 12 21 12 21z M12 8.2a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z"/></svg>{{ (c.pais or "—")|e }}</span>
-              <span class="cmp-meta__item"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7.8a4.2 4.2 0 1 0 0 8.4 4.2 4.2 0 0 0 0-8.4z M16.2 7.8v5.1a3 3 0 0 0 5.3 1.9 M20 15.9A9 9 0 1 1 18.4 5.6"/></svg>{{ c.cuentas }} cuenta{% if c.cuentas != 1 %}s{% endif %}</span>
-              {% if c.web %}<span class="cmp-meta__link" data-href="{{ c.web|e }}" data-blank="1"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5h5v5 M19 5l-8 8 M18 14v5H5V6h5"/></svg>Web</span>{% endif %}
-            </div>
-
-            <div class="cmp-stat">
-              <span class="cmp-stat__row">
-                <span>Virales 30 d</span>
-                <span class="cmp-stat__n{% if not c.virales %} cmp-stat__n--zero{% endif %}">{{ c.virales }}</span>
-              </span>
-              <span class="cmp-stat__track">
-                <span class="cmp-stat__fill{% if not c.virales %} cmp-stat__fill--zero{% endif %}" style="width:{{ c.virales_pct }}%"></span>
-              </span>
-            </div>
-          </div>
-
-          <div class="cmp-card__foot">
-            <span class="cmp-card__sync">{{ c.sync }}</span>
-            <span class="cmp-card__actions">
-              {% if can_edit %}
-              <button class="cmp-btn cmp-btn--sm" type="button" data-editar="{{ c.name|e }}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5z M14.5 6.5l3 3"/></svg>Editar</button>
-              <button class="cmp-del" type="button" title="Eliminar competidor" data-borrar="{{ c.name|e }}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15 M9.5 6.5V4.5h5v2 M6.5 6.5 7.5 20h9l1-13.5 M10 10v6.5 M14 10v6.5"/></svg></button>
-              {% endif %}
-            </span>
-          </div>
-        </article>
-        {% endfor %}
-
-        {% if can_edit %}
-        <button class="cmp-add" type="button" data-nuevo>
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14 M5 12h14"/></svg>
-          <span>Añadir competidor</span>
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-l">
+        <button class="hamb" data-side-toggle title="Mostrar u ocultar sidebar">
+          <svg class="ico" viewBox="0 0 24 24" width="15" height="15"><path d="M4 5h16v14H4zM9.5 5v14"/></svg>
         </button>
-        {% endif %}
+        <span class="page-title">
+          <svg class="ico" viewBox="0 0 24 24" width="17" height="17"><path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20c0-3.6 2.9-5.5 6.5-5.5s6.5 1.9 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c2.1.6 3.5 2.2 3.5 5.2"/></svg>
+          Competidores
+        </span>
+        <span class="sub"><span class="tnum" id="shown">0</span> de <span class="tnum" id="total">{{ total }}</span> marcas monitoreadas</span>
       </div>
-      {% else %}
-      <div class="cmp-empty">
-        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M16.2 16.2 20.5 20.5"/></svg>
-        <p>Ningún competidor coincide con los filtros.</p>
-        <button class="cmp-btn cmp-btn--primary" type="button" data-href="/radar/competidores">Limpiar filtros</button>
+      <div class="topbar-r">
+        <button class="btn" id="csv">
+          <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M12 4v11M8 11.5l4 4 4-4M4.5 20h15"/></svg>CSV
+        </button>
+        {% if can_edit %}<button class="btn primary" id="nuevo">
+          <svg class="ico" viewBox="0 0 24 24" width="14" height="14" style="stroke-width:2.4"><path d="M12 5v14M5 12h14"/></svg>Nuevo competidor
+        </button>{% endif %}
       </div>
-      {% endif %}
+    </header>
+
+    <div class="filters">
+      <div class="searchbox">
+        <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM16.2 16.2 20.5 20.5"/></svg>
+        <input type="search" id="q" placeholder="Buscar marca, categoría, país...">
+      </div>
+      <div class="pick" data-filter>
+        <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M6.5 3.5v17M6.5 4.5h11l-2.2 3.8 2.2 3.7h-11"/></svg>
+        <select id="f-pri" data-default="todas">
+          <option value="todas">Todas las prioridades</option>
+          {% for p in prioridades %}<option value="{{ p|e }}">{{ p|e }}</option>
+          {% endfor %}
+        </select>
+        <svg class="ico caret" viewBox="0 0 24 24" width="12" height="12"><path d="M7 10l5 5 5-5"/></svg>
+      </div>
+      <div class="pick" data-filter>
+        <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M4 11.5 11.5 4H20v8.5L12.5 20zM15.5 8.5h.01"/></svg>
+        <select id="f-cat" data-default="todas">
+          <option value="todas">Todas las categorías</option>
+          {% for c in categorias %}<option value="{{ c|e }}">{{ c|e }}</option>
+          {% endfor %}
+        </select>
+        <svg class="ico caret" viewBox="0 0 24 24" width="12" height="12"><path d="M7 10l5 5 5-5"/></svg>
+      </div>
+      <div class="pick" data-filter>
+        <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M12 21s6.5-6.1 6.5-11a6.5 6.5 0 1 0-13 0C5.5 14.9 12 21 12 21z"/></svg>
+        <select id="f-pais" data-default="todos">
+          <option value="todos">Todos los países</option>
+          {% for p in paises %}<option value="{{ p|e }}">{{ p|e }}</option>
+          {% endfor %}
+        </select>
+        <svg class="ico caret" viewBox="0 0 24 24" width="12" height="12"><path d="M7 10l5 5 5-5"/></svg>
+      </div>
+      <button class="clear" id="clear">Limpiar</button>
+      <span class="hint" id="hint">Clic en el encabezado para ordenar</span>
+    </div>
+
+    <div class="tablewrap">
+      <div class="thead">
+        <div class="th chk" id="all"><span class="box"><svg class="ico" viewBox="0 0 24 24" width="9" height="9"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span></div>
+        <div class="th c"><span>#</span></div>
+        <button class="th sortable" data-sort="nombre"><span>Marca</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 14l6-5 6 5"/></svg></button>
+        <button class="th sortable" data-sort="categoria"><span>Categoría</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 14l6-5 6 5"/></svg></button>
+        <button class="th sortable c" data-sort="prioridad"><span>Prioridad</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 14l6-5 6 5"/></svg></button>
+        <button class="th sortable c" data-sort="pais"><span>País</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 14l6-5 6 5"/></svg></button>
+        <button class="th sortable c" data-sort="cuentas"><span>Cuentas</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 14l6-5 6 5"/></svg></button>
+        <button class="th sortable c on" data-sort="virales"><span>Virales 30 d</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg></button>
+        <button class="th sortable c" data-sort="eng"><span>Engagement</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 14l6-5 6 5"/></svg></button>
+        <button class="th sortable c" data-sort="dias"><span>Sincronizado</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 14l6-5 6 5"/></svg></button>
+        <div class="th c"><span></span></div>
+      </div>
+      <div id="rows"></div>
+      {% if can_edit %}<button class="addrow" id="add"><span class="slot"><svg class="ico" viewBox="0 0 24 24" width="13" height="13" style="stroke-width:2.4"><path d="M12 5v14M5 12h14"/></svg></span>Añadir competidor</button>{% endif %}
+      <div class="empty" id="empty" hidden>
+        <svg class="ico" viewBox="0 0 24 24" width="24" height="24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM16.2 16.2 20.5 20.5"/></svg>
+        <span>Ningún competidor coincide con los filtros.</span>
+      </div>
+    </div>
+
+    <div class="footbar">
+      <span>Marca cada competidor como <strong>directo</strong>, indirecto o referente para priorizar el análisis.</span>
+      <div class="sums">
+        <span>Cuentas: <strong id="sumC">0</strong></span>
+        <span>Virales 30 d: <strong class="hot" id="sumV">0</strong></span>
+        <span>Directos: <strong class="ok" id="sumD">0</strong></span>
+      </div>
     </div>
   </div>
 </div>
 
 {% if can_edit %}
-<!-- ============ EDITAR / NUEVO ============ -->
-<div class="cmp-overlay" id="dlg-editar" style="display:none">
-  <div class="cmp-dialog">
-    <div class="cmp-dialog__body">
-      <span class="cmp-dialog__icon" style="color:var(--accent);background:var(--accent-soft)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5z M14.5 6.5l3 3"/></svg></span>
-      <span class="cmp-dialog__text" style="flex:1">
-        <span class="cmp-dialog__title" id="ed-titulo">Nuevo competidor</span>
-        <span class="cmp-search" style="flex:none"><input type="text" id="ed-nombre" placeholder="Nombre comercial"></span>
-        <span class="cmp-select">
-          <select id="ed-prioridad">
-            {% for p in prioridades %}<option value="{{ p|e }}">{{ p|e }}</option>
-            {% endfor %}
-          </select>
-          <span class="cmp-select__caret"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg></span>
-        </span>
-        <span class="cmp-select">
-          <select id="ed-categoria">
-            <option value="">Sin categoría</option>
-            {% for c in categorias %}<option value="{{ c|e }}">{{ c|e }}</option>
-            {% endfor %}
-          </select>
-          <span class="cmp-select__caret"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg></span>
-        </span>
-        <span class="cmp-search" style="flex:none"><input type="text" id="ed-pais" placeholder="País"></span>
-        <span class="cmp-search" style="flex:none"><input type="text" id="ed-website" placeholder="https://…"></span>
-        <span class="cmp-dialog__desc" id="ed-error" style="color:var(--danger);display:none"></span>
-      </span>
-    </div>
-    <div class="cmp-dialog__foot">
-      <button class="cmp-btn" type="button" data-cerrar>Cancelar</button>
-      <button class="cmp-btn cmp-btn--primary" type="button" id="ed-guardar">Guardar</button>
+<!-- Diálogos: el diseño no trae modal, se componen con sus propios controles -->
+<div id="overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:60;padding:24px">
+  <div id="dlg-editar" style="display:none;width:430px;max-width:94vw;padding:20px;border-radius:12px;background:var(--panel);border:1px solid var(--line)">
+    <div style="font-size:16px;font-weight:700;margin-bottom:14px" id="ed-titulo">Nuevo competidor</div>
+    <input id="ed-nombre" placeholder="Nombre comercial" style="height:34px;width:100%;padding:0 11px;margin-bottom:9px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;color:var(--text);background:var(--bg)">
+    <select id="ed-categoria" style="height:34px;width:100%;padding:0 9px;margin-bottom:9px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;color:var(--text);background:var(--bg)">
+      <option value="">Sin categoría</option>
+      {% for c in categorias_alta %}<option value="{{ c|e }}">{{ c|e }}</option>
+      {% endfor %}
+    </select>
+    <select id="ed-prioridad" style="height:34px;width:100%;padding:0 9px;margin-bottom:9px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;color:var(--text);background:var(--bg)">
+      {% for p in prioridades %}<option value="{{ p|e }}">{{ p|e }}</option>
+      {% endfor %}
+    </select>
+    <input id="ed-pais" placeholder="País" style="height:34px;width:100%;padding:0 11px;margin-bottom:9px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;color:var(--text);background:var(--bg)">
+    <input id="ed-web" placeholder="https://…" style="height:34px;width:100%;padding:0 11px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;color:var(--text);background:var(--bg)">
+    <div id="ed-error" style="color:var(--danger);font-size:12px;margin-top:9px;display:none"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+      <button class="btn" data-cerrar>Cancelar</button>
+      <button class="btn primary" id="ed-guardar">Guardar</button>
     </div>
   </div>
-</div>
 
-<!-- ============ CONFIRMACIÓN DE BORRADO ============ -->
-<div class="cmp-overlay" id="dlg-borrar" style="display:none">
-  <div class="cmp-dialog">
-    <div class="cmp-dialog__body">
-      <span class="cmp-dialog__icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15 M9.5 6.5V4.5h5v2 M6.5 6.5 7.5 20h9l1-13.5 M10 10v6.5 M14 10v6.5"/></svg></span>
-      <span class="cmp-dialog__text">
-        <span class="cmp-dialog__title" id="bo-titulo">Eliminar</span>
-        <span class="cmp-dialog__desc">Dejarás de recibir sus publicaciones y anuncios en el radar. El histórico ya analizado se conserva.</span>
-        <span class="cmp-dialog__desc" id="bo-error" style="color:var(--danger);display:none"></span>
-      </span>
-    </div>
-    <div class="cmp-dialog__foot">
-      <button class="cmp-btn" type="button" data-cerrar>Cancelar</button>
-      <button class="cmp-btn cmp-btn--danger" type="button" id="bo-confirmar">Eliminar</button>
+  <div id="dlg-borrar" style="display:none;width:420px;max-width:94vw;padding:20px;border-radius:12px;background:var(--panel);border:1px solid var(--line)">
+    <div style="font-size:16px;font-weight:700;margin-bottom:9px" id="bo-titulo">Eliminar</div>
+    <div style="font-size:13px;color:var(--muted)" id="bo-desc"></div>
+    <div id="bo-error" style="color:var(--danger);font-size:12px;margin-top:9px;display:none"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+      <button class="btn" data-cerrar>Cancelar</button>
+      <button class="btn primary" id="bo-confirmar" style="background:var(--danger);border-color:var(--danger)">Eliminar</button>
     </div>
   </div>
 </div>
 {% endif %}
 
-<div class="cmp-toast" id="toast" style="display:none"></div>
+<div class="toast" id="toast"></div>
 
 <script>
-  (function () {
-    var API = '/api/method/marketinghub.www.radar.competidores.index.';
-    var CSRF = '{{ csrf_token }}';
-    var DATOS = {{ competidores_json }};
+(function(){
+  var root = document.documentElement;
+  var API = '/api/method/marketinghub.';
+  var CSRF = '{{ csrf_token }}';
+  var PUEDE_EDITAR = {{ 'true' if can_edit else 'false' }};
 
-    // tema (persistido)
-    var body = document.body;
-    function setTema(t) { body.dataset.theme = t === 'dark' ? 'dark' : ''; }
-    try { setTema(localStorage.getItem('cmp-theme') || ''); } catch (e) {}
-    document.getElementById('theme-toggle').addEventListener('click', function () {
-      var t = body.dataset.theme === 'dark' ? '' : 'dark';
-      setTema(t);
-      try { localStorage.setItem('cmp-theme', t); } catch (e) {}
+  /* tema */
+  var SUN = "M12 6.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z M12 2v2 M12 20v2 M4.9 4.9l1.4 1.4 M17.7 17.7l1.4 1.4 M2 12h2 M20 12h2 M4.9 19.1l1.4-1.4 M17.7 6.3l1.4-1.4";
+  var MOON = "M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z";
+  function setTheme(t){
+    root.setAttribute('data-theme', t);
+    document.getElementById('themePath').setAttribute('d', t === 'dark' ? SUN : MOON);
+    document.getElementById('themeLabel').textContent = t === 'dark' ? 'Tema claro' : 'Tema oscuro';
+    try{ localStorage.setItem('radar-theme', t); }catch(e){}
+  }
+  var st=null; try{ st = localStorage.getItem('radar-theme'); }catch(e){}
+  setTheme(st || 'light');
+  document.getElementById('theme').addEventListener('click', function(){
+    setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+
+  /* sidebar */
+  function setSide(v){ root.setAttribute('data-side', v); try{ localStorage.setItem('radar-side', v); }catch(e){} }
+  var ss=null; try{ ss = localStorage.getItem('radar-side'); }catch(e){}
+  setSide(ss || 'on');
+  document.querySelectorAll('[data-side-toggle]').forEach(function(b){
+    b.addEventListener('click', function(){ setSide(root.getAttribute('data-side') === 'on' ? 'off' : 'on'); });
+  });
+  document.querySelectorAll('.nav-item[data-href]').forEach(function(b){
+    b.addEventListener('click', function(){ window.location.href = b.dataset.href; });
+  });
+
+  /* datos */
+  var DATA = {{ filas_json }};
+  var PRI = {Directo:'dir', Indirecto:'ind', Referente:'ref'};
+  var sort = {k:'virales', dir:-1}, sel = {};
+
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function v(id){ return document.getElementById(id).value; }
+  function toast(m){
+    var t = document.getElementById('toast');
+    t.textContent = m; t.classList.add('on');
+    clearTimeout(toast._t); toast._t = setTimeout(function(){ t.classList.remove('on'); }, 2800);
+  }
+  function fila(id){ return DATA.filter(function(d){ return d.id === id; })[0]; }
+
+  function filtered(){
+    var q = v('q').trim().toLowerCase(), pri = v('f-pri'), cat = v('f-cat'), pais = v('f-pais');
+    return DATA.filter(function(d){
+      return (pri === 'todas' || d.prioridad === pri)
+        && (cat === 'todas' || d.categoria === cat)
+        && (pais === 'todos' || d.pais === pais)
+        && (!q || (d.nombre + ' ' + d.categoria + ' ' + d.pais).toLowerCase().indexOf(q) > -1);
     });
+  }
 
-    // elementos que navegan (no son <a>: el CSS pinta los enlaces con el acento)
-    document.querySelectorAll('[data-href]').forEach(function (el) {
-      el.addEventListener('click', function () {
-        if (el.dataset.blank) window.open(el.dataset.href, '_blank', 'noopener');
-        else window.location.href = el.dataset.href;
+  function render(){
+    var rows = filtered().slice(), k = sort.k, dir = sort.dir;
+    rows.sort(function(a,b){
+      var x = a[k], y = b[k];
+      if(k === 'eng'){ x = parseFloat(a.eng); y = parseFloat(b.eng); }
+      if(typeof x === 'string') return x.localeCompare(y) * dir;
+      return (x - y) * dir;
+    });
+    var max = Math.max.apply(null, [1].concat(DATA.map(function(d){ return d.virales; })));
+
+    document.getElementById('rows').innerHTML = rows.map(function(d, i){
+      var p = PRI[d.prioridad] || 'ind';
+      var vcls = d.virales === 0 ? ' zero' : (d.virales >= max * 0.6 ? ' hot' : '');
+      var dot = d.dias <= 1 ? '' : (d.dias <= 4 ? ' warn' : ' bad');
+      return '<div class="tr' + (sel[d.id] ? ' sel' : '') + '" data-id="' + esc(d.id) + '">'
+        + '<div class="td chk" data-check><span class="box"><svg class="ico" viewBox="0 0 24 24" width="9" height="9"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span></div>'
+        + '<div class="td c n tnum">' + (i + 1) + '</div>'
+        + '<div class="td" style="gap:8px"><span class="av ' + p + '">' + esc((d.nombre || '?')[0]) + '</span><span class="name">' + esc(d.nombre) + '</span>'
+          + (d.web ? '<span class="web" data-web title="Sitio web"><svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="M14 5h5v5M19 5l-7.5 7.5M17 14v5H5V7h5"/></svg></span>' : '') + '</div>'
+        + '<div class="td" style="color:var(--muted)">' + esc(d.categoria) + '</div>'
+        + '<div class="td c"><span class="chip ' + p + '">' + esc(d.prioridad) + '</span></div>'
+        + '<div class="td"><span class="pais"><svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="M12 21s6.5-6.1 6.5-11a6.5 6.5 0 1 0-13 0C5.5 14.9 12 21 12 21z"/><circle cx="12" cy="10" r="2.2"/></svg>' + esc(d.pais) + '</span></div>'
+        + '<div class="td c tnum">' + d.cuentas + '</div>'
+        + '<div class="td"><span class="viral' + vcls + '"><b>' + d.virales + '</b><span class="bar"><i style="width:' + Math.round(d.virales / max * 100) + '%"></i></span></span></div>'
+        + '<div class="td c tnum" style="color:var(--muted)">' + esc(d.eng) + '</div>'
+        + '<div class="td"><span class="sync"><span class="dot' + dot + '"></span>' + esc(d.sync) + '</span></div>'
+        + '<div class="td last">'
+          + (PUEDE_EDITAR
+              ? '<button class="act" data-scrape title="Scrapear sus anuncios ahora"><svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4h-4"/></svg></button>'
+                + '<button class="act edit" data-editar title="Editar"><svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M4 20h4L19.5 8.5a2 2 0 0 0-2.8-2.8L5 17.2z"/></svg></button>'
+                + '<button class="act del" data-del title="Eliminar"><svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l.8 13h9.4l.8-13"/></svg></button>'
+              : '')
+        + '</div>'
+      + '</div>';
+    }).join('');
+
+    document.getElementById('empty').hidden = rows.length > 0;
+    document.getElementById('shown').textContent = rows.length;
+    document.getElementById('total').textContent = DATA.length;
+    document.getElementById('sumC').textContent = rows.reduce(function(a,b){ return a + b.cuentas; }, 0);
+    document.getElementById('sumV').textContent = rows.reduce(function(a,b){ return a + b.virales; }, 0);
+    document.getElementById('sumD').textContent = rows.filter(function(d){ return d.prioridad === 'Directo'; }).length;
+
+    var n = Object.keys(sel).filter(function(i){ return sel[i]; }).length;
+    document.getElementById('hint').textContent = n ? n + ' seleccionados' : 'Clic en el encabezado para ordenar';
+    document.getElementById('all').classList.toggle('on', rows.length > 0 && rows.every(function(d){ return sel[d.id]; }));
+
+    document.querySelectorAll('.th.sortable').forEach(function(th){
+      var isOn = th.dataset.sort === k;
+      th.classList.toggle('on', isOn);
+      th.querySelector('path').setAttribute('d', dir === 1 ? 'M6 14l6-5 6 5' : 'M6 10l6 5 6-5');
+    });
+    document.querySelectorAll('[data-filter]').forEach(function(p){
+      var s = p.querySelector('select');
+      p.classList.toggle('on', s.value !== s.dataset.default);
+    });
+  }
+
+  function llamar(metodo, datos){
+    return fetch(API + metodo, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'X-Frappe-CSRF-Token': CSRF },
+      body: JSON.stringify(datos || {})
+    }).then(function(r){
+      return r.json().then(function(j){
+        if(!r.ok) throw new Error((j._server_messages && JSON.parse(j._server_messages)[0]) || j.exception || 'Error');
+        return j.message;
       });
     });
+  }
 
-    // filtros → querystring
-    function aplicar(nombre, valor) {
-      var p = new URLSearchParams(window.location.search);
-      if (valor) p.set(nombre, valor); else p.delete(nombre);
-      window.location.search = p.toString();
+  document.querySelectorAll('.filters select, #q').forEach(function(el){
+    el.addEventListener('input', render); el.addEventListener('change', render);
+  });
+  document.getElementById('clear').addEventListener('click', function(){
+    document.querySelectorAll('.filters select').forEach(function(s){ s.value = s.dataset.default; });
+    document.getElementById('q').value = ''; sel = {}; render();
+  });
+  document.querySelectorAll('.th.sortable').forEach(function(th){
+    th.addEventListener('click', function(){
+      var key = th.dataset.sort;
+      var asc = ['nombre','categoria','prioridad','pais'].indexOf(key) > -1;
+      sort = {k:key, dir: sort.k === key ? -sort.dir : (asc ? 1 : -1)};
+      render();
+    });
+  });
+  document.getElementById('all').addEventListener('click', function(){
+    var rows = filtered(), all = rows.every(function(d){ return sel[d.id]; });
+    rows.forEach(function(d){ sel[d.id] = !all; });
+    render();
+  });
+  document.getElementById('csv').addEventListener('click', function(){
+    var rows = filtered();
+    var out = [['Marca','Categoría','Prioridad','País','Cuentas','Virales 30 d','Engagement','Sincronizado','Web']];
+    rows.forEach(function(d){ out.push([d.nombre, d.categoria, d.prioridad, d.pais, d.cuentas, d.virales, d.eng, d.sync, d.web]); });
+    var csv = out.map(function(f){ return f.map(function(x){ return '"' + String(x).replace(/"/g,'""') + '"'; }).join(','); }).join('\n');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8'}));
+    a.download = 'competidores.csv'; a.click(); URL.revokeObjectURL(a.href);
+    toast('Exportados ' + rows.length + ' competidores a CSV.');
+  });
+
+  var overlay = document.getElementById('overlay');
+  var edit = overlay && document.getElementById('dlg-editar');
+  var del = overlay && document.getElementById('dlg-borrar');
+  var editando = null, borrando = null;
+
+  function abrir(cual){
+    overlay.style.display = 'flex';
+    edit.style.display = cual === 'edit' ? '' : 'none';
+    del.style.display = cual === 'del' ? '' : 'none';
+  }
+  function cerrar(){ overlay.style.display = 'none'; }
+  if(overlay){
+    document.querySelectorAll('[data-cerrar]').forEach(function(b){ b.addEventListener('click', cerrar); });
+    overlay.addEventListener('click', function(ev){ if(ev.target === overlay) cerrar(); });
+  }
+
+  function abrirEditar(id){
+    editando = id;
+    var d = id ? (fila(id) || {}) : {};
+    document.getElementById('ed-titulo').textContent = id ? 'Editar «' + (d.nombre || id) + '»' : 'Nuevo competidor';
+    document.getElementById('ed-nombre').value = d.nombre_comercial || d.nombre || '';
+    document.getElementById('ed-categoria').value = (d.categoria && d.categoria !== 'Sin categoría') ? d.categoria : '';
+    document.getElementById('ed-prioridad').value = d.prioridad || 'Indirecto';
+    document.getElementById('ed-pais').value = (d.pais && d.pais !== '—') ? d.pais : '';
+    document.getElementById('ed-web').value = d.website || '';
+    document.getElementById('ed-error').style.display = 'none';
+    abrir('edit');
+  }
+  ['nuevo','add'].forEach(function(id){
+    var b = document.getElementById(id);
+    if(b) b.addEventListener('click', function(){ abrirEditar(null); });
+  });
+
+  document.getElementById('rows').addEventListener('click', function(e){
+    var tr = e.target.closest('.tr'); if(!tr) return;
+    var id = tr.dataset.id, d = fila(id);
+    if(e.target.closest('[data-check]')){ sel[id] = !sel[id]; render(); return; }
+    if(e.target.closest('[data-web]')){ if(d && d.web) window.open(d.web, '_blank', 'noopener'); return; }
+    if(!PUEDE_EDITAR) return;
+    if(e.target.closest('[data-scrape]')){
+      toast('Scrapeando ' + d.nombre + '…');
+      llamar('api.radar_ads_scraper.ejecutar_scrape_ads_competidor', { competidor: id })
+        .then(function(){ toast('Scrape de ' + d.nombre + ' terminado.'); })
+        .catch(function(err){ toast(String(err.message).replace(/<[^>]*>/g, '')); });
+      return;
     }
-    document.querySelectorAll('.cmp-toolbar select').forEach(function (sel) {
-      sel.addEventListener('change', function () { aplicar(sel.name, sel.value); });
-    });
-    var buscador = document.querySelector('.cmp-toolbar input[name=q]');
-    if (buscador) buscador.addEventListener('keydown', function (ev) {
-      if (ev.key === 'Enter') aplicar('q', buscador.value.trim());
-    });
-
-    function toast(msg) {
-      var t = document.getElementById('toast');
-      t.textContent = msg; t.style.display = '';
-      setTimeout(function () { t.style.display = 'none'; }, 3000);
+    if(e.target.closest('[data-editar]')){ abrirEditar(id); return; }
+    if(e.target.closest('[data-del]')){
+      borrando = id;
+      document.getElementById('bo-titulo').textContent = 'Eliminar «' + d.nombre + '»';
+      document.getElementById('bo-desc').textContent = d.cuentas
+        ? 'Tiene ' + d.cuentas + ' cuenta' + (d.cuentas === 1 ? '' : 's') + ' social' + (d.cuentas === 1 ? '' : 'es') + '. Hay que borrarlas antes.'
+        : 'No tiene cuentas sociales asociadas. Esta acción no se puede deshacer.';
+      document.getElementById('bo-error').style.display = 'none';
+      abrir('del');
     }
+  });
 
-    function llamar(metodo, datos) {
-      return fetch(API + metodo, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': CSRF },
-        body: JSON.stringify(datos)
-      }).then(function (r) {
-        return r.json().then(function (j) {
-          if (!r.ok) throw new Error((j._server_messages && JSON.parse(j._server_messages)[0]) || j.exception || 'Error');
-          return j.message;
-        });
-      });
-    }
-
-    var edit = document.getElementById('dlg-editar');
-    var del = document.getElementById('dlg-borrar');
-    if (!edit) return;
-    var editando = null, borrando = null;
-
-    function abrirEditar(name) {
-      editando = name;
-      var c = DATOS.filter(function (x) { return x.name === name; })[0] || {};
-      document.getElementById('ed-titulo').textContent = name ? 'Editar «' + (c.titulo || name) + '»' : 'Nuevo competidor';
-      document.getElementById('ed-nombre').value = c.nombre_comercial || '';
-      document.getElementById('ed-prioridad').value = c.prioridad || 'Indirecto';
-      document.getElementById('ed-categoria').value = c.categoria || '';
-      document.getElementById('ed-pais').value = c.pais || '';
-      document.getElementById('ed-website').value = c.website || '';
-      document.getElementById('ed-error').style.display = 'none';
-      edit.style.display = '';
-    }
-
-    document.querySelectorAll('[data-nuevo]').forEach(function (b) {
-      b.addEventListener('click', function () { abrirEditar(null); });
-    });
-    document.querySelectorAll('[data-editar]').forEach(function (b) {
-      b.addEventListener('click', function () { abrirEditar(b.dataset.editar); });
-    });
-    document.querySelectorAll('[data-borrar]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        borrando = b.dataset.borrar;
-        document.getElementById('bo-titulo').textContent = 'Eliminar «' + borrando + '»';
-        document.getElementById('bo-error').style.display = 'none';
-        del.style.display = '';
-      });
-    });
-    document.querySelectorAll('[data-cerrar]').forEach(function (b) {
-      b.addEventListener('click', function () { edit.style.display = 'none'; del.style.display = 'none'; });
-    });
-
-    document.getElementById('ed-guardar').addEventListener('click', function () {
+  if(overlay){
+    document.getElementById('ed-guardar').addEventListener('click', function(){
       var err = document.getElementById('ed-error');
-      llamar('guardar', {
+      llamar('www.radar.competidores.index.guardar', {
         name: editando || '',
         nombre_comercial: document.getElementById('ed-nombre').value.trim(),
-        prioridad: document.getElementById('ed-prioridad').value,
         categoria: document.getElementById('ed-categoria').value,
+        prioridad: document.getElementById('ed-prioridad').value,
         pais: document.getElementById('ed-pais').value.trim(),
-        website: document.getElementById('ed-website').value.trim(),
+        website: document.getElementById('ed-web').value.trim(),
         activo: 1
-      }).then(function () {
-        toast('Competidor guardado.');
-        setTimeout(function () { window.location.reload(); }, 600);
-      }).catch(function (e) {
-        err.textContent = String(e.message).replace(/<[^>]*>/g, '');
-        err.style.display = '';
-      });
+      }).then(function(){ window.location.reload(); })
+        .catch(function(e){ err.textContent = String(e.message).replace(/<[^>]*>/g, ''); err.style.display = ''; });
     });
-
-    document.getElementById('bo-confirmar').addEventListener('click', function () {
+    document.getElementById('bo-confirmar').addEventListener('click', function(){
       var err = document.getElementById('bo-error');
-      llamar('borrar', { name: borrando }).then(function () {
-        toast('«' + borrando + '» eliminado del radar.');
-        setTimeout(function () { window.location.reload(); }, 600);
-      }).catch(function (e) {
-        err.textContent = String(e.message).replace(/<[^>]*>/g, '');
-        err.style.display = '';
-      });
+      llamar('www.radar.competidores.index.borrar', { name: borrando })
+        .then(function(){ window.location.reload(); })
+        .catch(function(e){ err.textContent = String(e.message).replace(/<[^>]*>/g, ''); err.style.display = ''; });
     });
-  })();
-</script>
+  }
 
-<script src="/radar/radar-sidebar.js?v=1"></script>
+  render();
+})();
+</script>
 
 {% endif %}
 

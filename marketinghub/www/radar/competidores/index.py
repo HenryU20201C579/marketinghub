@@ -21,12 +21,7 @@ VIEW_ROLES = (
 	"System Manager",
 )
 PRIORIDADES = ("Directo", "Indirecto", "Referente")
-# El diseño distingue la prioridad con el color del avatar y del badge
-PRIO_CLS = {
-	"Directo": {"avatar": "", "badge": ""},
-	"Indirecto": {"avatar": " cmp-avatar--neutral", "badge": " cmp-prio--ind"},
-	"Referente": {"avatar": " cmp-avatar--top", "badge": " cmp-prio--ref"},
-}
+
 
 
 def _has_role(roles):
@@ -47,49 +42,74 @@ def get_context(context):
 	if context.no_access:
 		return
 
-	fd = frappe.form_dict
-	context.f_q = (fd.get("q") or "").strip()
-	context.f_prioridad = fd.get("prioridad") if fd.get("prioridad") in PRIORIDADES else ""
-	context.f_categoria = fd.get("categoria") or ""
-	context.hay_filtros = bool(context.f_q or context.f_prioridad or context.f_categoria)
-
-	todos = listar()
-	visibles = [
-		c for c in todos
-		if (not context.f_q or context.f_q.lower() in (c.get("nombre_comercial") or c["name"]).lower())
-		and (not context.f_prioridad or c.get("prioridad") == context.f_prioridad)
-		and (not context.f_categoria or c.get("categoria") == context.f_categoria)
-	]
-
 	virales = _virales_30d()
+	engagement = _engagement_30d()
 	sync = _ultima_sync()
-	tope = max(list(virales.values()) + [1])
-	for c in visibles:
+	filas = []
+	for c in listar():
 		nombre = c.get("nombre_comercial") or c["name"]
-		prio = c.get("prioridad") if c.get("prioridad") in PRIO_CLS else "Indirecto"
-		n = virales.get(c["name"], 0)
-		c["titulo"] = nombre
-		c["inicial"] = nombre[:1].upper()
-		c["prioridad_label"] = prio
-		c["avatar_cls"] = PRIO_CLS[prio]["avatar"]
-		c["badge_cls"] = PRIO_CLS[prio]["badge"]
-		c["virales"] = n
-		c["virales_pct"] = round(n / tope * 100) if n else 3
-		c["web"] = c.get("website") if (c.get("website") or "").startswith(("http://", "https://")) else ""
-		c["sync"] = _hace(sync.get(c["name"]))
+		prio = c.get("prioridad") if c.get("prioridad") in PRIORIDADES else "Indirecto"
+		cuando = sync.get(c["name"])
+		filas.append({
+			"id": c["name"],
+			"nombre": nombre,
+			"categoria": c.get("categoria") or "Sin categoría",
+			"prioridad": prio,
+			"pais": c.get("pais") or "—",
+			"cuentas": int(c.get("cuentas") or 0),
+			"virales": virales.get(c["name"], 0),
+			"eng": f"{engagement.get(c['name'], 0):.1f}%",
+			"sync": _hace(cuando),
+			"dias": _dias(cuando),
+			"web": c.get("website") if (c.get("website") or "").startswith(("http://", "https://")) else "",
+			"nombre_comercial": c.get("nombre_comercial") or "",
+			"website": c.get("website") or "",
+		})
 
-	context.competidores = visibles
-	# el diálogo de edición necesita los datos en JS; `frappe.as_json` no está
-	# disponible dentro del sandbox de Jinja, así que se serializa aquí
-	context.competidores_json = frappe.as_json(visibles).replace("</", "<\\/")
-	context.total = len(todos)
-	context.mostrados = len(visibles)
-	context.categorias = listar_categorias()
+	context.filas_json = frappe.as_json(filas).replace("</", "<\\/")
+	context.total = len(filas)
+	context.categorias = sorted({f["categoria"] for f in filas if f["categoria"] != "Sin categoría"})
+	context.paises = sorted({f["pais"] for f in filas if f["pais"] != "—"})
 	context.prioridades = list(PRIORIDADES)
+	context.categorias_alta = listar_categorias()
+	try:
+		from marketinghub.www.radar.index import obtener_contadores
+		context.contadores = obtener_contadores()
+	except Exception:
+		context.contadores = {}
+	context.ultima_corrida = _ultima_corrida()
 	try:
 		context.csrf_token = frappe.local.session.data.csrf_token
 	except Exception:
 		context.csrf_token = ""
+
+
+def _engagement_30d():
+	"""Engagement medio de las publicaciones de los últimos 30 días."""
+	desde = date.today() - timedelta(days=30)
+	rows = frappe.db.sql("""
+		SELECT competidor, AVG(engagement_pct) AS media
+		FROM `tabPublicacion Competencia`
+		WHERE fecha_publicacion >= %s AND competidor IS NOT NULL
+		GROUP BY competidor
+	""", (desde,), as_dict=True)
+	return {r.competidor: float(r.media or 0) for r in rows}
+
+
+def _dias(cuando):
+	if not cuando:
+		return 99
+	if isinstance(cuando, str):
+		cuando = get_datetime(cuando)
+	return max(0, (datetime.now() - cuando).days)
+
+
+def _ultima_corrida():
+	try:
+		s = frappe.get_cached_doc("Radar Settings")
+		return _hace(s.ultima_corrida)
+	except Exception:
+		return "—"
 
 
 def _virales_30d():
@@ -114,17 +134,17 @@ def _ultima_sync():
 
 
 def _hace(cuando):
-	"""'Sincronizado hace 13 h' / 'hace 2 d'."""
+	"""'hace 13 h' / 'hace 2 d', como en el diseño."""
 	if not cuando:
-		return "Sin sincronizar"
+		return "sin datos"
 	if isinstance(cuando, str):
 		cuando = get_datetime(cuando)
 	minutos = int((datetime.now() - cuando).total_seconds() // 60)
 	if minutos < 60:
-		return f"Sincronizado hace {max(minutos, 1)} min"
+		return f"hace {max(minutos, 1)} min"
 	if minutos < 60 * 24:
-		return f"Sincronizado hace {minutos // 60} h"
-	return f"Sincronizado hace {minutos // (60 * 24)} d"
+		return f"hace {minutos // 60} h"
+	return f"hace {minutos // (60 * 24)} d"
 
 
 @frappe.whitelist()
