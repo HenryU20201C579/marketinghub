@@ -1,217 +1,213 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Categorías</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/radar/categorias/categorias.css?v=cat1">
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/radar/categorias/styles.css?v=xls1" />
 </head>
-<body class="cat">
+<body>
 
 {% if no_access %}
-<div class="cat-app" style="display:block">
-  <div class="cat-empty" style="margin-top:80px">
-    <p>Categorías · Acceso denegado. Se requiere uno de estos roles: {{ required_roles|join(", ") }}.</p>
-  </div>
+<div class="page">
+  <div class="wrap"><div class="card" style="padding:28px;text-align:center">
+    Categorías · Acceso denegado. Se requiere uno de estos roles: {{ required_roles|join(", ") }}.
+  </div></div>
 </div>
 {% else %}
 
-<div class="cat-app">
+<div class="page">
 
-  <!-- ============ CABECERA ============ -->
-  <header class="cat-header">
-    <div class="cat-header__left">
-      <a class="cat-back" href="/radar"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>Volver</a>
-      <span class="cat-div"></span>
-      <div class="cat-title-group">
-        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h7l9 9-6.5 6.5-9-9z M7.6 8.1h.01"/></svg>
-        <span class="cat-title">Categorías</span>
-      </div>
+  <!-- Barra de título -->
+  <header class="topbar">
+    <a class="back" href="/radar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Volver</a>
+    <div class="divider"></div>
+    <div class="title">
+      <span class="logo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 3 12V4a1 1 0 0 1 1-1h8a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.6z"/><circle cx="7.5" cy="7.5" r="1.4"/></svg></span>
+      Categorías
     </div>
-    <div class="cat-header__right">
-      <span class="cat-counter">{{ mostradas }} de {{ total }}</span>
-      <button class="cat-iconbtn" id="theme-toggle" title="Cambiar tema" type="button"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg></button>
-      {% if can_edit %}<button class="cat-btn cat-btn--primary" type="button" data-nuevo><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14 M5 12h14"/></svg>Nueva categoría</button>{% endif %}
-    </div>
+    <div class="spacer"></div>
+    <div class="meta">{{ total }} categoría{% if total != 1 %}s{% endif %} · <b>{{ sin_competidores }} sin competidores</b></div>
+    <button class="btn icon" id="themeBtn" title="Cambiar tema" onclick="toggleTheme()">
+      <svg id="iconMoon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg id="iconSun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:none"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M2 12h2.4M19.6 12H22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/></svg>
+    </button>
+    {% if can_edit %}<button class="btn primary" data-nuevo><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Nueva categoría</button>{% endif %}
   </header>
 
-  <!-- ============ FILTROS ============ -->
-  <div class="cat-toolbar">
-    <div class="cat-search">
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M16.2 16.2 20.5 20.5"/></svg>
-      <input type="text" name="q" placeholder="Buscar categoría…" value="{{ f_q|e }}">
+  <!-- Filtros -->
+  <div class="toolbar">
+    <div class="search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input placeholder="Buscar categoría…" id="q" value="{{ f_q|e }}" />
     </div>
-
-    <button class="cat-toggle{% if f_uso %} is-on{% endif %}" type="button" data-toggle-uso>
-      <span class="cat-toggle__box"><svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span>
-      Solo en uso
-    </button>
-
-    <div class="cat-seg">
-      <button class="cat-seg__item{% if f_orden == 'pubs' %} is-on{% endif %}" type="button" data-orden="">Más publicaciones</button>
-      <button class="cat-seg__item{% if f_orden == 'az' %} is-on{% endif %}" type="button" data-orden="az">A–Z</button>
-    </div>
-
-    <button class="cat-btn cat-btn--quiet{% if hay_filtros %} is-active{% endif %}" type="button" data-href="/radar/categorias">Limpiar</button>
+    <label class="check"><input type="checkbox" id="uso"{% if f_uso %} checked{% endif %} />Solo en uso</label>
+    <button class="btn{% if f_orden == 'pubs' %} soft{% endif %}" data-orden=""><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M6 12h12M9 18h6"/></svg>Más publicaciones</button>
+    <button class="btn{% if f_orden == 'az' %} soft{% endif %}" data-orden="az">A–Z</button>
+    <button class="btn ghost" data-href="/radar/categorias">Limpiar</button>
+    <div class="spacer"></div>
+    <button class="btn" id="csv"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M4 21h16"/></svg>Exportar CSV</button>
+    <div class="meta num">{{ mostradas }} / {{ total }}</div>
   </div>
 
-  <!-- ============ CONTENIDO ============ -->
-  <div class="cat-content">
-    <div class="cat-wrap">
-      <p class="cat-lede">Agrupa a tus competidores por tipo (cuero, calzado, moda…). Las categorías filtran el radar y agrupan los reportes. <strong>{{ sin_competidores }} sin competidores</strong> asignados.</p>
-
-      {% if categorias %}
-      <div class="cat-grid">
-
-        {% for c in categorias %}
-        <article class="cat-card">
-          <div class="cat-card__body">
-            <div class="cat-card__top">
-              <span class="cat-card__id">
-                <span class="cat-ico{{ c.ico_cls }}"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5h7l9 9-6.5 6.5-9-9z M7.6 8.1h.01"/></svg></span>
-                <span class="cat-card__names">
-                  <span class="cat-card__name">{{ c.titulo|e }}</span>
-                  <span class="cat-card__sub">{{ c.sub }}</span>
-                </span>
-              </span>
-              <span class="cat-pill{{ c.pill_cls }}">{{ c.pill_label }}</span>
-            </div>
-
-            <div class="cat-stat">
-              <span class="cat-stat__row">
-                <span>Publicaciones 30 d</span>
-                <span class="cat-stat__n{% if not c.pubs %} cat-stat__n--zero{% endif %}">{{ c.pubs }}</span>
-              </span>
-              <span class="cat-stat__track">
-                <span class="cat-stat__fill{% if not c.pubs %} cat-stat__fill--zero{% endif %}" style="width:{{ c.pubs_pct }}%"></span>
-              </span>
-            </div>
-
-            <div class="cat-brands">
-            {% for m in c.marcas %}<span class="cat-brand">{{ m|e }}</span>
-            {% else %}<span class="cat-brands__empty">Sin competidores asignados</span>
-            {% endfor %}
-            </div>
+  <!-- Tabla -->
+  <div class="wrap">
+    <div class="card">
+      <div class="scroll">
+        <div class="grid">
+          <div class="thead">
+            <div class="pl"><input type="checkbox" id="check-todas" /></div>
+            <div>Categoría {% if f_orden == 'az' %}↑{% endif %}</div>
+            <div>Estado</div>
+            <div class="right">Compet.</div>
+            <div class="right">Publicaciones 30 d</div>
+            <div class="center">Tendencia</div>
+            <div>Asignados</div>
+            <div>Actualizada</div>
+            <div class="right">Acciones</div>
           </div>
 
-          <div class="cat-card__foot">
-            <span class="cat-card__upd">{{ c.upd }}</span>
-            <span class="cat-card__actions">
-              {% if can_edit %}
-              <button class="cat-btn cat-btn--sm" type="button" data-editar="{{ c.name|e }}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5z M14.5 6.5l3 3"/></svg>Editar</button>
-              <button class="cat-del" type="button" title="Eliminar categoría" data-borrar="{{ c.name|e }}" data-usos="{{ c.competidores }}"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15 M9.5 6.5V4.5h5v2 M6.5 6.5 7.5 20h9l1-13.5 M10 10v6.5 M14 10v6.5"/></svg></button>
-              {% endif %}
-            </span>
+          <!-- fila activa: class="tr on" -->
+          {% for c in categorias %}
+          <div class="tr{% if c.usada %} on{% endif %}">
+            <div class="pl"><input type="checkbox" /></div>
+            <div class="cat">
+              <span class="cat-ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 3 12V4a1 1 0 0 1 1-1h8a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.6z"/><circle cx="7.5" cy="7.5" r="1.4"/></svg></span>
+              <span class="cat-name">{{ c.titulo|e }}</span>
+            </div>
+            <div><span class="pill">{{ c.pill_label }}</span></div>
+            <div class="right cell-num num">{{ c.competidores }}</div>
+            <div class="bar">
+              <div class="track"><div class="fill" style="width:{{ c.pubs_pct }}%"></div></div>
+              <span class="badge num">{{ c.pubs }}</span>
+            </div>
+            <div class="spark">
+              {% for h in c.spark %}{% if h %}<i class="v" style="height:{{ h }}px"></i>{% else %}<i></i>{% endif %}{% endfor %}
+            </div>
+            <div class="tags">{% for m in c.marcas %}<span class="tag">{{ m|e }}</span>{% else %}<span class="empty">Sin asignar</span>{% endfor %}</div>
+            <div class="date">{{ c.upd }}</div>
+            <div class="actions">
+              {% if can_edit %}<button class="btn sm" data-editar="{{ c.name|e }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Editar</button>{% endif %}
+              <button class="btn sm primary" data-href="{{ c.url_analizar|e }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>Analizar</button>
+              {% if can_edit %}<button class="btn sm icon" data-borrar="{{ c.name|e }}" data-usos="{{ c.competidores }}"><svg class="danger" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg></button>{% endif %}
+            </div>
           </div>
-        </article>
-        {% endfor %}
+          {% endfor %}
 
-        {% if can_edit %}
-        <button class="cat-add" type="button" data-nuevo>
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14 M5 12h14"/></svg>
-          <span>Añadir categoría</span>
-        </button>
-        {% endif %}
+          {% if can_edit %}
+          <div class="addrow">
+            <div></div>
+            <button data-nuevo><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Añadir categoría</button>
+          </div>
+          {% endif %}
+
+          <div class="tfoot">
+            <div></div>
+            <div class="strong">Total</div>
+            <div></div>
+            <div class="right strong num">{{ total_competidores }}</div>
+            <div class="right strong num">{{ total_pubs }}</div>
+            <div></div>
+            <div class="meta">{{ total_competidores }} competidor{% if total_competidores != 1 %}es{% endif %} asignado{% if total_competidores != 1 %}s{% endif %}</div>
+            <div></div>
+            <div></div>
+          </div>
+        </div>
       </div>
-      {% else %}
-      <div class="cat-empty">
-        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M16.2 16.2 20.5 20.5"/></svg>
-        <p>Ninguna categoría coincide con los filtros.</p>
-        <button class="cat-btn cat-btn--primary" type="button" data-href="/radar/categorias">Limpiar filtros</button>
-      </div>
-      {% endif %}
     </div>
   </div>
 </div>
 
 {% if can_edit %}
-<!-- ============ EDITAR / NUEVA ============ -->
-<div class="cat-overlay" id="dlg-editar" style="display:none">
-  <div class="cat-dialog">
-    <div class="cat-dialog__body">
-      <span class="cat-dialog__icon" style="color:var(--accent);background:var(--accent-soft)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5z M14.5 6.5l3 3"/></svg></span>
-      <span class="cat-dialog__text" style="flex:1">
-        <span class="cat-dialog__title" id="ed-titulo">Nueva categoría</span>
-        <span class="cat-search" style="flex:none"><input type="text" id="ed-nombre" placeholder="Nombre de la categoría"></span>
-        <span class="cat-search" style="flex:none"><input type="text" id="ed-descripcion" placeholder="Descripción (opcional)"></span>
-        <span class="cat-dialog__desc" id="ed-error" style="color:var(--danger);display:none"></span>
-      </span>
-    </div>
-    <div class="cat-dialog__foot">
-      <button class="cat-btn" type="button" data-cerrar>Cancelar</button>
-      <button class="cat-btn cat-btn--primary" type="button" id="ed-guardar">Guardar</button>
+<!-- Diálogos: el diseño no trae modal, así que se componen con .card y .btn -->
+<div id="overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:24px">
+  <div class="card" id="dlg-editar" style="display:none;width:420px;max-width:94vw;padding:20px">
+    <div style="font-size:16px;font-weight:700;margin-bottom:14px" id="ed-titulo">Nueva categoría</div>
+    <input id="ed-nombre" placeholder="Nombre de la categoría" style="height:36px;width:100%;padding:0 12px;margin-bottom:10px;border:1px solid var(--border);border-radius:8px;font:inherit;font-size:13px;color:var(--text);background:var(--input-bg)" />
+    <input id="ed-descripcion" placeholder="Descripción (opcional)" style="height:36px;width:100%;padding:0 12px;border:1px solid var(--border);border-radius:8px;font:inherit;font-size:13px;color:var(--text);background:var(--input-bg)" />
+    <div id="ed-error" class="meta" style="color:var(--danger-fg);margin-top:10px;display:none"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+      <button class="btn" data-cerrar>Cancelar</button>
+      <button class="btn primary" id="ed-guardar">Guardar</button>
     </div>
   </div>
-</div>
 
-<!-- ============ CONFIRMACIÓN DE BORRADO ============ -->
-<div class="cat-overlay" id="dlg-borrar" style="display:none">
-  <div class="cat-dialog">
-    <div class="cat-dialog__body">
-      <span class="cat-dialog__icon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15 M9.5 6.5V4.5h5v2 M6.5 6.5 7.5 20h9l1-13.5 M10 10v6.5 M14 10v6.5"/></svg></span>
-      <span class="cat-dialog__text">
-        <span class="cat-dialog__title" id="bo-titulo">Eliminar</span>
-        <span class="cat-dialog__desc" id="bo-desc"></span>
-        <span class="cat-dialog__desc" id="bo-error" style="color:var(--danger);display:none"></span>
-      </span>
-    </div>
-    <div class="cat-dialog__foot">
-      <button class="cat-btn" type="button" data-cerrar>Cancelar</button>
-      <button class="cat-btn cat-btn--danger" type="button" id="bo-confirmar">Eliminar</button>
+  <div class="card" id="dlg-borrar" style="display:none;width:420px;max-width:94vw;padding:20px">
+    <div style="font-size:16px;font-weight:700;margin-bottom:10px" id="bo-titulo">Eliminar</div>
+    <div class="meta" id="bo-desc"></div>
+    <div id="bo-error" class="meta" style="color:var(--danger-fg);margin-top:10px;display:none"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+      <button class="btn" data-cerrar>Cancelar</button>
+      <button class="btn primary" id="bo-confirmar" style="background:var(--danger-fg);box-shadow:none">Eliminar</button>
     </div>
   </div>
 </div>
 {% endif %}
 
-<div class="cat-toast" id="toast" style="display:none"></div>
-
+<script src="/radar/categorias/app.js?v=xls1"></script>
 <script>
   (function () {
     var API = '/api/method/marketinghub.www.radar.categorias.index.';
     var CSRF = '{{ csrf_token }}';
     var DATOS = {{ categorias_json }};
 
-    // tema (persistido)
-    var body = document.body;
-    function setTema(t) { body.dataset.theme = t === 'dark' ? 'dark' : ''; }
-    try { setTema(localStorage.getItem('cat-theme') || ''); } catch (e) {}
-    document.getElementById('theme-toggle').addEventListener('click', function () {
-      var t = body.dataset.theme === 'dark' ? '' : 'dark';
-      setTema(t);
-      try { localStorage.setItem('cat-theme', t); } catch (e) {}
-    });
-
-    // elementos que navegan (no son <a>: el CSS pinta los enlaces con el acento)
-    document.querySelectorAll('[data-href]').forEach(function (el) {
-      el.addEventListener('click', function () { window.location.href = el.dataset.href; });
-    });
-
-    // filtros → querystring
+    // navegación y filtros → querystring
     function aplicar(nombre, valor) {
       var p = new URLSearchParams(window.location.search);
       if (valor) p.set(nombre, valor); else p.delete(nombre);
       window.location.search = p.toString();
     }
-    var buscador = document.querySelector('.cat-search input[name=q]');
-    if (buscador) buscador.addEventListener('keydown', function (ev) {
-      if (ev.key === 'Enter') aplicar('q', buscador.value.trim());
-    });
-    var toggle = document.querySelector('[data-toggle-uso]');
-    if (toggle) toggle.addEventListener('click', function () {
-      aplicar('uso', toggle.classList.contains('is-on') ? '' : '1');
+    document.querySelectorAll('[data-href]').forEach(function (el) {
+      el.addEventListener('click', function () { window.location.href = el.dataset.href; });
     });
     document.querySelectorAll('[data-orden]').forEach(function (b) {
       b.addEventListener('click', function () { aplicar('orden', b.dataset.orden); });
     });
+    var q = document.getElementById('q');
+    q.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') aplicar('q', q.value.trim()); });
+    document.getElementById('uso').addEventListener('change', function () {
+      aplicar('uso', this.checked ? '1' : '');
+    });
 
-    function toast(msg) {
-      var t = document.getElementById('toast');
-      t.textContent = msg; t.style.display = '';
-      setTimeout(function () { t.style.display = 'none'; }, 3000);
+    // marcar / desmarcar todas las filas
+    var todas = document.getElementById('check-todas');
+    todas.addEventListener('change', function () {
+      document.querySelectorAll('.tr input[type=checkbox]').forEach(function (c) { c.checked = todas.checked; });
+    });
+
+    // exportar CSV de lo que se está viendo
+    document.getElementById('csv').addEventListener('click', function () {
+      var filas = [['Categoría', 'Estado', 'Competidores', 'Publicaciones 30 d', 'Asignados', 'Actualizada']];
+      DATOS.forEach(function (c) {
+        filas.push([c.titulo, c.pill_label, c.competidores, c.pubs, (c.marcas || []).join(' | '), c.upd]);
+      });
+      var csv = filas.map(function (f) {
+        return f.map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
+      }).join('\n');
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+      a.download = 'categorias.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    var overlay = document.getElementById('overlay');
+    if (!overlay) return;
+    var edit = document.getElementById('dlg-editar');
+    var del = document.getElementById('dlg-borrar');
+    var editando = null, borrando = null;
+
+    function abrir(cual) {
+      overlay.style.display = 'flex';
+      edit.style.display = cual === 'edit' ? '' : 'none';
+      del.style.display = cual === 'del' ? '' : 'none';
     }
+    function cerrar() { overlay.style.display = 'none'; }
+    document.querySelectorAll('[data-cerrar]').forEach(function (b) { b.addEventListener('click', cerrar); });
+    overlay.addEventListener('click', function (ev) { if (ev.target === overlay) cerrar(); });
 
     function llamar(metodo, datos) {
       return fetch(API + metodo, {
@@ -226,26 +222,26 @@
       });
     }
 
-    var edit = document.getElementById('dlg-editar');
-    var del = document.getElementById('dlg-borrar');
-    if (!edit) return;
-    var editando = null, borrando = null;
-
-    function abrirEditar(name) {
-      editando = name;
-      var c = DATOS.filter(function (x) { return x.name === name; })[0] || {};
-      document.getElementById('ed-titulo').textContent = name ? 'Editar «' + (c.titulo || name) + '»' : 'Nueva categoría';
-      document.getElementById('ed-nombre').value = c.nombre_categoria || '';
-      document.getElementById('ed-descripcion').value = c.descripcion || '';
-      document.getElementById('ed-error').style.display = 'none';
-      edit.style.display = '';
-    }
-
     document.querySelectorAll('[data-nuevo]').forEach(function (b) {
-      b.addEventListener('click', function () { abrirEditar(null); });
+      b.addEventListener('click', function () {
+        editando = null;
+        document.getElementById('ed-titulo').textContent = 'Nueva categoría';
+        document.getElementById('ed-nombre').value = '';
+        document.getElementById('ed-descripcion').value = '';
+        document.getElementById('ed-error').style.display = 'none';
+        abrir('edit');
+      });
     });
     document.querySelectorAll('[data-editar]').forEach(function (b) {
-      b.addEventListener('click', function () { abrirEditar(b.dataset.editar); });
+      b.addEventListener('click', function () {
+        editando = b.dataset.editar;
+        var c = DATOS.filter(function (x) { return x.name === editando; })[0] || {};
+        document.getElementById('ed-titulo').textContent = 'Editar «' + (c.titulo || editando) + '»';
+        document.getElementById('ed-nombre').value = c.nombre_categoria || '';
+        document.getElementById('ed-descripcion').value = c.descripcion || '';
+        document.getElementById('ed-error').style.display = 'none';
+        abrir('edit');
+      });
     });
     document.querySelectorAll('[data-borrar]').forEach(function (b) {
       b.addEventListener('click', function () {
@@ -256,11 +252,8 @@
           ? 'Tiene ' + usos + ' competidor' + (usos === 1 ? '' : 'es') + ' asignado' + (usos === 1 ? '' : 's') + '. Hay que dejarlos sin categoría antes de borrarla.'
           : 'No tiene competidores asignados. Esta acción no se puede deshacer.';
         document.getElementById('bo-error').style.display = 'none';
-        del.style.display = '';
+        abrir('del');
       });
-    });
-    document.querySelectorAll('[data-cerrar]').forEach(function (b) {
-      b.addEventListener('click', function () { edit.style.display = 'none'; del.style.display = 'none'; });
     });
 
     document.getElementById('ed-guardar').addEventListener('click', function () {
@@ -269,24 +262,20 @@
         name: editando || '',
         nombre_categoria: document.getElementById('ed-nombre').value.trim(),
         descripcion: document.getElementById('ed-descripcion').value.trim()
-      }).then(function () {
-        toast('Categoría guardada.');
-        setTimeout(function () { window.location.reload(); }, 600);
-      }).catch(function (e) {
-        err.textContent = String(e.message).replace(/<[^>]*>/g, '');
-        err.style.display = '';
-      });
+      }).then(function () { window.location.reload(); })
+        .catch(function (e) {
+          err.textContent = String(e.message).replace(/<[^>]*>/g, '');
+          err.style.display = '';
+        });
     });
 
     document.getElementById('bo-confirmar').addEventListener('click', function () {
       var err = document.getElementById('bo-error');
-      llamar('borrar', { name: borrando }).then(function () {
-        toast('«' + borrando + '» eliminada.');
-        setTimeout(function () { window.location.reload(); }, 600);
-      }).catch(function (e) {
-        err.textContent = String(e.message).replace(/<[^>]*>/g, '');
-        err.style.display = '';
-      });
+      llamar('borrar', { name: borrando }).then(function () { window.location.reload(); })
+        .catch(function (e) {
+          err.textContent = String(e.message).replace(/<[^>]*>/g, '');
+          err.style.display = '';
+        });
     });
   })();
 </script>
