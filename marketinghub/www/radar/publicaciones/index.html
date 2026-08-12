@@ -8,615 +8,265 @@
 {{ super() }}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest"></script>
-<link rel="stylesheet" href="/radar/radar.css">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/radar/publicaciones/publicaciones.css">
 <style>
-  /* ============================================
-     LAYOUT AMPLIO (full-width para la tabla)
-     ============================================ */
-  /* Override del contenedor Bootstrap de Frappe (max-width 1290) */
-  main.container.my-4,
-  body main.container,
-  .page-content-wrapper main.container {
-    max-width: none !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-  }
-  .page_content { padding: 0 !important; }
-
-  .rd-app.rd-wide .rd-main {
-    max-width: none;
-    padding: 12px 16px 28px;
-    width: 100%;
-  }
-  .rd-app.rd-wide .rd-topbar { padding-left: 20px; padding-right: 20px; }
-
-  /* Título integrado en el topbar */
-  .rd-topbar { padding: 10px 20px; }
-  .rd-topbar .rd-topbar-title {
-    font-size: 16px; font-weight: 700; color: var(--text);
-    display: flex; align-items: center; gap: 8px;
-    padding-left: 4px; border-left: 1px solid var(--border);
-    margin-left: 4px; padding-left: 12px;
-  }
-  .rd-topbar .rd-topbar-title-emoji { font-size: 18px; }
-
-  /* ============================================
-     BARRA DE FILTROS pegajosa
-     ============================================ */
-  .rd-filterbar {
-    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 8px 10px; margin-bottom: 10px;
-    box-shadow: var(--shadow-sm);
-    position: sticky; top: 0; z-index: 20;
-  }
-  .rd-filterbar .rd-input,
-  .rd-filterbar .rd-select {
-    padding: 7px 10px; font-size: 13px; min-height: 34px;
-    width: auto; flex: 0 1 auto;
-  }
-  .rd-filterbar .rd-input { width: 240px; }
-  .rd-filterbar .rd-select { width: 170px; }
-  .rd-filterbar .rd-spacer { flex: 1; min-width: 20px; }
-  .rd-filterbar .rd-counter {
-    font-size: 13px; color: var(--text-2); font-weight: 500;
-    padding: 6px 10px; background: var(--bg-soft); border-radius: 6px;
-  }
-
-  /* Toggle "Solo virales" grande y rojo */
-  .rd-viral-toggle {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 7px 12px; border-radius: 8px;
-    background: var(--red-bg); color: var(--red);
-    font-weight: 700; font-size: 13px;
-    border: 2px solid transparent; cursor: pointer;
-    transition: background .15s;
-    user-select: none;
-  }
-  .rd-viral-toggle:hover { background: #fecaca; }
-  .rd-viral-toggle input { display: none; }
-  .rd-viral-toggle.rd-on {
-    background: var(--red); color: white; border-color: var(--red);
-  }
-  .rd-viral-toggle .rd-viral-count {
-    background: rgba(255,255,255,.9); color: var(--red);
-    padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 800;
-  }
-  .rd-viral-toggle.rd-on .rd-viral-count {
-    background: rgba(0,0,0,.15); color: white;
-  }
-
-  /* Chip para limpiar filtros */
-  .rd-btn-clear {
-    background: transparent; border: 1px solid var(--border-strong);
-    color: var(--text-2); font-size: 12px; padding: 6px 10px;
-    border-radius: 6px; cursor: pointer;
-  }
-  .rd-btn-clear:hover { background: var(--bg-soft); }
-
-  /* ============================================
-     TABLA ESTILO EXCEL
-     ============================================ */
-  .rd-tblwrap {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); overflow-x: auto; overflow-y: visible;
-    box-shadow: var(--shadow-sm);
-  }
-  table.rd-tbl {
-    width: 100%; border-collapse: separate; border-spacing: 0;
-    font-size: 13px; font-family: 'Inter', sans-serif;
-  }
-  .rd-tbl thead th {
-    background: var(--bg-soft); color: var(--text);
-    font-weight: 700; font-size: 11px; text-transform: uppercase;
-    letter-spacing: 0.02em;
-    padding: 8px 6px; text-align: left;
-    border-bottom: 2px solid var(--border-strong);
-    white-space: nowrap; user-select: none;
-  }
-  .rd-tbl thead th.rd-sortable { cursor: pointer; }
-  .rd-tbl thead th.rd-sortable:hover { background: #e2e8f0; color: var(--brand); }
-  .rd-tbl thead th .rd-sort-ico {
-    display: inline-block; width: 12px; margin-left: 2px;
-    color: var(--muted); font-size: 10px;
-  }
-  .rd-tbl thead th.rd-asc  .rd-sort-ico::after { content: '▲'; color: var(--brand); }
-  .rd-tbl thead th.rd-desc .rd-sort-ico::after { content: '▼'; color: var(--brand); }
-
-  .rd-tbl tbody tr {
-    border-bottom: 1px solid var(--border);
-    transition: background .1s;
-  }
-  .rd-tbl tbody tr:nth-child(even) td { background: #fafbfd; }
-  .rd-tbl tbody tr:hover td { background: #e0edff; }
-  /* Viral: fila roja, PRIORIDAD sobre nth-child gracias a especificidad */
-  .rd-tbl tbody tr.rd-row-viral td {
-    background: #ffe9e9 !important;
-    box-shadow: inset 4px 0 0 var(--red);
-    color: #7f1d1d;
-  }
-  .rd-tbl tbody tr.rd-row-viral:hover td { background: #ffd6d6 !important; }
-  .rd-tbl tbody tr.rd-row-viral td.rd-cell-comp,
-  .rd-tbl tbody tr.rd-row-viral td.rd-num { color: #7f1d1d; }
-
-  .rd-tbl td {
-    padding: 7px 6px; vertical-align: middle;
-    white-space: nowrap;
-  }
-  .rd-tbl td.rd-num {
-    text-align: right; font-family: 'JetBrains Mono', ui-monospace, monospace;
-    font-variant-numeric: tabular-nums; font-size: 12px;
-  }
-  .rd-tbl td.rd-cell-hook {
-    max-width: 260px; overflow: hidden; text-overflow: ellipsis;
-    white-space: nowrap; font-weight: 500;
-  }
-  .rd-tbl td.rd-cell-comp { font-weight: 600; color: var(--text); }
-
-  /* Chips de plataforma en columna estrecha */
-  .rd-plat-chip {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 26px; height: 26px; border-radius: 6px;
-    font-size: 12px; font-weight: 700; color: white;
-  }
-  .rd-plat-instagram { background: linear-gradient(45deg,#f09433,#dc2743); }
-  .rd-plat-tiktok    { background: #000000; }
-  .rd-plat-facebook  { background: #1877f2; }
-  .rd-plat-youtube   { background: #ff0000; }
-
-  /* Colores de intensidad para engagement */
-  .rd-eng-alto  { background: #d1fae5; color: #065f46; font-weight: 700; padding: 3px 8px; border-radius: 4px; }
-  .rd-eng-medio { background: #fef3c7; color: #92400e; font-weight: 600; padding: 3px 8px; border-radius: 4px; }
-  .rd-eng-bajo  { color: #94a3b8; padding: 3px 8px; }
-
-  /* Tier: imagen + nombre en badge */
-  .rd-tier-cell { display: flex; align-items: center; gap: 6px; }
-  .rd-tier-img {
-    width: 34px; height: 34px; object-fit: contain;
-    image-rendering: pixelated;
-    flex-shrink: 0;
-    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-    border: 1px solid #cbd5e1;
-    border-radius: 5px;
-    padding: 2px;
-  }
-  .rd-tier-name {
-    font-size: 11px; font-weight: 700;
-    padding: 2px 6px; border-radius: 4px;
-    white-space: nowrap;
-    color: var(--text);
-  }
-
-  /* Badge de estado tipo pill */
-  .rd-pill {
-    display: inline-block; padding: 2px 8px; border-radius: 999px;
-    font-size: 11px; font-weight: 600; text-transform: uppercase;
-    letter-spacing: 0.02em;
-  }
-  .rd-pill-nuevo      { background: #dbeafe; color: #1d4ed8; }
-  .rd-pill-analizado  { background: #fef3c7; color: #92400e; }
-  .rd-pill-guardado   { background: #dcfce7; color: #166534; }
-  .rd-pill-descartado { background: #e5e7eb; color: #4b5563; }
-
-  /* (columna del fuego eliminada — el tier tiene su propia imagen) */
-
-  /* Titulo clickeable (abre post en nueva pestaña) */
-  .rd-hook-link {
-    color: var(--text); text-decoration: none;
-    display: inline-flex; align-items: center; gap: 6px;
-    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .rd-hook-link:hover { color: var(--brand); text-decoration: none; }
-  .rd-hook-link:hover .rd-ext-ico { opacity: 1; }
-  .rd-ext-ico {
-    width: 12px; height: 12px; opacity: 0.35; flex-shrink: 0;
-    color: var(--muted); transition: opacity .12s;
-  }
-  .rd-row-viral .rd-hook-link { color: #7f1d1d; }
-  .rd-row-viral .rd-hook-link:hover { color: #b91c1c; }
-
-  /* Boton Analizar unico en columna acciones */
-  .rd-tbl td.rd-actions { padding: 0 10px 0 4px; text-align: right; }
-  .rd-btn-analizar {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 4px 8px; font-size: 11.5px; font-weight: 600;
-    background: transparent; color: var(--brand);
-    border: 1px solid var(--brand); border-radius: 5px;
-    cursor: pointer; font-family: inherit;
-    transition: background .12s;
-  }
-  .rd-btn-analizar:hover { background: var(--brand); color: white; }
-  .rd-btn-analizar i { width: 12px; height: 12px; }
-  .rd-row-viral .rd-btn-analizar {
-    border-color: var(--red); color: var(--red);
-  }
-  .rd-row-viral .rd-btn-analizar:hover { background: var(--red); color: white; }
-
-  .rd-empty-tbl { padding: 60px 20px; text-align: center; color: var(--text-2); }
-
-  /* Responsive escalonado. Con celdas mas compactas y hook 260px,
-     el ancho total base es ~1120px y todo cabe hasta ~1150 viewport. */
-  @media (max-width: 1300px) {
-    .rd-col-scrapeado { display: none; }
-  }
-  @media (max-width: 1150px) {
-    .rd-col-guardados { display: none; }
-  }
-  @media (max-width: 1050px) {
-    .rd-col-shares { display: none; }
-  }
-  @media (max-width: 950px) {
-    .rd-col-coment { display: none; }
-    .rd-tbl td.rd-cell-hook { max-width: 200px; }
-  }
-  @media (max-width: 800px) {
-    .rd-col-fecha { display: none; }
-    .rd-btn-analizar span { display: none; }
-    .rd-btn-analizar { padding: 4px 6px; }
-  }
-
-  .rd-notas-modal-body textarea { min-height: 100px; }
-
-  /* ================================================================
-     OVERRIDE 1:1 DEL MOCKUP (extraído del HTML original del usuario)
-     Paleta + valores estructurales copiados literales.
-     ================================================================ */
-  :root {
-    /* Vars EXACTAS del mockup */
-    --bg:            #F1F2F3;
-    --panel:         #FFFFFF;
-    --raise:         #F7F8F8;
-    --line:          #D8DBDD;
-    --hair:          #E9EBEC;
-    --text:          #17191B;
-    --muted:         #4E5358;
-    --faint:         #61666B;
-    --accent:        #008060;
-    --accent-2:      #006B51;
-    --accent-soft:   rgba(0,128,96,0.10);
-    --onaccent:      #FFFFFF;
-    --warn:          #8A4B12;
-    --warn-soft:     rgba(138,75,18,0.12);
-    --info:          #4B5055;
-    --info-soft:     rgba(75,80,85,0.10);
-    --shadow:        0 1px 2px rgba(0,0,0,0.06);
-
-    /* Aliases para compat con clases legacy que aún usan --brand, --bg-soft, etc. */
-    --brand:         var(--accent);
-    --brand-bg:      var(--accent-soft);
-    --brand-strong:  var(--accent-2);
-    --bg-soft:       var(--raise);
-    --surface:       var(--panel);
-    --border:        var(--hair);
-    --border-strong: var(--line);
-    --text-2:        var(--muted);
-  }
-
-  /* Fondo + font aplicado a TODOS los contenedores de Frappe */
+  /* Override Frappe containers */
   html, body,
-  body .page-container, body .page-content, body .website-content,
-  body main.container, body main, body .page-content-wrapper, body .rd-app {
+  main.container.my-4, body main.container,
+  .page-content-wrapper main.container,
+  .page_content, .page-container, .page-content, .website-content {
+    max-width: none !important; padding: 0 !important; margin: 0 !important;
     background: var(--bg) !important;
   }
-  body,
-  body * {
-    font-family: "Public Sans", system-ui, -apple-system, BlinkMacSystemFont, sans-serif !important;
-  }
-  body {
-    color: var(--text) !important;
-    -webkit-font-smoothing: antialiased;
-    margin: 0; padding: 0;
-  }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { color: var(--accent-2); }
-  ::-webkit-scrollbar { width: 10px; height: 10px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 10px; }
-  ::placeholder { color: var(--faint); }
+  body.pub { min-height: 100vh; }
 
-  /* =========== TOPBAR =========== */
-  .rd-app .rd-topbar {
-    background: var(--panel) !important;
-    border-bottom: 1px solid var(--line);
-    padding: 12px 20px !important;
-    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  /* Modal reuse (Radar.modal) — mapear su estilo al diseño */
+  .rd-modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    display: none; align-items: flex-start; justify-content: center;
+    padding: 48px 20px; z-index: 200;
   }
-  .rd-app .rd-back {
-    color: var(--accent); font-weight: 600; font-size: 13px;
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 4px 8px; border-radius: 6px;
+  .rd-modal-backdrop.rd-visible { display: flex; }
+  .rd-modal {
+    width: 600px; max-width: 94vw; border-radius: 12px;
+    background: var(--bg); border: 1px solid var(--line);
+    box-shadow: 0 30px 70px rgba(0,0,0,0.35); overflow: hidden;
+    display: flex; flex-direction: column;
   }
-  .rd-app .rd-back:hover { background: var(--accent-soft); color: var(--accent); }
-  .rd-app .rd-back i { width: 14px; height: 14px; }
-  .rd-app .rd-topbar-title {
-    font-weight: 700; font-size: 15px; color: var(--text);
-    border-left: 1px solid var(--line); padding-left: 12px; margin-left: 4px;
-    display: inline-flex; align-items: center; gap: 8px;
+  .rd-modal-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 12px 18px; border-bottom: 1px solid var(--line); background: var(--panel);
+    font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--muted);
   }
-  .rd-app .rd-topbar-title-emoji {
-    display: inline-flex; align-items: center; color: var(--muted);
+  .rd-modal-close {
+    width: 26px; height: 26px; border-radius: 7px; border: none;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; color: var(--muted); cursor: pointer;
   }
-  .rd-app .rd-topbar-title-emoji i { width: 18px; height: 18px; }
-  .rd-app .rd-topbar-right { gap: 12px; display: flex; align-items: center; }
-  .rd-count-lbl {
-    color: var(--muted); font-size: 13px; font-weight: 400;
+  .rd-modal-close:hover { background: var(--raise); color: var(--text); }
+  .rd-modal-body { padding: 20px 24px; overflow-y: auto; }
+  .rd-modal-actions {
+    display: flex; justify-content: flex-end; gap: 10px;
+    padding: 12px 18px; border-top: 1px solid var(--line); background: var(--panel);
   }
-  .rd-theme-toggle {
-    width: 32px; height: 32px; border-radius: 50%;
+  .rd-btn {
+    height: auto; padding: 9px 16px; border-radius: 8px;
     border: 1px solid var(--line); background: var(--panel);
-    display: inline-flex; align-items: center; justify-content: center;
-    color: var(--faint); cursor: pointer; padding: 0;
-  }
-  .rd-theme-toggle:hover { border-color: var(--muted); color: var(--text); }
-  .rd-theme-toggle i { width: 15px; height: 15px; }
-
-  /* =========== FILTERBAR (chips estilo mockup) =========== */
-  .rd-filterbar {
-    background: var(--panel) !important;
-    border: none !important; border-bottom: 1px solid var(--line);
-    border-radius: 0 !important;
-    box-shadow: none;
-    padding: 12px 20px !important;
-    gap: 8px !important;
-    margin: 0 !important;
-  }
-  .rd-filterbar .rd-select,
-  .rd-filterbar .rd-input {
-    height: 34px !important; min-height: 34px !important;
-    padding: 0 12px !important; border-radius: 8px !important;
-    border: 1px solid var(--line) !important;
-    background: var(--panel) !important;
-    color: var(--text) !important;
-    font-size: 13px !important; font-weight: 500;
-    font-family: inherit !important;
-    box-shadow: none !important;
+    color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600;
     cursor: pointer;
   }
-  .rd-filterbar .rd-select {
-    appearance: none; -webkit-appearance: none;
-    padding-right: 30px !important;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2361666B' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 10px center !important;
+  .rd-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .rd-btn.rd-btn-secondary { background: var(--panel); color: var(--text); }
+  .rd-btn:not(.rd-btn-secondary):not(.rd-btn-danger) {
+    background: var(--accent); border-color: transparent; color: var(--onaccent);
+    padding: 9px 18px;
   }
-  .rd-filterbar .rd-input { width: 260px !important; cursor: text; }
-  .rd-filterbar .rd-select:hover, .rd-filterbar .rd-input:hover { border-color: var(--muted) !important; }
-  .rd-filterbar .rd-select:focus, .rd-filterbar .rd-input:focus {
-    outline: 2px solid var(--accent-soft); border-color: var(--accent) !important;
+  .rd-btn:not(.rd-btn-secondary):not(.rd-btn-danger):hover {
+    background: var(--accent-2); border-color: transparent; color: var(--onaccent);
   }
-  .rd-filterbar .rd-counter {
-    color: var(--muted); font-weight: 500; font-size: 13px;
-    font-family: inherit; font-variant-numeric: tabular-nums;
-  }
-  .rd-btn-clear {
-    background: transparent !important; color: var(--text) !important;
-    border: 1px solid var(--line) !important;
-    padding: 0 14px !important; height: 34px !important;
-    border-radius: 8px !important; font-size: 13px !important; font-weight: 500 !important;
-    cursor: pointer; font-family: inherit;
-    display: inline-flex; align-items: center;
-  }
-  .rd-btn-clear:hover { background: var(--raise) !important; border-color: var(--muted) !important; }
+  .rd-btn.rd-btn-danger { background: #d33; border-color: #d33; color: #fff; }
 
-  .rd-btn-csv, .rd-btn-actualizar {
+  /* Fields dentro del modal */
+  .rd-field { margin-bottom: 14px; }
+  .rd-field label {
+    display: block; font-size: 12px; font-weight: 600; color: var(--muted);
+    margin-bottom: 5px;
+  }
+  .rd-select, .rd-textarea, .rd-input {
+    width: 100%; padding: 8px 10px;
+    border: 1px solid var(--line); border-radius: 8px;
     background: var(--panel); color: var(--text);
-    border: 1px solid var(--line);
-    padding: 0 14px; height: 34px; border-radius: 8px;
-    font-weight: 500; font-size: 13px;
-    display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
-    font-family: inherit;
+    font-family: inherit; font-size: 13px;
   }
-  .rd-btn-csv:hover, .rd-btn-actualizar:hover { border-color: var(--muted); background: var(--raise); }
-  .rd-btn-csv i, .rd-btn-actualizar i { width: 14px; height: 14px; color: var(--faint); }
-
-  /* =========== TABLA =========== */
-  .rd-tblwrap {
-    background: var(--panel) !important;
-    border: 1px solid var(--line) !important;
-    border-radius: 10px !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    overflow: hidden;
-    margin: 12px 20px;
-  }
-  .rd-tbl thead th {
-    background: var(--raise);
-    color: var(--muted);
-    font-size: 11px !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.07em !important;
-    font-weight: 600 !important;
-    padding: 10px 12px !important;
-    border-bottom: 1px solid var(--line);
-  }
-  .rd-tbl thead th.rd-sortable:hover { background: var(--panel); color: var(--text); }
-  .rd-tbl thead th.rd-asc  .rd-sort-ico::after,
-  .rd-tbl thead th.rd-desc .rd-sort-ico::after { color: var(--accent); }
-
-  .rd-tbl tbody tr {
-    border-bottom: 1px solid var(--hair);
-    background: var(--panel);
-  }
-  .rd-tbl tbody tr:nth-child(even) td { background: transparent; }
-  .rd-tbl tbody tr:hover td { background: var(--raise); }
-  .rd-tbl tbody tr.rd-row-viral { background: rgba(0,128,96,0.03); }
-  .rd-tbl tbody tr.rd-row-viral td { background: transparent !important; }
-  .rd-tbl tbody tr.rd-row-viral:hover td { background: var(--raise) !important; }
-  .rd-tbl tbody tr.rd-row-viral td.rd-cell-comp,
-  .rd-tbl tbody tr.rd-row-viral td.rd-num { color: var(--text); }
-  .rd-tbl td {
-    padding: 9px 12px !important; font-size: 13px !important; color: var(--text);
-    border-top: none;
-  }
-  .rd-tbl td.rd-num { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text); }
-
-  /* =========== BADGES (Estado + Tier) — rounded pills =========== */
-  .rd-pill {
-    padding: 3px 10px !important; border-radius: 999px !important;
-    font-size: 11px !important; font-weight: 600 !important;
-    letter-spacing: 0.04em; border: none !important;
-    display: inline-flex; align-items: center;
-  }
-  .rd-pill-nuevo      { background: var(--info-soft) !important; color: var(--info) !important; }
-  .rd-pill-analizada  { background: var(--accent-soft) !important; color: var(--accent) !important; }
-  .rd-pill-guardado   { background: var(--warn-soft) !important; color: var(--warn) !important; }
-  .rd-pill-descartado { background: var(--raise) !important; color: var(--faint) !important; }
-
-  .rd-tier-name, .rd-tier-badge {
-    padding: 2px 10px !important;
-    border-radius: 999px !important;
-    font-size: 11px !important; font-weight: 600 !important;
-    letter-spacing: 0.02em;
-    border: none !important;
+  .rd-textarea { min-height: 80px; resize: vertical; }
+  .rd-select:focus, .rd-textarea:focus, .rd-input:focus {
+    outline: 2px solid var(--accent-soft); border-color: var(--accent);
   }
 
-  /* =========== BOTONES ACCIÓN — Guion outline + Analizar filled =========== */
-  .rd-btn-analizar {
-    padding: 6px 11px !important; border-radius: 7px !important;
-    font-size: 12px !important; font-weight: 600 !important;
-    color: var(--onaccent) !important; background: var(--accent) !important;
-    border: 1px solid var(--accent) !important;
-    display: inline-flex; align-items: center; gap: 5px;
-    cursor: pointer; font-family: inherit; white-space: nowrap;
-    transition: background .1s;
+  /* Toast */
+  .rd-toast {
+    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+    padding: 11px 20px; border-radius: 9px;
+    font-size: 13px; font-weight: 600;
+    color: var(--onaccent); background: var(--accent);
+    box-shadow: 0 14px 34px rgba(0,0,0,0.3);
+    display: flex; align-items: center; gap: 9px; z-index: 300;
+    opacity: 0; transition: opacity .2s;
   }
-  .rd-btn-analizar:hover { background: var(--accent-2) !important; border-color: var(--accent-2) !important; }
-  .rd-btn-analizar i { width: 12px; height: 12px; }
-  /* Guion → outline */
-  .rd-btn-analizar[title*="guión"], .rd-btn-analizar[title*="Guión"] {
-    color: var(--text) !important;
-    background: var(--panel) !important;
-    border: 1px solid var(--line) !important;
+  .rd-toast.rd-visible { opacity: 1; }
+  .rd-toast::before {
+    content: ""; width: 6px; height: 6px; border-radius: 999px;
+    background: var(--onaccent); opacity: 0.7;
   }
-  .rd-btn-analizar[title*="guión"]:hover, .rd-btn-analizar[title*="Guión"]:hover {
-    background: var(--raise) !important; border-color: var(--muted) !important; color: var(--text) !important;
-  }
-  .rd-row-viral .rd-btn-analizar { background: var(--accent) !important; border-color: var(--accent) !important; color: var(--onaccent) !important; }
+  .rd-toast.rd-error { background: #d33; }
 
-  /* =========== HOOK CELL =========== */
-  .rd-hook-link {
-    color: var(--text); text-decoration: none;
-    display: inline-flex; align-items: center; gap: 5px;
+  /* Empty state */
+  .pub-empty-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 60px 20px; color: var(--muted);
   }
-  .rd-hook-link:hover { color: var(--accent); }
-  .rd-hook-link .rd-ext-ico { width: 12px; height: 12px; color: var(--faint); }
-
-  /* Engagement % */
-  .rd-eng-hi  { color: var(--accent); font-weight: 600; }
-  .rd-eng-mid { color: var(--warn); font-weight: 600; }
-  .rd-eng-lo  { color: var(--muted); }
-
-  /* Checkbox */
-  .rd-tbl thead th:first-child,
-  .rd-tbl tbody td:first-child { padding-left: 16px !important; padding-right: 6px !important; }
-  .rd-row-check {
-    width: 14px; height: 14px;
-    border: 1.5px solid var(--line); border-radius: 3px;
-    background: var(--panel); cursor: pointer;
-    accent-color: var(--accent);
-  }
-
-  /* =========== MAIN LAYOUT =========== */
-  .rd-app.rd-wide .rd-main {
-    padding: 0 !important; max-width: none !important;
-  }
+  .pub-empty-wrap .t { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
 </style>
 {% endblock %}
 
 {% block page_content %}
 {% if no_access %}
-<div class="rd-na-screen"><div class="rd-na-card">
-  <div class="rd-na-brand"><span class="rd-na-dot"></span><span>Radar · Acceso denegado</span></div>
-  <div class="rd-na-body">No tienes permiso.
-    <ul class="rd-na-roles">{% for r in required_roles %}<li><code>{{ r }}</code></li>{% endfor %}</ul>
+<div style="padding: 60px 20px; max-width: 500px; margin: 0 auto; text-align: center;
+            background: var(--panel); border: 1px solid var(--line); border-radius: 12px;">
+  <div style="font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 10px;">
+    Radar de Competencia · Acceso denegado
   </div>
-</div></div>
+  <div style="color: var(--muted); font-size: 13px; line-height: 1.5;">
+    Se requiere alguno de los siguientes roles:
+    <ul style="margin: 10px 0; list-style: none; padding: 0;">
+      {% for r in required_roles %}
+      <li><code style="background: var(--raise); padding: 2px 8px; border-radius: 4px;">{{ r }}</code></li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
 {% else %}
-<div class="rd-app rd-wide">
-  <header class="rd-topbar">
-    <div class="rd-topbar-left">
-      <a href="/radar" class="rd-back"><i data-lucide="arrow-left"></i> Volver</a>
-      <div class="rd-topbar-title">
-        <span class="rd-topbar-title-emoji"><i data-lucide="bar-chart-3"></i></span>
-        <span>Publicaciones</span>
+<body class="pub">
+
+<div class="pub-app">
+
+  <!-- ============ CABECERA ============ -->
+  <header class="pub-header">
+    <div class="pub-header__left">
+      <a class="pub-back" href="/radar">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+        Volver
+      </a>
+      <span class="pub-sep"></span>
+      <div class="pub-title-group">
+        <svg class="pub-title-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 20.5h17 M7.5 20.5v-6.5 M12.5 20.5v-11 M17.5 20.5v-4"/></svg>
+        <span class="pub-title">Publicaciones</span>
       </div>
     </div>
-    <div class="rd-topbar-right">
-      <span id="rd-count" class="rd-count-lbl"></span>
-      <button class="rd-theme-toggle" title="Modo oscuro (próximamente)" aria-label="Toggle theme">
-        <i data-lucide="moon"></i>
+    <div class="pub-header__right">
+      <span class="pub-total" id="pub-total">0 publicaciones total</span>
+      <button class="pub-icon-btn" id="theme-toggle" title="Cambiar tema" type="button">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
       </button>
     </div>
   </header>
 
-  <main class="rd-main">
-    <!-- BARRA DE FILTROS -->
-    <div class="rd-filterbar">
-      <select id="rd-f-tier" class="rd-select" title="Tier mínimo">
-        <option value="">⭐ Todos los tiers</option>
-      </select>
-      <select id="rd-f-fecha" class="rd-select" title="Fecha">
-        <option value="1">📅 Últimas 24h</option>
-        <option value="7" selected>📅 Últimos 7 días</option>
-        <option value="30">📅 Últimos 30 días</option>
-        <option value="">📅 Todos</option>
-      </select>
-      <select id="rd-f-comp" class="rd-select"><option value="">👥 Todos los competidores</option></select>
-      <select id="rd-f-plat" class="rd-select">
-        <option value="">🌐 Todas las plataformas</option>
-        <option value="Instagram">Instagram</option>
-        <option value="TikTok">TikTok</option>
-        <option value="Facebook">Facebook</option>
-        <option value="YouTube">YouTube</option>
-      </select>
-      <select id="rd-f-estado" class="rd-select">
-        <option value="">🏁 Todos los estados</option>
-        {% for e in estados %}<option value="{{ e }}">{{ e }}</option>{% endfor %}
-      </select>
-      <input type="text" id="rd-f-search" class="rd-input" placeholder="🔍 Buscar en título / caption...">
-      <button class="rd-btn-clear" onclick="RadarPubs.limpiarFiltros()">Limpiar</button>
-      <div class="rd-spacer"></div>
-      <button class="rd-btn-csv" onclick="RadarPubs.exportarCSV()" title="Descargar los resultados filtrados como CSV">
-        <i data-lucide="download"></i> Exportar CSV
-      </button>
-      <span class="rd-counter" id="rd-counter">0 / 0</span>
+  <!-- ============ FILTROS ============ -->
+  <div class="pub-toolbar">
+    <div class="pub-toolbar__filters">
+
+      <!-- Tier -->
+      <div class="pub-select" id="pub-wrap-tier">
+        <svg class="pub-select__icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 14.6 9l6 .9-4.3 4.2 1 6-5.3-2.8-5.3 2.8 1-6L3.4 9.9l6-.9z"/></svg>
+        <select id="pub-f-tier">
+          <option value="">Todos los tiers</option>
+        </select>
+        <svg class="pub-select__caret" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>
+      </div>
+
+      <!-- Rango -->
+      <div class="pub-select">
+        <svg class="pub-select__icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15v13.5h-15z M8.5 3.5v4 M15.5 3.5v4 M4.5 11h15"/></svg>
+        <select id="pub-f-fecha">
+          <option value="1">Últimas 24h</option>
+          <option value="7" selected>Últimos 7 días</option>
+          <option value="30">Últimos 30 días</option>
+          <option value="90">Últimos 90 días</option>
+          <option value="">Todos</option>
+        </select>
+        <svg class="pub-select__caret" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>
+      </div>
+
+      <!-- Competidor -->
+      <div class="pub-select">
+        <svg class="pub-select__icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5a3.4 3.4 0 1 0 0 6.8A3.4 3.4 0 0 0 9 5z M3 20c1.2-3.2 3.6-4.5 6-4.5s4.8 1.3 6 4.5 M16.5 6.2a3 3 0 0 1 0 5.6 M21 19.5c-.8-2.2-2-3.2-3.5-3.7"/></svg>
+        <select id="pub-f-comp">
+          <option value="">Todos los competidores</option>
+        </select>
+        <svg class="pub-select__caret" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>
+      </div>
+
+      <!-- Plataforma -->
+      <div class="pub-select">
+        <svg class="pub-select__icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 3.5 8l8.5 4.5L20.5 8z M3.5 12.5 12 17l8.5-4.5 M3.5 16.5 12 21l8.5-4.5"/></svg>
+        <select id="pub-f-plat">
+          <option value="">Todas las plataformas</option>
+          <option value="TikTok">TikTok</option>
+          <option value="Instagram">Instagram</option>
+          <option value="Facebook">Facebook</option>
+          <option value="YouTube">YouTube</option>
+        </select>
+        <svg class="pub-select__caret" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>
+      </div>
+
+      <!-- Estado -->
+      <div class="pub-select">
+        <svg class="pub-select__icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5v17 M6.5 4.5h11l-2.2 3.8 2.2 3.7h-11"/></svg>
+        <select id="pub-f-estado">
+          <option value="">Todos los estados</option>
+          {% for e in estados %}<option value="{{ e }}">{{ e }}</option>{% endfor %}
+        </select>
+        <svg class="pub-select__caret" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg>
+      </div>
+
+      <!-- Buscador -->
+      <div class="pub-search">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M16.2 16.2 20.5 20.5"/></svg>
+        <input type="text" id="pub-f-search" placeholder="Buscar en título / caption…">
+      </div>
+
+      <button class="pub-btn pub-btn--quiet" type="button" id="pub-limpiar">Limpiar</button>
     </div>
 
-    <!-- TABLA -->
-    <div class="rd-tblwrap">
-      <table class="rd-tbl" id="rd-tbl">
-        <thead>
-          <tr>
-            <th style="width: 32px;"><input type="checkbox" class="rd-row-check" id="rd-check-all" title="Seleccionar todos"></th>
-            <th class="rd-sortable rd-asc" data-sort="tier_orden" style="width: 160px;">Tier <span class="rd-sort-ico"></span></th>
-            <th style="width: 44px;">Plat</th>
-            <th class="rd-sortable" data-sort="competidor">Competidor <span class="rd-sort-ico"></span></th>
-            <th class="rd-sortable rd-col-fecha" data-sort="fecha_publicacion">Fecha <span class="rd-sort-ico"></span></th>
-            <th>Título / Hook</th>
-            <th class="rd-sortable" data-sort="vistas_actual" style="text-align:right;">Vistas <span class="rd-sort-ico"></span></th>
-            <th class="rd-sortable" data-sort="likes_actual" style="text-align:right;">Likes <span class="rd-sort-ico"></span></th>
-            <th class="rd-sortable rd-col-coment" data-sort="comentarios_actual" style="text-align:right;">Coment <span class="rd-sort-ico"></span></th>
-            <th class="rd-col-shares" style="text-align:right;">Shares</th>
-            <th class="rd-col-guardados" style="text-align:right;">Guar.</th>
-            <th class="rd-sortable" data-sort="engagement_pct" style="text-align:right;">Eng % <span class="rd-sort-ico"></span></th>
-            <th class="rd-col-scrapeado" style="width: 110px;">Scrapeado</th>
-            <th>Estado</th>
-            <th style="width: 160px;">Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="rd-tbody">
-          <tr><td colspan="15" class="rd-empty-tbl">Cargando…</td></tr>
-        </tbody>
-      </table>
+    <div class="pub-toolbar__actions">
+      <button class="pub-btn" type="button" id="pub-csv">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11 M8 11l4 4 4-4 M4.5 19.5h15"/></svg>
+        Exportar CSV
+      </button>
+      <span class="pub-counter" id="pub-counter">0 / 0</span>
     </div>
-  </main>
+  </div>
+
+  <!-- ============ TABLA ============ -->
+  <div class="pub-tablewrap">
+    <div class="pub-table" id="pub-table">
+
+      <!-- cabecera -->
+      <div class="pub-row pub-head" id="pub-head-row">
+        <div>
+          <span class="pub-check" id="pub-check-all" title="Seleccionar todos">
+            <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
+          </span>
+        </div>
+        <div class="pub-head__cell pub-head__cell--sortable is-sorted" data-sort="tier_orden">Tier <span class="pub-sort-dir">↑</span></div>
+        <div class="pub-head__cell">Plat</div>
+        <div class="pub-head__cell pub-head__cell--sortable" data-sort="competidor">Competidor</div>
+        <div class="pub-head__cell pub-head__cell--sortable" data-sort="fecha_publicacion">Fecha</div>
+        <div class="pub-head__cell">Título / hook</div>
+        <div class="pub-head__cell pub-head__cell--num pub-head__cell--sortable" data-sort="vistas_actual">Vistas</div>
+        <div class="pub-head__cell pub-head__cell--num pub-head__cell--sortable" data-sort="likes_actual">Likes</div>
+        <div class="pub-head__cell pub-head__cell--num">Coment.</div>
+        <div class="pub-head__cell pub-head__cell--num">Shares</div>
+        <div class="pub-head__cell pub-head__cell--num">Guar.</div>
+        <div class="pub-head__cell pub-head__cell--num pub-head__cell--sortable" data-sort="engagement_pct">Eng %</div>
+        <div class="pub-head__cell">Scrapeado</div>
+        <div class="pub-head__cell">Estado</div>
+        <div class="pub-head__cell"></div>
+      </div>
+
+      <!-- filas aquí (JS) -->
+      <div id="pub-body">
+        <div class="pub-empty-wrap"><div class="t">Cargando…</div></div>
+      </div>
+
+    </div>
+  </div>
+
 </div>
 
-<script src="/radar/radar.js?v=shopify3"></script>
+<script src="/radar/radar.js?v=retro1"></script>
 <script>
   const CAN_EDIT = {{ 'true' if can_edit else 'false' }};
   const FORMATOS = {{ formatos|tojson }};
@@ -652,22 +302,44 @@
       return d.toLocaleDateString('es-PE', {day:'2-digit', month:'short'});
     } catch (e) { return s; }
   }
-  function engClass(pct) {
-    if (pct >= 5) return 'rd-eng-alto';
-    if (pct >= 2) return 'rd-eng-medio';
-    return 'rd-eng-bajo';
+  function esc(s) {
+    if (s == null) return '';
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
+    })[c]);
+  }
+  function iconTier(orden) {
+    // Ícono por rango de tier: alto (estrella/hacha), medio (rombo), bajo (círculo)
+    if (orden && orden <= 5) {
+      // hacha/warn
+      return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 3.5c3 0 6 2 6.5 5-2.5.6-4.4.2-6.2-1 M13.8 7.5 4.5 16.8l2.7 2.7 9.3-9.3"/></svg>';
+    }
+    if (orden && orden <= 8) {
+      return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8.5 12 4l6 4.5v7L12 20l-6-4.5z"/></svg>';
+    }
+    return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"/></svg>';
+  }
+  function iconGuion() {
+    return '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5z M14.5 6.5l3 3"/></svg>';
+  }
+  function iconAnalizar() {
+    return '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z M16.2 16.2 20.5 20.5"/></svg>';
+  }
+  function iconLink() {
+    return '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5h5v5 M19 5l-8 8 M18 14v5H5V6h5"/></svg>';
+  }
+  function iconCheck() {
+    return '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
   }
 
   window.RadarPubs = {
     lista: [],
-    tiersConfig: [],       // config visual de los tiers
-    tierPorOrden: {},      // map orden → tier config (más robusto que por nombre)
+    tierPorOrden: {},
     sortBy: 'tier_orden',
-    sortDir: 'asc',        // menor orden = mejor tier
+    sortDir: 'asc',
+    seleccionados: new Set(),
 
     async cargar() {
-      // Si vinimos con ?fecha_desde=&fecha_hasta= (desde comparativa), aplicamos
-      // en el servidor. El resto de filtros son client-side.
       const q = new URLSearchParams(location.search);
       const args = {limite: 500};
       if (q.get('fecha_desde')) args.fecha_desde = q.get('fecha_desde');
@@ -675,27 +347,24 @@
       try {
         this.lista = await Radar.api('marketinghub.www.radar.publicaciones.index.listar', args);
       } catch (e) {
-        document.getElementById('rd-tbody').innerHTML =
-          `<tr><td colspan="15" class="rd-empty-tbl"><b>Error:</b> ${Radar.escapeHtml(e.message)}</td></tr>`;
+        document.getElementById('pub-body').innerHTML =
+          `<div class="pub-empty-wrap"><div class="t">Error</div><div>${esc(e.message)}</div></div>`;
         return;
       }
-      document.getElementById('rd-count').textContent = `${this.lista.length} publicaciones total`;
+      document.getElementById('pub-total').textContent = `${this.lista.length} publicaciones total`;
       this.render();
     },
 
     render() {
-      const q       = document.getElementById('rd-f-search').value.toLowerCase().trim();
-      const comp    = document.getElementById('rd-f-comp').value;
-      const plat    = document.getElementById('rd-f-plat').value;
-      const est     = document.getElementById('rd-f-estado').value;
-      const tierMin = document.getElementById('rd-f-tier').value;  // orden mínimo (más alto)
-      const dias    = document.getElementById('rd-f-fecha').value; // '1','7','30',''
+      const q       = document.getElementById('pub-f-search').value.toLowerCase().trim();
+      const comp    = document.getElementById('pub-f-comp').value;
+      const plat    = document.getElementById('pub-f-plat').value;
+      const est     = document.getElementById('pub-f-estado').value;
+      const tierMin = document.getElementById('pub-f-tier').value;
+      const dias    = document.getElementById('pub-f-fecha').value;
 
-      let cutoffDate = null;
-      if (dias) {
-        cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - parseInt(dias));
-      }
+      let cutoff = null;
+      if (dias) { cutoff = new Date(); cutoff.setDate(cutoff.getDate() - parseInt(dias)); }
 
       let items = this.lista.filter(p =>
         (!q     || (p.titulo_hook || '').toLowerCase().includes(q) || (p.descripcion || '').toLowerCase().includes(q)) &&
@@ -703,7 +372,7 @@
         (!plat  || p.plataforma === plat) &&
         (!est   || p.estado === est) &&
         (!tierMin || (p.tier_orden && p.tier_orden <= parseInt(tierMin))) &&
-        (!cutoffDate || (p.fecha_publicacion && new Date(p.fecha_publicacion + 'T00:00:00') >= cutoffDate))
+        (!cutoff || (p.fecha_publicacion && new Date(p.fecha_publicacion + 'T00:00:00') >= cutoff))
       );
 
       // Ordenar
@@ -717,74 +386,91 @@
         return (va - vb) * dir;
       });
 
-      const counter = document.getElementById('rd-counter');
-      counter.textContent = `${items.length} / ${this.lista.length}`;
+      document.getElementById('pub-counter').textContent = `${items.length} / ${this.lista.length}`;
 
-      const tb = document.getElementById('rd-tbody');
+      const body = document.getElementById('pub-body');
       if (!items.length) {
-        tb.innerHTML = `<tr><td colspan="15" class="rd-empty-tbl">
-          <div style="font-size:15px;font-weight:600;margin-bottom:6px;">Sin resultados</div>
+        body.innerHTML = `<div class="pub-empty-wrap">
+          <div class="t">Sin resultados</div>
           <div>Ningún post coincide con los filtros aplicados.</div>
-        </td></tr>`;
+        </div>`;
         return;
       }
-
-      tb.innerHTML = items.map(p => this.row(p)).join('');
-      lucide.createIcons();
-
-      // Actualizar iconos de sort en headers
-      document.querySelectorAll('.rd-tbl thead th').forEach(th => {
-        th.classList.remove('rd-asc','rd-desc');
-        if (th.dataset.sort === this.sortBy) th.classList.add('rd-' + this.sortDir);
+      body.innerHTML = items.map(p => this.row(p)).join('');
+      // Actualizar indicador de sort
+      document.querySelectorAll('.pub-head__cell--sortable').forEach(el => {
+        const cur = el.dataset.sort === this.sortBy;
+        el.classList.toggle('is-sorted', cur);
+        // limpiar flechas
+        const dirSpan = el.querySelector('.pub-sort-dir');
+        if (cur) {
+          if (!dirSpan) el.insertAdjacentHTML('beforeend', ` <span class="pub-sort-dir">${this.sortDir === 'asc' ? '↑' : '↓'}</span>`);
+          else dirSpan.textContent = this.sortDir === 'asc' ? '↑' : '↓';
+        } else if (dirSpan) {
+          dirSpan.remove();
+        }
       });
     },
 
     row(p) {
-      const plat = (p.plataforma || '?').toLowerCase();
-      const plat_ini = (p.plataforma || '?').charAt(0).toUpperCase();
+      const isSel = this.seleccionados.has(p.name);
+      const orden = p.tier_orden || 99;
+      const tierName = (this.tierPorOrden[orden] || {}).nombre || p.tier || '—';
+      let tierMod = '';
+      if (orden <= 5) tierMod = 'pub-tier--top';
+      else if (orden >= 9) tierMod = 'pub-tier--low';
+
+      const plat = (p.plataforma || '?').charAt(0).toUpperCase();
       const eng = p.engagement_pct || 0;
-      const estCls = 'rd-pill-' + (p.estado || 'nuevo').toLowerCase();
+      const engMod = eng >= 3 ? 'pub-eng--high' : '';
+
+      let statusMod = '';
+      const est = (p.estado || 'Nuevo');
+      if (est === 'Analizada') statusMod = 'pub-status--analizada';
+      else if (est === 'Guardado') statusMod = 'pub-status--guion';
+      else if (est === 'Descartado') statusMod = 'pub-status--programada';
+
       const hookText = p.titulo_hook || p.descripcion || '—';
-
       const hookHtml = p.url_publicacion
-        ? `<a class="rd-hook-link" href="${Radar.escapeHtml(p.url_publicacion)}" target="_blank" rel="noopener" title="Abrir post · ${Radar.escapeHtml(p.descripcion || '')}"><span>${Radar.escapeHtml(hookText)}</span><i data-lucide="external-link" class="rd-ext-ico"></i></a>`
-        : Radar.escapeHtml(hookText);
-
-      // celda tier: imagen + nombre coloreado (buscamos por ORDEN, no por nombre,
-      // porque el usuario puede haber renombrado el tier en Settings)
-      const tierCfg = this.tierPorOrden[p.tier_orden] || {};
-      const tierImg = tierCfg.imagen_url || '';
-      const tierColor = tierCfg.color_hex || '#94a3b8';
-      const tierName = tierCfg.nombre || p.tier || '—';
-      const tierCell = `
-        <div class="rd-tier-cell" title="${Radar.escapeHtml(tierName)}">
-          ${tierImg ? `<img class="rd-tier-img" src="${Radar.escapeHtml(tierImg)}" alt="${Radar.escapeHtml(tierName)}">` : ''}
-          <span class="rd-tier-name" style="background:${tierColor}20; color:${tierColor}; border:1px solid ${tierColor}40;">${Radar.escapeHtml(tierName)}</span>
-        </div>`;
+        ? `<a class="pub-link" href="${esc(p.url_publicacion)}" target="_blank" rel="noopener">
+             <span>${esc(hookText)}</span>${iconLink()}
+           </a>`
+        : `<div class="pub-cell"><span>${esc(hookText)}</span></div>`;
 
       return `
-        <tr class="${p.es_viral ? 'rd-row-viral' : ''}">
-          <td><input type="checkbox" class="rd-row-check" data-name="${Radar.escapeHtml(p.name)}"></td>
-          <td>${tierCell}</td>
-          <td><span class="rd-plat-chip rd-plat-${plat}">${plat_ini}</span></td>
-          <td class="rd-cell-comp">${Radar.escapeHtml(p.competidor || '')}</td>
-          <td class="rd-col-fecha" style="color:var(--text-2);">${fmtDate(p.fecha_publicacion)}</td>
-          <td class="rd-cell-hook">${hookHtml}</td>
-          <td class="rd-num" style="font-weight:700;">${fmtNum(p.vistas_actual)}</td>
-          <td class="rd-num">${fmtNum(p.likes_actual)}</td>
-          <td class="rd-num rd-col-coment">${fmtNum(p.comentarios_actual)}</td>
-          <td class="rd-num rd-col-shares">${fmtNum(p.compartidos_actual)}</td>
-          <td class="rd-num rd-col-guardados">${fmtNum(p.guardados_actual)}</td>
-          <td class="rd-num"><span class="${engClass(eng)}">${eng.toFixed(2)}%</span></td>
-          <td class="rd-col-scrapeado" style="font-size:11px;color:var(--text-2);white-space:nowrap;">${fmtScrapeo(p.fecha_ultimo_scrapeo)}</td>
-          <td><span class="rd-pill ${estCls}">${Radar.escapeHtml(p.estado || 'Nuevo')}</span></td>
-          <td class="rd-actions">
+        <div class="pub-row pub-body-row ${isSel ? 'is-selected' : ''}" data-name="${esc(p.name)}">
+          <div>
+            <span class="pub-check ${isSel ? 'is-checked' : ''}" data-check="${esc(p.name)}">
+              ${iconCheck()}
+            </span>
+          </div>
+          <div class="pub-tier ${tierMod}">
+            ${iconTier(orden)}
+            <span class="pub-tier__label">${esc(tierName)}</span>
+          </div>
+          <div class="pub-cell"><span class="pub-plat">${plat}</span></div>
+          <div class="pub-cell pub-cell--strong">${esc(p.competidor || '')}</div>
+          <div class="pub-cell pub-cell--date">${fmtDate(p.fecha_publicacion)}</div>
+          ${hookHtml}
+          <div class="pub-cell pub-cell--views">${fmtNum(p.vistas_actual)}</div>
+          <div class="pub-cell pub-cell--num">${fmtNum(p.likes_actual)}</div>
+          <div class="pub-cell pub-cell--num">${fmtNum(p.comentarios_actual)}</div>
+          <div class="pub-cell pub-cell--num">${fmtNum(p.compartidos_actual)}</div>
+          <div class="pub-cell pub-cell--num">${fmtNum(p.guardados_actual)}</div>
+          <div class="pub-cell" style="text-align:right"><span class="pub-eng ${engMod}">${eng.toFixed(2)}%</span></div>
+          <div class="pub-cell pub-cell--muted">${fmtScrapeo(p.fecha_ultimo_scrapeo)}</div>
+          <div class="pub-cell"><span class="pub-status ${statusMod}">${esc(est)}</span></div>
+          <div class="pub-cell--actions">
             ${CAN_EDIT ? `
-              <button class="rd-btn-analizar" onclick="RadarPubs.hacerGuion('${Radar.escapeHtml(p.name)}')" title="Crear guión inspirado en este video" style="margin-right:4px;"><i data-lucide="pen-line"></i><span>Guion</span></button>
-              <button class="rd-btn-analizar" onclick="RadarPubs.analizar('${Radar.escapeHtml(p.name)}')" title="Analizar / editar estado"><i data-lucide="search"></i><span>Analizar</span></button>
+              <button class="pub-btn pub-btn--sm" data-act="guion" data-name="${esc(p.name)}" type="button">
+                ${iconGuion()} Guion
+              </button>
+              <button class="pub-btn pub-btn--sm pub-btn--primary" data-act="analizar" data-name="${esc(p.name)}" type="button">
+                ${iconAnalizar()} Analizar
+              </button>
             ` : ''}
-          </td>
-        </tr>`;
+          </div>
+        </div>`;
     },
 
     ordenar(campo) {
@@ -798,33 +484,31 @@
     },
 
     limpiarFiltros() {
-      ['rd-f-search','rd-f-comp','rd-f-plat','rd-f-estado','rd-f-tier'].forEach(id => {
+      ['pub-f-search','pub-f-comp','pub-f-plat','pub-f-estado','pub-f-tier'].forEach(id => {
         document.getElementById(id).value = '';
       });
-      document.getElementById('rd-f-fecha').value = '7';
+      document.getElementById('pub-f-fecha').value = '7';
       this.render();
     },
 
     exportarCSV() {
-      // Aplicar mismos filtros que render() para exportar solo lo visible
-      const q       = document.getElementById('rd-f-search').value.toLowerCase().trim();
-      const comp    = document.getElementById('rd-f-comp').value;
-      const plat    = document.getElementById('rd-f-plat').value;
-      const est     = document.getElementById('rd-f-estado').value;
-      const tierMin = document.getElementById('rd-f-tier').value;
-      const dias    = document.getElementById('rd-f-fecha').value;
-      let cutoffDate = null;
-      if (dias) { cutoffDate = new Date(); cutoffDate.setDate(cutoffDate.getDate() - parseInt(dias)); }
+      const q       = document.getElementById('pub-f-search').value.toLowerCase().trim();
+      const comp    = document.getElementById('pub-f-comp').value;
+      const plat    = document.getElementById('pub-f-plat').value;
+      const est     = document.getElementById('pub-f-estado').value;
+      const tierMin = document.getElementById('pub-f-tier').value;
+      const dias    = document.getElementById('pub-f-fecha').value;
+      let cutoff = null;
+      if (dias) { cutoff = new Date(); cutoff.setDate(cutoff.getDate() - parseInt(dias)); }
       const items = this.lista.filter(p =>
         (!q     || (p.titulo_hook || '').toLowerCase().includes(q) || (p.descripcion || '').toLowerCase().includes(q)) &&
         (!comp  || p.competidor === comp) &&
         (!plat  || p.plataforma === plat) &&
         (!est   || p.estado === est) &&
         (!tierMin || (p.tier_orden && p.tier_orden <= parseInt(tierMin))) &&
-        (!cutoffDate || (p.fecha_publicacion && new Date(p.fecha_publicacion + 'T00:00:00') >= cutoffDate))
+        (!cutoff || (p.fecha_publicacion && new Date(p.fecha_publicacion + 'T00:00:00') >= cutoff))
       );
       if (!items.length) { Radar.toast('Sin datos para exportar', 'error'); return; }
-
       const cols = [
         ['tier', 'Tier'], ['plataforma', 'Plataforma'], ['competidor', 'Competidor'],
         ['fecha_publicacion', 'Fecha'], ['titulo_hook', 'Título'],
@@ -834,16 +518,13 @@
         ['es_viral', 'Viral'], ['estado', 'Estado'],
         ['url_publicacion', 'URL'], ['fecha_ultimo_scrapeo', 'Último scrapeo'],
       ];
-      const esc = v => {
+      const escCsv = v => {
         if (v == null) return '';
         const s = String(v).replace(/"/g, '""');
         return /[,\n"]/.test(s) ? `"${s}"` : s;
       };
       let csv = cols.map(c => c[1]).join(',') + '\n';
-      items.forEach(p => {
-        csv += cols.map(([k]) => esc(p[k])).join(',') + '\n';
-      });
-      // BOM + descarga
+      items.forEach(p => { csv += cols.map(([k]) => escCsv(p[k])).join(',') + '\n'; });
       const blob = new Blob(['﻿' + csv], {type: 'text/csv;charset=utf-8'});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -851,7 +532,7 @@
       a.href = url; a.download = `radar-publicaciones-${stamp}.csv`;
       document.body.appendChild(a); a.click();
       setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
-      Radar.toast(`✓ ${items.length} publicaciones exportadas`, 'success');
+      Radar.toast(`${items.length} publicaciones exportadas`, 'success');
     },
 
     async hacerGuion(name) {
@@ -862,14 +543,15 @@
         title: 'Crear guión inspirado',
         confirmText: 'Crear y abrir editor',
         bodyHtml: `
-          <p style="font-size:13px;line-height:1.5;color:var(--text-2);">
-            Se va a crear un guión nuevo tomando como referencia:
+          <p style="font-size:13px;line-height:1.5;color:var(--muted);margin-bottom:12px;">
+            Se creará un guión nuevo tomando como referencia:
           </p>
-          <div style="background:var(--orange-bg);padding:10px 12px;border-radius:8px;margin:10px 0;font-size:12.5px;">
-            <div style="font-weight:600;color:#9a3412;">${Radar.escapeHtml(hook)}</div>
-            <div style="color:#78350f;margin-top:2px;">🎵 ${Radar.escapeHtml(p.competidor || '')} · ${Radar.escapeHtml(p.plataforma || '')} · ${Radar.escapeHtml((p.vistas_actual || 0).toLocaleString('es-PE'))} vistas</div>
+          <div style="background:var(--raise);padding:12px;border-radius:8px;font-size:12.5px;">
+            <div style="font-weight:600;color:var(--text);">${esc(hook)}</div>
+            <div style="color:var(--muted);margin-top:4px;">
+              ${esc(p.competidor || '')} · ${esc(p.plataforma || '')} · ${esc((p.vistas_actual || 0).toLocaleString('es-PE'))} vistas
+            </div>
           </div>
-          <p style="font-size:12px;color:var(--muted);">Podrás editar el título, la fecha de publicación y toda la estructura AIDA en el editor.</p>
         `,
         onConfirm: async () => {
           try {
@@ -892,106 +574,144 @@
       const p = this.lista.find(x => x.name === name);
       if (!p) return;
       const formOpts = ['<option value="">— Sin formato —</option>'].concat(
-        FORMATOS.map(f => `<option value="${Radar.escapeHtml(f)}" ${p.formato === f ? 'selected' : ''}>${Radar.escapeHtml(f)}</option>`)
+        FORMATOS.map(f => `<option value="${esc(f)}" ${p.formato === f ? 'selected' : ''}>${esc(f)}</option>`)
       ).join('');
-      const estOpts = ESTADOS.map(e => `<option value="${Radar.escapeHtml(e)}" ${p.estado === e ? 'selected' : ''}>${Radar.escapeHtml(e)}</option>`).join('');
+      const estOpts = ESTADOS.map(e => `<option value="${esc(e)}" ${p.estado === e ? 'selected' : ''}>${esc(e)}</option>`).join('');
       Radar.modal({
         title: 'Analizar publicación',
         confirmText: 'Guardar análisis',
         bodyHtml: `
-          <div class="rd-notas-modal-body">
-            <div class="rd-field">
-              <label>Formato</label>
-              <select id="rd-a-formato" class="rd-select">${formOpts}</select>
-            </div>
-            <div class="rd-field">
-              <label>Estado</label>
-              <select id="rd-a-estado" class="rd-select">${estOpts}</select>
-            </div>
-            <div class="rd-field">
-              <label>Elementos a copiar (checklist rápido)</label>
-              <textarea id="rd-a-elementos" class="rd-textarea" placeholder="Ej: hook 3 seg, corte a 0:05, CTA final">${Radar.escapeHtml(p.elementos_a_copiar || '')}</textarea>
-            </div>
-            <div class="rd-field">
-              <label>Notas de análisis (insights libres)</label>
-              <textarea id="rd-a-notas" class="rd-textarea" placeholder="Hook, storytelling, edición, música, público...">${Radar.escapeHtml(p.notas_analisis || '')}</textarea>
-            </div>
+          <div class="rd-field">
+            <label>Formato</label>
+            <select id="pub-a-formato" class="rd-select">${formOpts}</select>
+          </div>
+          <div class="rd-field">
+            <label>Estado</label>
+            <select id="pub-a-estado" class="rd-select">${estOpts}</select>
+          </div>
+          <div class="rd-field">
+            <label>Elementos a copiar (checklist rápido)</label>
+            <textarea id="pub-a-elementos" class="rd-textarea" placeholder="Ej: hook 3 seg, corte a 0:05, CTA final">${esc(p.elementos_a_copiar || '')}</textarea>
+          </div>
+          <div class="rd-field">
+            <label>Notas de análisis</label>
+            <textarea id="pub-a-notas" class="rd-textarea" placeholder="Hook, storytelling, edición, música, público...">${esc(p.notas_analisis || '')}</textarea>
           </div>
         `,
         onConfirm: async () => {
           const data = {
             name: p.name,
-            formato: document.getElementById('rd-a-formato').value,
-            estado: document.getElementById('rd-a-estado').value,
-            elementos_a_copiar: document.getElementById('rd-a-elementos').value,
-            notas_analisis: document.getElementById('rd-a-notas').value,
+            formato: document.getElementById('pub-a-formato').value,
+            estado: document.getElementById('pub-a-estado').value,
+            elementos_a_copiar: document.getElementById('pub-a-elementos').value,
+            notas_analisis: document.getElementById('pub-a-notas').value,
           };
           await Radar.api('marketinghub.www.radar.publicaciones.index.actualizar_analisis', data);
-          Radar.toast('✓ Análisis guardado', 'success');
+          Radar.toast('Análisis guardado', 'success');
           this.cargar();
         }
       });
-    }
+    },
   };
 
   document.addEventListener('DOMContentLoaded', async function() {
-    lucide.createIcons();
-    // poblar dropdowns
+    // Poblar dropdowns
     try {
       const opts = await Radar.api('marketinghub.www.radar.publicaciones.index.opciones_filtros');
-      // competidores
-      document.getElementById('rd-f-comp').innerHTML = '<option value="">Todos los competidores</option>' +
-        opts.competidores.map(c => `<option value="${Radar.escapeHtml(c)}">${Radar.escapeHtml(c)}</option>`).join('');
-      // tiers
-      RadarPubs.tiersConfig = opts.tiers || [];
+      document.getElementById('pub-f-comp').innerHTML =
+        '<option value="">Todos los competidores</option>' +
+        opts.competidores.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
       RadarPubs.tierPorOrden = {};
-      opts.tiers.forEach(t => { RadarPubs.tierPorOrden[t.orden] = t; });
-      const selT = document.getElementById('rd-f-tier');
-      selT.innerHTML = '<option value="">🏆 Todos los tiers</option>' +
-        opts.tiers.map(t => `<option value="${t.orden}">${t.orden}. ${Radar.escapeHtml(t.nombre)}${t.es_viral ? ' 🔥' : ''} o mejor</option>`).join('');
+      (opts.tiers || []).forEach(t => { RadarPubs.tierPorOrden[t.orden] = t; });
+      const selT = document.getElementById('pub-f-tier');
+      selT.innerHTML = '<option value="">Todos los tiers</option>' +
+        (opts.tiers || []).map(t => `<option value="${t.orden}">${t.orden}. ${esc(t.nombre)}${t.es_viral ? ' 🔥' : ''} o mejor</option>`).join('');
     } catch (e) { console.error(e); }
 
-    // Aplicar filtros preseleccionados desde query string
+    // Query string
     const q = new URLSearchParams(location.search);
     for (const [key, elId] of [
-      ['competidor', 'rd-f-comp'],
-      ['plataforma', 'rd-f-plat'],
-      ['estado', 'rd-f-estado'],
-    ]) {
-      if (q.get(key)) {
-        const el = document.getElementById(elId);
-        if (el) el.value = q.get(key);
-      }
-    }
-    // Si el usuario vino desde comparativa con fecha específica, deshabilito el
-    // filtro de "últimos N días" para no ocultar los resultados.
+      ['competidor', 'pub-f-comp'],
+      ['plataforma', 'pub-f-plat'],
+      ['estado', 'pub-f-estado'],
+    ]) { if (q.get(key)) { const el = document.getElementById(elId); if (el) el.value = q.get(key); } }
     if (q.get('fecha_desde') || q.get('fecha_hasta')) {
-      document.getElementById('rd-f-fecha').value = '';
+      document.getElementById('pub-f-fecha').value = '';
     }
 
     RadarPubs.cargar();
 
-    // Listeners
-    ['rd-f-comp','rd-f-plat','rd-f-estado','rd-f-tier','rd-f-fecha'].forEach(id => {
-      document.getElementById(id).addEventListener('change', () => RadarPubs.render());
-    });
-    document.getElementById('rd-f-search').addEventListener('input', () => RadarPubs.render());
-
-    // Sort clicks
-    document.querySelectorAll('.rd-tbl thead th.rd-sortable').forEach(th => {
-      th.addEventListener('click', () => RadarPubs.ordenar(th.dataset.sort));
-    });
-
-    // Checkbox master → marca/desmarca todas las filas
-    const chkAll = document.getElementById('rd-check-all');
-    if (chkAll) {
-      chkAll.addEventListener('change', function () {
-        document.querySelectorAll('#rd-tbody .rd-row-check').forEach(el => {
-          el.checked = chkAll.checked;
-        });
+    // Listeners de filtros
+    ['pub-f-comp','pub-f-plat','pub-f-estado','pub-f-tier','pub-f-fecha'].forEach(id => {
+      document.getElementById(id).addEventListener('change', () => {
+        // marcar el tier chip como activo si seleccionado
+        if (id === 'pub-f-tier') {
+          const val = document.getElementById(id).value;
+          document.getElementById('pub-wrap-tier').classList.toggle('is-active', !!val);
+        }
+        RadarPubs.render();
       });
-    }
+    });
+    document.getElementById('pub-f-search').addEventListener('input', () => RadarPubs.render());
+
+    // Sort en headers
+    document.querySelectorAll('.pub-head__cell--sortable').forEach(el => {
+      el.addEventListener('click', () => RadarPubs.ordenar(el.dataset.sort));
+    });
+
+    // Botones toolbar
+    document.getElementById('pub-limpiar').addEventListener('click', () => RadarPubs.limpiarFiltros());
+    document.getElementById('pub-csv').addEventListener('click', () => RadarPubs.exportarCSV());
+
+    // Delegación: check individual + botones Guion/Analizar
+    document.getElementById('pub-body').addEventListener('click', function (e) {
+      const chk = e.target.closest('[data-check]');
+      if (chk) {
+        e.preventDefault();
+        const name = chk.dataset.check;
+        if (RadarPubs.seleccionados.has(name)) RadarPubs.seleccionados.delete(name);
+        else RadarPubs.seleccionados.add(name);
+        chk.classList.toggle('is-checked');
+        chk.closest('.pub-body-row').classList.toggle('is-selected');
+        return;
+      }
+      const btn = e.target.closest('[data-act]');
+      if (btn) {
+        e.preventDefault();
+        const act = btn.dataset.act;
+        const name = btn.dataset.name;
+        if (act === 'guion') RadarPubs.hacerGuion(name);
+        else if (act === 'analizar') RadarPubs.analizar(name);
+      }
+    });
+
+    // Checkbox master
+    document.getElementById('pub-check-all').addEventListener('click', function () {
+      const checked = !this.classList.contains('is-checked');
+      this.classList.toggle('is-checked', checked);
+      document.querySelectorAll('#pub-body [data-check]').forEach(el => {
+        el.classList.toggle('is-checked', checked);
+        el.closest('.pub-body-row')?.classList.toggle('is-selected', checked);
+        const name = el.dataset.check;
+        if (checked) RadarPubs.seleccionados.add(name); else RadarPubs.seleccionados.delete(name);
+      });
+    });
+
+    // Toggle tema
+    document.getElementById('theme-toggle').addEventListener('click', function () {
+      const body = document.body;
+      const curr = body.getAttribute('data-theme');
+      body.setAttribute('data-theme', curr === 'dark' ? '' : 'dark');
+      try { localStorage.setItem('pub-theme', body.getAttribute('data-theme') || ''); } catch(e){}
+    });
+    // Restaurar tema
+    try {
+      const saved = localStorage.getItem('pub-theme');
+      if (saved) document.body.setAttribute('data-theme', saved);
+    } catch(e){}
   });
 </script>
+
+</body>
 {% endif %}
 {% endblock %}
