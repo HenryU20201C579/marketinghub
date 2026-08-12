@@ -8,6 +8,29 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/radar/cuentas/styles.css?v=xls1" />
+<style>
+  /* Colores de marca de cada red. El diseño trae tonos genéricos (rosa y
+     turquesa), así que aquí se ajustan a los oficiales de Instagram y TikTok
+     sin tocar styles.css. */
+  .pill.ig, .avatar.ig { color:#C13584; background:#FDEAF3; border-color:#F3C4DC; }
+  .pill.ig .dot { background:linear-gradient(45deg,#F58529,#DD2A7B,#8134AF,#515BD4); }
+  .btn[data-plataforma="Instagram"] { color:#C13584; }
+  .btn[data-plataforma="Instagram"]:hover { border-color:#E1306C; color:#C13584; }
+  .btn[data-plataforma="Instagram"].soft { background:#FDEAF3; border-color:#F3C4DC; }
+
+  .pill.tt, .avatar.tt { color:#010101; background:#EAF9FA; border-color:#BFE9EC; }
+  .pill.tt .dot { background:linear-gradient(135deg,#25F4EE 0 50%,#FE2C55 50% 100%); }
+  .btn[data-plataforma="TikTok"] { color:#010101; }
+  .btn[data-plataforma="TikTok"]:hover { border-color:#25F4EE; color:#010101; }
+  .btn[data-plataforma="TikTok"].soft { background:#EAF9FA; border-color:#BFE9EC; }
+
+  html[data-theme="dark"] .pill.ig, html[data-theme="dark"] .avatar.ig,
+  html[data-theme="dark"] .btn[data-plataforma="Instagram"] { color:#F58BBE; }
+  html[data-theme="dark"] .pill.ig, html[data-theme="dark"] .avatar.ig { background:#331728; border-color:#5A2745; }
+  html[data-theme="dark"] .pill.tt, html[data-theme="dark"] .avatar.tt,
+  html[data-theme="dark"] .btn[data-plataforma="TikTok"] { color:#F2FDFE; }
+  html[data-theme="dark"] .pill.tt, html[data-theme="dark"] .avatar.tt { background:#14282B; border-color:#23525A; }
+</style>
 </head>
 <body>
 
