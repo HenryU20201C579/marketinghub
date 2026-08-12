@@ -182,7 +182,7 @@
           </div>
 
           {% for p in top %}
-          <a class="rad-viral" href="{{ (p.url_publicacion or '/radar/publicaciones')|e }}"{% if p.url_publicacion %} target="_blank" rel="noopener"{% endif %}>
+          <div class="rad-viral" data-href="{{ (p.url_publicacion or '/radar/publicaciones')|e }}"{% if p.url_publicacion %} data-blank="1"{% endif %}>
             <span class="rad-viral__rank{% if loop.index <= 3 %} rad-viral__rank--top{% endif %}">{{ loop.index }}</span>
             <span class="rad-viral__bar{{ p.bar_cls }}"></span>
             <span class="rad-viral__text">
@@ -193,7 +193,7 @@
               <span class="rad-viral__views">{{ p.vistas_fmt }}</span>
               <span class="rad-viral__eng{{ p.eng_cls }}">{{ p.eng_fmt }} eng</span>
             </span>
-          </a>
+          </div>
           {% else %}
           <div style="padding:28px 18px;text-align:center;font-size:12px;color:var(--muted)">
             Sin publicaciones en el período.
@@ -288,9 +288,13 @@
       });
     });
 
-    // Botones que navegan (se mantienen como <button> para conservar el estilo del diseño)
+    // Elementos que navegan. No son <a> a propósito: el CSS del diseño pinta
+    // todo enlace con el color de acento y estos textos van en color de texto.
     document.querySelectorAll('[data-href]').forEach(function (b) {
-      b.addEventListener('click', function () { window.location.href = b.dataset.href; });
+      b.addEventListener('click', function () {
+        if (b.dataset.blank) window.open(b.dataset.href, '_blank', 'noopener');
+        else window.location.href = b.dataset.href;
+      });
     });
   })();
 </script>
