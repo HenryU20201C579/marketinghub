@@ -14,7 +14,7 @@ def _has_role(roles):
 
 def get_context(context):
 	if frappe.session.user == "Guest":
-		frappe.local.flags.redirect_location = "/login?redirect-to=/radar/guiones"
+		frappe.local.flags.redirect_location = "/login?redirect-to=/radar"
 		raise frappe.Redirect
 	context.no_cache = 1
 	context.no_header = 1
@@ -84,3 +84,39 @@ def guardar(name, cambios):
 	doc.save(ignore_permissions=True)
 	frappe.db.commit()
 	return {"ok": True, "estado": doc.estado, "ratio_vs_referente": doc.ratio_vs_referente}
+
+
+@frappe.whitelist()
+def crear_desde_publicacion(publicacion_name):
+	"""Crea un guion nuevo prellenado con la referencia."""
+	if not _has_role(ANALISTA_ROLES):
+		frappe.throw("Solo un analista puede crear guiones.", frappe.PermissionError)
+	pub = frappe.db.get_value(
+		"Publicacion Competencia", publicacion_name,
+		["competidor", "titulo_hook", "plataforma"], as_dict=True,
+	)
+	if not pub:
+		frappe.throw("Publicación no encontrada.")
+	titulo = f"Adaptación: {pub.titulo_hook or publicacion_name}"[:140]
+	doc = frappe.get_doc({
+		"doctype": "Guion",
+		"titulo": titulo,
+		"estado": "Idea",
+		"referencia_publicacion": publicacion_name,
+		"competidor_ref": pub.competidor,
+		"plataforma": pub.plataforma if pub.plataforma in (
+			"Instagram", "TikTok", "Facebook", "YouTube",
+		) else None,
+	})
+	doc.insert(ignore_permissions=True)
+	frappe.db.commit()
+	return {"name": doc.name, "url": f"/radar/guion?name={doc.name}"}
+
+
+@frappe.whitelist()
+def eliminar(name):
+	if not _has_role(ANALISTA_ROLES):
+		frappe.throw("Solo un analista puede eliminar guiones.", frappe.PermissionError)
+	frappe.delete_doc("Guion", name, ignore_permissions=True)
+	frappe.db.commit()
+	return {"ok": True}

@@ -12,9 +12,7 @@
     marca: '<path d="M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M12 11.4a.6.6 0 1 0 0 1.2.6.6 0 0 0 0-1.2z"/>',
     metricas: '<path d="M3 3v18h18 M7 15l4-4 3 3 5-6"/>',
     publicaciones: '<path d="M12 3.5s4.5 3.6 4.5 8a4.5 4.5 0 0 1-9 0c0-1.6.8-2.9 1.6-3.8 0 1.6.9 2.4 1.6 2.4 1 0 1.3-1 1.3-2.3 0-1.6-.5-3.1-1-4.3z M8 15.5a4 4 0 0 0 8 0"/>',
-    guiones: '<path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5z M14.5 6.5l3 3"/>',
     calendario: '<path d="M4.5 6.5h15v13.5h-15z M8.5 3.5v4 M15.5 3.5v4 M4.5 11h15"/>',
-    agenda: '<path d="M8 6.5h12 M8 12h12 M8 17.5h12 M4 6.5h.01 M4 12h.01 M4 17.5h.01"/>',
     ads: '<path d="M4 6.5h16v11H4z M4 10h16 M8 6.5v11"/>',
     competidores: '<path d="M6.5 3.5v17 M6.5 4.5h11l-2.2 3.8 2.2 3.7h-11"/>',
     cuentas: '<path d="M12 7.8a4.2 4.2 0 1 0 0 8.4 4.2 4.2 0 0 0 0-8.4z M16.2 7.8v5.1a3 3 0 0 0 5.3 1.9 M20 15.9A9 9 0 1 1 18.4 5.6"/>',
@@ -31,9 +29,7 @@
       items: [
         { href: '/radar/metricas', icono: 'metricas', label: 'Métricas', destacado: true },
         { href: '/radar/publicaciones', icono: 'publicaciones', label: 'Publicaciones', count: 'publicaciones' },
-        { href: '/radar/guiones', icono: 'guiones', label: 'Guiones', count: 'guiones' },
         { href: '/radar/comparativa', icono: 'calendario', label: 'Calendario pubs' },
-        { href: '/radar/guiones?vista=calendario', icono: 'agenda', label: 'Agenda guiones', count: 'guiones_semana' },
         { href: '/radar/ads', icono: 'ads', label: 'Ads Library', count: 'ads' }
       ]
     },
@@ -53,8 +49,8 @@
       'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + ICON[nombre] + '</svg>';
   }
 
-  // El item activo se decide por ruta + query: /radar/guiones y
-  // /radar/guiones?vista=calendario son entradas distintas del menu.
+  // El item activo se decide por ruta + query, para que dos entradas que
+  // apunten al mismo path con distinta ?vista no se marquen ambas.
   function esActivo(href) {
     var url = new URL(href, window.location.origin);
     if (url.pathname !== window.location.pathname) return false;

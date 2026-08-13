@@ -204,9 +204,9 @@
 				bodyHtml: '<p>¿Eliminar este guión? Esta acción no se puede deshacer.</p>',
 				confirmText: 'Eliminar', danger: true,
 				onConfirm: async () => {
-					await Radar.api('marketinghub.www.radar.guiones.index.eliminar', { name: NAME });
+					await Radar.api('marketinghub.www.radar.guion.index.eliminar', { name: NAME });
 					Radar.toast('Guión eliminado', 'success');
-					window.location.href = '/radar/guiones';
+					window.location.href = '/radar';
 				},
 			});
 		});

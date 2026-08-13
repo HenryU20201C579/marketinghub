@@ -52,19 +52,9 @@ launcher_tiles = [
 		"icon": "file-text",
 	},
 	{
-		"label": "Radar · Guiones",
-		"url": "/radar/guiones",
-		"icon": "pen-tool",
-	},
-	{
 		"label": "Radar · Calendario pubs",
 		"url": "/radar/comparativa",
 		"icon": "calendar-days",
-	},
-	{
-		"label": "Radar · Agenda guiones",
-		"url": "/radar/guiones?vista=calendario",
-		"icon": "list-checks",
 	},
 	{
 		"label": "Radar · Ads Library",
