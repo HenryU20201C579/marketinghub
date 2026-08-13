@@ -261,4 +261,4 @@ def crear_guion_desde_ad(ad_name):
 	})
 	doc.insert(ignore_permissions=True)
 	frappe.db.commit()
-	return {"name": doc.name, "url": f"/radar/guion?name={doc.name}"}
+	return {"name": doc.name}

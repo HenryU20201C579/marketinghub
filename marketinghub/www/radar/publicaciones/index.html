@@ -400,7 +400,7 @@
     var id = tr.dataset.id, row = fila(id);
     if(e.target.closest('[data-check]')){ sel[id] = !sel[id]; render(); return; }
     if(e.target.closest('[data-guion]')){
-      llamar('guion.index.crear_desde_publicacion', { publicacion_name:id })
+      llamar('publicaciones.index.crear_desde_publicacion', { publicacion_name:id })
         .then(function(){ toast('Guion creado.'); })
         .catch(function(err){ toast(String(err.message).replace(/<[^>]*>/g, '')); });
       return;

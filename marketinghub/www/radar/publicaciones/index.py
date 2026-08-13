@@ -239,3 +239,33 @@ def actualizar_analisis(name=None, formato=None, estado=None,
 	doc.save(ignore_permissions=True)
 	frappe.db.commit()
 	return {"ok": True}
+
+
+@frappe.whitelist()
+def crear_desde_publicacion(publicacion_name):
+	"""Botón 'hacer guion' de una fila: crea el Guion con la publicación como referencia.
+
+	El Guion se edita desde el desk (/app/guion); el Radar ya no tiene página propia.
+	"""
+	if not _has_role(ANALISTA_ROLES):
+		frappe.throw("Solo un analista puede crear guiones.", frappe.PermissionError)
+	pub = frappe.db.get_value(
+		"Publicacion Competencia", publicacion_name,
+		["competidor", "titulo_hook", "plataforma"], as_dict=True,
+	)
+	if not pub:
+		frappe.throw("Publicación no encontrada.")
+	titulo = f"Adaptación: {pub.titulo_hook or publicacion_name}"[:140]
+	doc = frappe.get_doc({
+		"doctype": "Guion",
+		"titulo": titulo,
+		"estado": "Idea",
+		"referencia_publicacion": publicacion_name,
+		"competidor_ref": pub.competidor,
+		"plataforma": pub.plataforma if pub.plataforma in (
+			"Instagram", "TikTok", "Facebook", "YouTube",
+		) else None,
+	})
+	doc.insert(ignore_permissions=True)
+	frappe.db.commit()
+	return {"name": doc.name}
