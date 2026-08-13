@@ -7,6 +7,10 @@ from marketinghub.marketinghub.doctype.cuenta_social.cuenta_social import extrae
 
 
 def execute():
+	# En un site fresh la tabla aun no existe (el DocType se crea en
+	# post_model_sync). Si no hay tabla, no hay nada que arreglar.
+	if not frappe.db.table_exists("Cuenta Social"):
+		return
 	# Buscar cuentas con name que termina en guion (handle vacio)
 	rotas = frappe.db.sql(
 		"""SELECT name, plataforma, handle, url_perfil

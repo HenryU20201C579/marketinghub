@@ -13,6 +13,10 @@ from collections import defaultdict
 
 
 def execute():
+	# En un site fresh las tablas aun no existen (los DocTypes se crean
+	# en post_model_sync). Sin datos que deduplicar, salir temprano.
+	if not frappe.db.table_exists("Cuenta Social") or not frappe.db.table_exists("Publicacion Competencia"):
+		return
 	cuentas = frappe.db.get_all(
 		"Cuenta Social",
 		fields=["name", "competidor", "plataforma", "handle"],

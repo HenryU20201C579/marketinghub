@@ -16,6 +16,10 @@ from datetime import date, timedelta
 
 
 def execute():
+	# En un site fresh la tabla aun no existe (el DocType se crea en
+	# post_model_sync). Sin publicaciones que revisar, salir temprano.
+	if not frappe.db.table_exists("Publicacion Competencia"):
+		return
 	limite = date.today() - timedelta(days=60)
 	viejos = frappe.db.get_all(
 		"Publicacion Competencia",
