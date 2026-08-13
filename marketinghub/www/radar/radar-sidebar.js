@@ -133,6 +133,8 @@
 
   function init() {
     if (document.getElementById('radx-side')) return;
+    // dentro de /panel la pagina va en un iframe y el sidebar lo pone el panel
+    if (window.self !== window.top) return;
     // Las paginas de error/acceso denegado no llevan menu.
     if (document.body.dataset.radxSide === 'off') return;
 

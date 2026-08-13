@@ -40,6 +40,52 @@ launcher_tiles = [
 		"icon": "trending-up",
 		"role": "Marketinghub-Marketing-Ver",
 	},
+	# --- Radar de Competencia: las 9 secciones de su sidebar ---
+	{
+		"label": "Radar · Publicaciones",
+		"url": "/radar/publicaciones",
+		"icon": "file-text",
+	},
+	{
+		"label": "Radar · Guiones",
+		"url": "/radar/guiones",
+		"icon": "pen-tool",
+	},
+	{
+		"label": "Radar · Calendario pubs",
+		"url": "/radar/comparativa",
+		"icon": "calendar-days",
+	},
+	{
+		"label": "Radar · Agenda guiones",
+		"url": "/radar/guiones?vista=calendario",
+		"icon": "list-checks",
+	},
+	{
+		"label": "Radar · Ads Library",
+		"url": "/radar/ads",
+		"icon": "store",
+	},
+	{
+		"label": "Radar · Competidores",
+		"url": "/radar/competidores",
+		"icon": "users",
+	},
+	{
+		"label": "Radar · Cuentas",
+		"url": "/radar/cuentas",
+		"icon": "user-square",
+	},
+	{
+		"label": "Radar · Categorias",
+		"url": "/radar/categorias",
+		"icon": "folder-kanban",
+	},
+	{
+		"label": "Radar · Ajustes",
+		"url": "/radar/settings",
+		"icon": "clipboard-check",
+	},
 ]
 
 

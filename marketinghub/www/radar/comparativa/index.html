@@ -25,6 +25,14 @@
   html[data-theme="dark"] .dow { border-bottom-color:rgba(255,255,255,.10); }
   html[data-theme="dark"] .dow div { border-right-color:rgba(255,255,255,.07); }
 </style>
+<script>
+  /* dentro de /panel la pagina se carga en un iframe: el sidebar lo pone el
+     panel, asi que aqui se oculta el propio */
+  if (window.self !== window.top) document.documentElement.setAttribute('data-embed', '1');
+</script>
+<style>
+  html[data-embed] .side, html[data-embed] .hamb { display:none !important; }
+</style>
 </head>
 <!-- este diseño trae su propio sidebar, así que no se inyecta el compartido -->
 <body data-radx-side="off">
