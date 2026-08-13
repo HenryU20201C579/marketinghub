@@ -40,7 +40,12 @@ launcher_tiles = [
 		"icon": "trending-up",
 		"role": "Marketinghub-Marketing-Ver",
 	},
-	# --- Radar de Competencia: las 9 secciones de su sidebar ---
+	# --- Radar de Competencia: las 10 secciones de su sidebar ---
+	{
+		"label": "Radar · Metricas",
+		"url": "/radar/metricas",
+		"icon": "trending-up",
+	},
 	{
 		"label": "Radar · Publicaciones",
 		"url": "/radar/publicaciones",
