@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar · Métricas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/radar/radar-os.css?v=os1">
+<link rel="stylesheet" href="/radar/radar-sidebar.css?v=1">
+<style>
+	/* Estilos especificos de la pagina de metricas — todo lo demas viene de radar-os.css */
+	.rmx-grid { display:grid; grid-template-columns:1.35fr 1fr; gap:16px; align-items:flex-start; }
+	@media (max-width:960px) { .rmx-grid { grid-template-columns:1fr; } }
+
+	/* Tarjeta plataforma */
+	.rmx-plat { display:flex; gap:12px; align-items:center; padding:12px 14px;
+	            border:1px solid var(--hair); border-radius:10px; background:var(--raise); }
+	.rmx-plat + .rmx-plat { margin-top:10px; }
+	.rmx-plat__ico { flex:none; width:38px; height:38px; border-radius:9px;
+	                 background:var(--panel); border:1px solid var(--line); color:var(--muted);
+	                 display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px;
+	                 letter-spacing:0.02em; }
+	.rmx-plat__body { flex:1; min-width:0; display:grid;
+	                  grid-template-columns:1fr auto auto auto; gap:14px; align-items:center; }
+	.rmx-plat__name { font-size:13px; font-weight:600; color:var(--text); display:flex;
+	                  flex-direction:column; gap:2px; }
+	.rmx-plat__name small { font-size:11px; color:var(--muted); font-weight:400; }
+	.rmx-plat__num { font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--text); }
+	.rmx-plat__num small { display:block; font-size:10px; color:var(--muted); font-weight:400;
+	                       text-transform:uppercase; letter-spacing:0.04em; }
+
+	/* Barra por tier */
+	.rmx-tier { display:flex; align-items:center; gap:10px; padding:2px 0; }
+	.rmx-tier__label { flex:none; width:100px; font-size:12px; color:var(--text); overflow:hidden;
+	                   text-overflow:ellipsis; white-space:nowrap; }
+	.rmx-tier__track { flex:1; height:14px; border-radius:5px; background:var(--raise); overflow:hidden; }
+	.rmx-tier__fill { height:100%; border-radius:5px; }
+	.rmx-tier__n { flex:none; font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums;
+	               min-width:56px; text-align:right; }
+
+	/* Tipo de contenido */
+	.rmx-tipo { display:flex; align-items:center; gap:12px; font-size:12px; padding:8px 0;
+	            border-bottom:1px solid var(--hair); }
+	.rmx-tipo:last-child { border-bottom:0; }
+	.rmx-tipo__label { flex:none; width:96px; font-size:13px; font-weight:500; color:var(--text); }
+	.rmx-tipo__track { flex:1; height:6px; border-radius:3px; background:var(--raise); overflow:hidden; }
+	.rmx-tipo__fill { height:100%; background:var(--accent); border-radius:3px; }
+	.rmx-tipo__n { flex:none; min-width:80px; text-align:right; color:var(--muted);
+	               font-variant-numeric:tabular-nums; }
+
+	/* Tabla ranking + top posts */
+	.rmx-tbl { width:100%; border-collapse:separate; border-spacing:0; font-size:12.5px; }
+	.rmx-tbl th { text-align:left; font-weight:600; color:var(--muted); font-size:11px;
+	              text-transform:uppercase; letter-spacing:0.05em; padding:8px 10px;
+	              border-bottom:1px solid var(--line); background:var(--panel); position:sticky; top:0; }
+	.rmx-tbl td { padding:10px; border-bottom:1px solid var(--hair); vertical-align:middle; }
+	.rmx-tbl tr:last-child td { border-bottom:0; }
+	.rmx-tbl tr:hover td { background:var(--raise); }
+	.rmx-tbl__num { text-align:right; font-variant-numeric:tabular-nums; font-weight:600;
+	                white-space:nowrap; }
+	.rmx-tbl__badge { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:500; }
+	.rmx-tbl__dot { width:8px; height:8px; border-radius:3px; flex:none; }
+	.rmx-tbl__link { color:var(--accent); text-decoration:none; font-weight:600; font-size:11px; }
+	.rmx-tbl__link:hover { text-decoration:underline; }
+	.rmx-tbl-wrap { overflow-x:auto; max-height:540px; }
+
+	/* Tendencia diaria (barras verticales) */
+	.rmx-trend { display:flex; align-items:flex-end; gap:3px; height:110px; padding:12px 4px 4px; }
+	.rmx-trend__bar { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;
+	                  min-width:0; cursor:default; }
+	.rmx-trend__col { width:100%; background:var(--accent-soft); border-radius:3px 3px 0 0;
+	                  position:relative; transition:background 0.15s; }
+	.rmx-trend__bar:hover .rmx-trend__col { background:var(--accent); }
+	.rmx-trend__col--zero { background:var(--hair); height:2px !important; }
+	.rmx-trend__label { font-size:9px; color:var(--faint); font-variant-numeric:tabular-nums;
+	                    white-space:nowrap; }
+	.rmx-trend__val { font-size:9px; color:var(--muted); font-weight:600; }
+
+	/* Scrape status */
+	.rmx-scr { display:flex; align-items:center; gap:12px; padding:8px 0; font-size:12px;
+	           border-bottom:1px solid var(--hair); }
+	.rmx-scr:last-child { border-bottom:0; }
+	.rmx-scr__pill { flex:none; width:6px; height:6px; border-radius:50%; background:var(--accent); }
+	.rmx-scr__pill--stale { background:var(--warn); }
+	.rmx-scr__pill--off { background:var(--faint); }
+	.rmx-scr__name { flex:1; color:var(--text); font-weight:500; min-width:0;
+	                 overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+	.rmx-scr__name small { color:var(--muted); font-weight:400; margin-left:6px; }
+	.rmx-scr__meta { flex:none; color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; }
+
+	/* Delta pct */
+	.rmx-delta { font-size:11px; font-weight:600; margin-left:6px; }
+	.rmx-delta--up { color:var(--accent); }
+	.rmx-delta--down { color:var(--warn); }
+</style>
+</head>
+<body class="rad">
+
+{% if no_access %}
+<div class="rad-app" style="display:block">
+  <div class="rad-card" style="max-width:460px;margin:80px auto;padding:28px;text-align:center">
+    <div style="font-size:15px;font-weight:700;margin-bottom:10px">Radar · Acceso denegado</div>
+    <div style="font-size:13px;color:var(--muted)">
+      Se requiere uno de estos roles:
+      <ul style="margin:10px 0 0;list-style:none;padding:0">
+        {% for r in required_roles %}<li><code>{{ r }}</code></li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% else %}
+
+<div class="rad-app">
+  <main class="rad-main">
+
+    <!-- ============ Topbar KPIs ============ -->
+    <div class="rad-topbar">
+      <div class="rad-kpis">
+        <div class="rad-kpi">
+          <span class="rad-kpi__value">{{ kpis.pubs }}</span>
+          <span class="rad-kpi__label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h7l4.5 4.5v12h-11.5z M13.5 3.5V8H18"/></svg>
+            <span>Publicaciones{% if kpis.pubs_delta_pct is not none %}<span class="rmx-delta rmx-delta--{{ 'up' if kpis.pubs_delta_pct >= 0 else 'down' }}">{{ '+' if kpis.pubs_delta_pct >= 0 else '' }}{{ kpis.pubs_delta_pct }}%</span>{% endif %}</span>
+          </span>
+        </div>
+
+        <div class="rad-kpi">
+          <span class="rad-kpi__value">{{ kpis.vistas_fmt }}</span>
+          <span class="rad-kpi__label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>
+            <span>Vistas{% if kpis.vistas_delta_pct is not none %}<span class="rmx-delta rmx-delta--{{ 'up' if kpis.vistas_delta_pct >= 0 else 'down' }}">{{ '+' if kpis.vistas_delta_pct >= 0 else '' }}{{ kpis.vistas_delta_pct }}%</span>{% endif %}</span>
+          </span>
+        </div>
+
+        <div class="rad-kpi">
+          <span class="rad-kpi__value">{{ kpis.likes_fmt }}</span>
+          <span class="rad-kpi__label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-9.5-9.5C.6 7.7 3 4 6.5 4c2 0 3.5 1.2 4.5 2.5C12 5.2 13.5 4 15.5 4 19 4 21.4 7.7 21.5 11.5 19 16.5 12 21 12 21z"/></svg>
+            <span>Likes</span>
+          </span>
+        </div>
+
+        <div class="rad-kpi">
+          <span class="rad-kpi__value">{{ kpis.comentarios_fmt }}</span>
+          <span class="rad-kpi__label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span>Comentarios</span>
+          </span>
+        </div>
+
+        <div class="rad-kpi">
+          <span class="rad-kpi__value rad-kpi__value--accent">{{ kpis.eng_avg }}%</span>
+          <span class="rad-kpi__label">
+            <svg class="is-accent" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20l6-6 4 4 8-10 M14 8h7v7"/></svg>
+            <span>Engagement promedio</span>
+          </span>
+        </div>
+
+        <div class="rad-kpi">
+          <span class="rad-kpi__value rad-kpi__value--muted">{{ kpis.virales }} · {{ kpis.casi_virales }}</span>
+          <span class="rad-kpi__label">
+            <svg class="is-top" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5s4.5 3.6 4.5 8a4.5 4.5 0 0 1-9 0c0-1.6.8-2.9 1.6-3.8 0 1.6.9 2.4 1.6 2.4 1 0 1.3-1 1.3-2.3 0-1.6-.5-3.1-1-4.3z"/></svg>
+            <span>Virales / Casi virales</span>
+          </span>
+        </div>
+
+        <div class="rad-kpis__cta">
+          <button class="rad-iconbtn" id="theme-toggle" type="button" title="Cambiar tema" aria-label="Cambiar tema">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>
+          </button>
+          <div class="rad-seg">
+            <button class="rad-seg__item{% if dias == 7 %} is-on{% endif %}" type="button" data-dias="7">7 días</button>
+            <button class="rad-seg__item{% if dias == 30 %} is-on{% endif %}" type="button" data-dias="30">30 días</button>
+            <button class="rad-seg__item{% if dias == 90 %} is-on{% endif %}" type="button" data-dias="90">90 días</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ Contenido ============ -->
+    <div class="rad-content">
+
+      <!-- Fila 1: Plataformas + Tipos de contenido -->
+      <div class="rmx-grid" style="margin-bottom:16px">
+        <section class="rad-card">
+          <div class="rad-card__head">
+            <span class="rad-card__title">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V9.5 M10 20V4.5 M16 20v-7 M21 20H3"/></svg>
+              Comparativa por plataforma
+            </span>
+            <span class="rad-card__sub">últimos {{ dias }} días</span>
+          </div>
+          <div class="rad-card__body" style="gap:0">
+            {% for p in plataformas %}
+            <div class="rmx-plat">
+              <span class="rmx-plat__ico">{{ p.icono }}</span>
+              <div class="rmx-plat__body">
+                <span class="rmx-plat__name">{{ p.plataforma }}<small>{{ p.share_vistas }}% de las vistas</small></span>
+                <span class="rmx-plat__num">{{ p.pubs }}<small>Pubs</small></span>
+                <span class="rmx-plat__num">{{ p.vistas_fmt }}<small>Vistas</small></span>
+                <span class="rmx-plat__num">{{ p.eng_avg }}%<small>Eng.</small></span>
+              </div>
+            </div>
+            {% else %}
+            <div style="padding:24px 12px;text-align:center;color:var(--muted);font-size:12px">Sin publicaciones en el periodo.</div>
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="rad-card">
+          <div class="rad-card__head">
+            <span class="rad-card__title">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h16"/></svg>
+              Tipos de contenido
+            </span>
+            <span class="rad-card__sub">distribución</span>
+          </div>
+          <div class="rad-card__body" style="gap:0">
+            {% for t in tipos %}
+            <div class="rmx-tipo">
+              <span class="rmx-tipo__label">{{ t.tipo }}</span>
+              <span class="rmx-tipo__track"><span class="rmx-tipo__fill" style="width:{{ t.pct }}%"></span></span>
+              <span class="rmx-tipo__n">{{ t.c }} · {{ t.pct }}% · <strong style="color:var(--text)">{{ t.eng_avg }}%</strong></span>
+            </div>
+            {% else %}
+            <div style="padding:24px 12px;text-align:center;color:var(--muted);font-size:12px">Sin datos.</div>
+            {% endfor %}
+          </div>
+        </section>
+      </div>
+
+      <!-- Fila 2: Ranking competidores + Distribucion tiers -->
+      <div class="rmx-grid" style="margin-bottom:16px">
+        <section class="rad-card">
+          <div class="rad-card__head">
+            <span class="rad-card__title">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8 M12 17v4 M17 3v6a5 5 0 0 1-10 0V3z M17 5h3a2 2 0 0 1 0 4h-3 M7 5H4a2 2 0 0 0 0 4h3"/></svg>
+              Ranking de competidores
+            </span>
+            <span class="rad-card__sub">últimos {{ dias }} días</span>
+          </div>
+          <div class="rad-tbl-wrap" style="padding:0 14px 14px">
+            <table class="rmx-tbl">
+              <thead>
+                <tr>
+                  <th>Competidor</th>
+                  <th style="text-align:right">Pubs</th>
+                  <th style="text-align:right">Vistas</th>
+                  <th style="text-align:right">Eng.</th>
+                  <th style="text-align:right">Virales</th>
+                  <th style="text-align:right">Mejor post</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for c in competidores %}
+                <tr>
+                  <td>
+                    <span class="rmx-tbl__badge">
+                      <span class="rmx-tbl__dot" style="background:{{ c.color }}"></span>
+                      {{ c.competidor }}
+                    </span>
+                  </td>
+                  <td class="rmx-tbl__num">{{ c.pubs }}</td>
+                  <td class="rmx-tbl__num">{{ c.vistas_fmt }}</td>
+                  <td class="rmx-tbl__num">{{ c.eng_avg }}%</td>
+                  <td class="rmx-tbl__num">{{ c.virales }} · {{ c.casi }}</td>
+                  <td class="rmx-tbl__num">
+                    {% if c.mejor_url %}<a class="rmx-tbl__link" href="{{ c.mejor_url }}" target="_blank" rel="noopener">{{ c.mejor_vistas_fmt }} ↗</a>{% else %}—{% endif %}
+                  </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Sin competidores con actividad.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="rad-card">
+          <div class="rad-card__head">
+            <span class="rad-card__title">
+              <svg class="is-top" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 14.6 9l6 .9-4.3 4.2 1 6-5.3-2.8-5.3 2.8 1-6L3.4 9.9l6-.9z"/></svg>
+              Distribución por tier
+            </span>
+            <span class="rad-card__sub">viralidad</span>
+          </div>
+          <div class="rad-card__body" style="gap:6px">
+            {% for t in tiers %}
+            <div class="rmx-tier">
+              <span class="rmx-tier__label">{{ t.tier }}</span>
+              <span class="rmx-tier__track"><span class="rmx-tier__fill" style="width:{{ t.pct }}%;background:{{ t.color }}"></span></span>
+              <span class="rmx-tier__n">{{ t.c }} · {{ t.pct }}%</span>
+            </div>
+            {% else %}
+            <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Sin datos de tiers.</div>
+            {% endfor %}
+          </div>
+        </section>
+      </div>
+
+      <!-- Fila 3: Tendencia + Scraper -->
+      <div class="rmx-grid" style="margin-bottom:16px">
+        <section class="rad-card">
+          <div class="rad-card__head">
+            <span class="rad-card__title">
+              <svg class="is-accent" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18 M7 15l4-4 3 3 5-6"/></svg>
+              Tendencia diaria
+            </span>
+            <span class="rad-card__sub">últimos {{ tendencia|length }} días</span>
+          </div>
+          <div class="rad-card__body" style="padding-top:8px">
+            <div class="rmx-trend">
+              {% for d in tendencia %}
+              <div class="rmx-trend__bar" title="{{ d.label }}: {{ d.count }} pubs">
+                <span class="rmx-trend__val">{{ d.count or '' }}</span>
+                <span class="rmx-trend__col{% if d.count == 0 %} rmx-trend__col--zero{% endif %}" style="height:{{ d.h }}%"></span>
+                {% if loop.index0 % 3 == 0 or loop.last %}<span class="rmx-trend__label">{{ d.label }}</span>{% else %}<span class="rmx-trend__label">&nbsp;</span>{% endif %}
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </section>
+
+        <section class="rad-card">
+          <div class="rad-card__head">
+            <span class="rad-card__title">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v6H4z M4 14h16v6H4z M8 8h.01 M8 18h.01"/></svg>
+              Actividad del scraper
+            </span>
+            <span class="rad-card__sub">por cuenta</span>
+          </div>
+          <div class="rad-card__body" style="gap:0">
+            {% for s in scrape %}
+            <div class="rmx-scr">
+              <span class="rmx-scr__pill{% if not s.activo %} rmx-scr__pill--off{% elif s.stale %} rmx-scr__pill--stale{% endif %}"></span>
+              <span class="rmx-scr__name">{{ s.plataforma }} · @{{ s.handle }}<small>{{ s.competidor or '' }}</small></span>
+              <span class="rmx-scr__meta">{{ s.pubs }} pubs · {{ s.hace }}</span>
+            </div>
+            {% else %}
+            <div style="padding:16px;text-align:center;color:var(--muted);font-size:12px">Sin cuentas registradas.</div>
+            {% endfor %}
+          </div>
+        </section>
+      </div>
+
+      <!-- Fila 4: Top posts detallado -->
+      <section class="rad-card">
+        <div class="rad-card__head">
+          <span class="rad-card__title">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v3H4z M4 10h16v3H4z M4 16h16v3H4z"/></svg>
+            Top {{ top_posts|length }} publicaciones
+          </span>
+          <span class="rad-card__sub">ordenadas por vistas · últimos {{ dias }} días</span>
+        </div>
+        <div class="rad-tbl-wrap" style="padding:0 14px 14px;max-height:640px;overflow:auto">
+          <table class="rmx-tbl">
+            <thead>
+              <tr>
+                <th style="width:38px">#</th>
+                <th>Post</th>
+                <th style="width:110px">Competidor</th>
+                <th style="width:80px">Plat.</th>
+                <th style="width:70px">Tipo</th>
+                <th style="width:60px">Fecha</th>
+                <th style="width:70px;text-align:right">Vistas</th>
+                <th style="width:60px;text-align:right">Likes</th>
+                <th style="width:60px;text-align:right">Coment</th>
+                <th style="width:60px;text-align:right">Eng.</th>
+                <th style="width:90px">Tier</th>
+                <th style="width:32px"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in top_posts %}
+              <tr>
+                <td class="rmx-tbl__num" style="color:var(--muted)">{{ loop.index }}</td>
+                <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
+                    title="{{ p.titulo_hook or p.name }}">{{ p.titulo_hook or p.name }}</td>
+                <td>
+                  <span class="rmx-tbl__badge">
+                    <span class="rmx-tbl__dot" style="background:{{ p.color }}"></span>
+                    {{ p.competidor or '—' }}
+                  </span>
+                </td>
+                <td style="color:var(--muted)">{{ p.plataforma or '—' }}</td>
+                <td style="color:var(--muted)">{{ p.tipo_contenido or '—' }}</td>
+                <td style="color:var(--muted);font-variant-numeric:tabular-nums">{{ p.fecha_fmt }}</td>
+                <td class="rmx-tbl__num">{{ p.vistas_fmt }}</td>
+                <td class="rmx-tbl__num" style="color:var(--muted)">{{ p.likes_fmt }}</td>
+                <td class="rmx-tbl__num" style="color:var(--muted)">{{ p.comentarios_fmt }}</td>
+                <td class="rmx-tbl__num" style="color:{% if p.engagement_pct >= 1.5 %}var(--accent){% else %}var(--muted){% endif %}">{{ p.engagement_pct }}%</td>
+                <td style="font-size:11px;color:var(--muted)">{{ p.tier or '—' }}</td>
+                <td>{% if p.url_publicacion %}<a class="rmx-tbl__link" href="{{ p.url_publicacion }}" target="_blank" rel="noopener" title="Ver publicación">↗</a>{% endif %}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="12" style="text-align:center;color:var(--muted);padding:20px">Sin publicaciones en el periodo.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div style="text-align:center;font-size:11px;color:var(--faint);margin-top:16px">
+        {{ kpis.cuentas_activas }} cuentas activas · {{ kpis.competidores_activos }} competidores ·
+        vistas totales <strong>{{ kpis.vistas_fmt }}</strong> · likes totales <strong>{{ kpis.likes_fmt }}</strong> ·
+        compartidos <strong>{{ kpis.compartidos_fmt }}</strong>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  (function () {
+    // Tema (persistido en localStorage — misma clave que /radar)
+    var body = document.body;
+    var btnTema = document.getElementById('theme-toggle');
+    function setTema(t) {
+      body.dataset.theme = t === 'dark' ? 'dark' : '';
+      btnTema.title = t === 'dark' ? 'Tema claro' : 'Tema oscuro';
+    }
+    try { setTema(localStorage.getItem('rad-theme') || ''); } catch (e) {}
+    btnTema.addEventListener('click', function () {
+      var t = body.dataset.theme === 'dark' ? '' : 'dark';
+      setTema(t);
+      try { localStorage.setItem('rad-theme', t); } catch (e) {}
+    });
+
+    // Cambiar rango de dias
+    document.querySelectorAll('.rad-seg__item').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var u = new URL(window.location.href);
+        u.searchParams.set('dias', b.dataset.dias);
+        window.location.href = u.toString();
+      });
+    });
+  })();
+</script>
+
+<script src="/radar/radar-sidebar.js?v=1"></script>
+
+{% endif %}
+
+</body>
+</html>
