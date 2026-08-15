@@ -370,7 +370,7 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 	_set_progreso(97, "Consultando el coste en Apify…")
 	coste = _registrar_gasto(
 		token, inicio, duracion, stats, estado, detalle, items_por_red,
-		origen, disparada_por, por_marca,
+		origen, disparada_por, por_marca, solo_marca,
 	)
 
 	frappe.db.commit()
@@ -428,7 +428,7 @@ def _repartir_coste(runs, por_marca):
 
 
 def _registrar_gasto(token, inicio, duracion, stats, estado, detalle, items_por_red,
-                     origen, disparada_por, por_marca=None):
+                     origen, disparada_por, por_marca=None, alcance=None):
 	"""Crea el Radar Corrida con el coste real de Apify (o el estimado si falla)."""
 	por_marca = por_marca or []
 	estimado = round(
@@ -458,6 +458,7 @@ def _registrar_gasto(token, inicio, duracion, stats, estado, detalle, items_por_
 	doc.fecha_inicio = frappe.utils.add_to_date(now_datetime(), seconds=-int(duracion))
 	doc.estado = estado
 	doc.origen = origen if origen in ("Manual", "Programada") else "Programada"
+	doc.alcance = alcance or "Todas"
 	doc.disparada_por = disparada_por or "Scheduler"
 	doc.duracion_segundos = duracion
 	doc.coste_usd = real if confirmado else estimado
@@ -566,8 +567,9 @@ def resumen_gasto(limite=8):
 
 	ultimas = frappe.db.get_all(
 		"Radar Corrida",
-		fields=["name", "fecha_inicio", "estado", "origen", "coste_usd", "coste_real",
-		        "items_total", "insertados", "actualizados", "duracion_segundos"],
+		fields=["name", "fecha_inicio", "estado", "origen", "alcance", "coste_usd",
+		        "coste_real", "items_total", "insertados", "actualizados",
+		        "duracion_segundos"],
 		order_by="fecha_inicio desc",
 		limit=int(limite),
 	)

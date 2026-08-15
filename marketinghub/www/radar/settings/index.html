@@ -348,6 +348,19 @@
       };
     }
 
+    function payloadGuardar() {
+      var datos = leerTodo();
+      return {
+        dias_retencion_snapshots: datos.dias_retencion_snapshots,
+        posts_por_perfil_ig: datos.posts_por_perfil_ig,
+        posts_por_perfil_tiktok: datos.posts_por_perfil_tiktok,
+        preset_frecuencia: datos.preset_frecuencia,
+        canal_alerta: datos.canal_alerta,
+        tiers: JSON.stringify(datos.tiers),
+        limites_marca: JSON.stringify(datos.limites_marca)
+      };
+    }
+
     var INICIAL = JSON.stringify(leerTodo());
     var dirty = document.getElementById('dirty');
     var btnGuardar = document.getElementById('guardar');
@@ -446,7 +459,13 @@
     function lanzar(marca) {
       bloquear(true);
       pintar({ pct: 1, paso: 'Encolando la corrida de ' + marca + '…', estado: 'corriendo' });
-      post(API_SCRAPER + 'ejecutar_scrape_ahora', { marca: marca })
+      // el scraper lee el límite de la base, no de la pantalla: si hay cambios sin
+      // guardar se guardan antes, para que la corrida use lo que se ve
+      var previo = JSON.stringify(leerTodo()) !== INICIAL
+        ? post(API + 'guardar_settings', payloadGuardar()).then(function () { INICIAL = JSON.stringify(leerTodo()); revisar(); })
+        : Promise.resolve();
+      previo
+        .then(function () { return post(API_SCRAPER + 'ejecutar_scrape_ahora', { marca: marca }); })
         .then(function () { seguir(); })
         .catch(function (e) {
           bloquear(false);
@@ -468,16 +487,7 @@
     }).catch(function () {});
 
     if (btnGuardar) btnGuardar.addEventListener('click', function () {
-      var datos = leerTodo();
-      post(API + 'guardar_settings', {
-        dias_retencion_snapshots: datos.dias_retencion_snapshots,
-        posts_por_perfil_ig: datos.posts_por_perfil_ig,
-        posts_por_perfil_tiktok: datos.posts_por_perfil_tiktok,
-        preset_frecuencia: datos.preset_frecuencia,
-        canal_alerta: datos.canal_alerta,
-        tiers: JSON.stringify(datos.tiers),
-        limites_marca: JSON.stringify(datos.limites_marca)
-      }).then(function () {
+      post(API + 'guardar_settings', payloadGuardar()).then(function () {
         toast('Configuración guardada.');
         setTimeout(function () { window.location.reload(); }, 700);
       }).catch(function (e) {

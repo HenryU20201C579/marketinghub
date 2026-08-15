@@ -10,6 +10,7 @@
   "fecha_inicio",
   "estado",
   "origen",
+  "alcance",
   "cb_1",
   "duracion_segundos",
   "disparada_por",
@@ -56,6 +57,15 @@
    "options": "\nManual\nProgramada",
    "read_only": 1,
    "in_standard_filter": 1
+  },
+  {
+   "fieldname": "alcance",
+   "fieldtype": "Data",
+   "label": "Alcance",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Nombre de la marca si la corrida fue de una sola; 'Todas' si fueron todas."
   },
   {"fieldname": "cb_1", "fieldtype": "Column Break"},
   {

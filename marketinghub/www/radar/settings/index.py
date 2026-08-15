@@ -111,7 +111,7 @@ def get_context(context):
 			# el método del dict, no el valor (mismo caso que `corrida.update`)
 			"n_items": "—" if historica else c["items_total"],
 			"meta": "histórico Apify" if historica
-			        else f"{c['origen']} · {c['insertados']} nuevas",
+			        else f"{c['alcance'] or 'Todas'} · {c['insertados']} nuevas",
 			"estado": c["estado"] or "",
 		})
 
