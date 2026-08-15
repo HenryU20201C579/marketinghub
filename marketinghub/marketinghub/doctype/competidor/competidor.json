@@ -14,6 +14,7 @@
   "activo",
   "color",
   "limite_posts",
+  "pausar_radar",
   "sb_notas",
   "notas_estrategicas"
  ],
@@ -80,6 +81,13 @@
    "label": "Posts por corrida",
    "default": "0",
    "description": "Cuántas publicaciones traer de esta marca en cada corrida. 0 = usar el default global de Radar Settings (IG/TikTok). Aplica a todas sus cuentas sociales."
+  },
+  {
+   "fieldname": "pausar_radar",
+   "fieldtype": "Check",
+   "label": "Pausar scrapeo",
+   "default": "0",
+   "description": "Si está marcado, el Radar no scrapea esta marca (ni manual ni programado). Sus datos ya guardados se conservan."
   },
   {
    "fieldname": "sb_notas",

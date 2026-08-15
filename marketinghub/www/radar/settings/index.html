@@ -96,17 +96,23 @@
         <p class="cfg-card__note">Cada marca se scrapea por separado: su propio límite, su propio coste. <strong>0</strong> = usar el default de arriba (IG {{ ig }} · TikTok {{ tt }}).</p>
         <div class="cfg-marca-head">
           <div>Marca</div>
-          <div class="cfg-tier-head__end">Último · total</div>
+          <div class="cfg-tier-head__end">Traídos</div>
+          <div class="cfg-tier-head__end">Coste</div>
           <div class="cfg-tier-head__end">Posts</div>
           <div></div>
         </div>
         <div class="cfg-marca-list">
           {% for m in marcas %}
-          <div class="cfg-marca" data-marca="{{ m.nombre|e }}">
+          <div class="cfg-marca{% if m.pausada %} is-pausada{% endif %}" data-marca="{{ m.nombre|e }}">
             <span class="cfg-tier__ini">{{ m.ini|e }}</span>
             <div class="cfg-marca__txt">
-              <span class="cfg-marca__nom">{{ m.nombre|e }}</span>
+              <span class="cfg-marca__nom">{{ m.nombre|e }}
+                {%- if m.pausada %}<span class="cfg-marca__tag">en pausa</span>{% endif %}</span>
               <span class="cfg-marca__redes">{{ m.redes|e }}</span>
+            </div>
+            <div class="cfg-marca__conteo">
+              <span class="cfg-marca__ult">{% if m.scrapeada %}{% if m.ig %}IG {{ m.ult_ig }}{% endif %}{% if m.ig and m.tt %} · {% endif %}{% if m.tt %}TT {{ m.ult_tt }}{% endif %}{% else %}—{% endif %}</span>
+              <span class="cfg-marca__acum">{{ m.tot_ig + m.tot_tt }} en total</span>
             </div>
             <div class="cfg-marca__gasto">
               <span class="cfg-marca__ult">{% if m.scrapeada %}${{ m.gasto_ultima }}{% else %}—{% endif %}</span>
@@ -114,7 +120,13 @@
             </div>
             <input class="cfg-input cfg-input--num" type="text" value="{{ m.limite }}" data-campo="limite"{% if not can_edit %} disabled{% endif %}>
             {% if can_edit %}
-            <button class="cfg-marca__run" type="button" data-run="{{ m.nombre|e }}" title="Scrapear solo {{ m.nombre|e }}"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5v13l10-6.5z"/></svg></button>
+            <div class="cfg-marca__acciones">
+              <button class="cfg-marca__pausa{% if m.pausada %} is-on{% endif %}" type="button" data-pausa="{{ m.nombre|e }}" title="{% if m.pausada %}Reanudar{% else %}Pausar{% endif %} el scrapeo de {{ m.nombre|e }}">
+                {% if m.pausada %}<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5v13l10-6.5z"/></svg>
+                {% else %}<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 5v14M14.5 5v14"/></svg>{% endif %}
+              </button>
+              <button class="cfg-marca__run" type="button" data-run="{{ m.nombre|e }}" title="Scrapear solo {{ m.nombre|e }}"{% if m.pausada %} disabled{% endif %}><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5v13l10-6.5z"/></svg></button>
+            </div>
             {% else %}<span></span>{% endif %}
           </div>
           {% else %}
@@ -127,6 +139,7 @@
           <div class="cfg-progress__top">
             <span class="cfg-progress__paso" id="progreso-paso">Encolando…</span>
             <span class="cfg-progress__pct" id="progreso-pct">0%</span>
+            <button class="cfg-progress__stop" type="button" id="detener" title="Detener la corrida y abortar el run en Apify"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5h11v11h-11z"/></svg>Detener</button>
           </div>
           <div class="cfg-progress__track"><div class="cfg-progress__bar" id="progreso-bar" style="width:0%"></div></div>
         </div>
@@ -233,6 +246,17 @@
             <div class="cfg-stat"><span class="cfg-stat__k">Este mes</span><span class="cfg-stat__v">${{ gasto.mes }}</span></div>
             <div class="cfg-stat"><span class="cfg-stat__k">Acumulado</span><span class="cfg-stat__v">${{ gasto.total }}</span></div>
             <div class="cfg-stat"><span class="cfg-stat__k">Promedio</span><span class="cfg-stat__v">${{ gasto.promedio }}</span></div>
+          </div>
+
+          <!-- conteo de lo scrapeado por red social -->
+          <div class="cfg-redes">
+            {% for r in redes %}
+            <div class="cfg-red">
+              <span class="cfg-red__k">{{ r.nombre }}</span>
+              <span class="cfg-red__v">{{ r.items }} <em>{{ r.unidad }}</em></span>
+              <span class="cfg-red__c">${{ r.coste }} · {{ r.items_mes }} este mes</span>
+            </div>
+            {% endfor %}
           </div>
           {% if corridas %}
           <div class="cfg-gasto-head">
@@ -348,6 +372,14 @@
       return mapa;
     }
 
+    function leerPausas() {
+      var mapa = {};
+      document.querySelectorAll('.cfg-marca[data-marca]').forEach(function (fila) {
+        mapa[fila.dataset.marca] = fila.classList.contains('is-pausada') ? 1 : 0;
+      });
+      return mapa;
+    }
+
     function leerTodo() {
       var canal = document.querySelector('.cfg-channel.is-on');
       return {
@@ -357,7 +389,8 @@
         preset_frecuencia: document.querySelector('[name=preset_frecuencia]').value,
         canal_alerta: canal ? canal.dataset.canal : '',
         tiers: leerTiers(),
-        limites_marca: leerLimites()
+        limites_marca: leerLimites(),
+        pausas_marca: leerPausas()
       };
     }
 
@@ -370,7 +403,8 @@
         preset_frecuencia: datos.preset_frecuencia,
         canal_alerta: datos.canal_alerta,
         tiers: JSON.stringify(datos.tiers),
-        limites_marca: JSON.stringify(datos.limites_marca)
+        limites_marca: JSON.stringify(datos.limites_marca),
+        pausas_marca: JSON.stringify(datos.pausas_marca)
       };
     }
 
@@ -432,12 +466,15 @@
     var pasoTxt = document.getElementById('progreso-paso');
     var timer = null;
 
+    var btnDetener = document.getElementById('detener');
+
     function pintar(p) {
       caja.style.display = '';
-      caja.classList.toggle('is-error', p.estado === 'error');
+      caja.classList.toggle('is-error', p.estado === 'error' || p.estado === 'cancelada');
       barra.style.width = (p.pct || 0) + '%';
       pctTxt.textContent = (p.pct || 0) + '%';
       pasoTxt.textContent = p.paso || '';
+      if (btnDetener) btnDetener.style.display = p.estado === 'corriendo' ? '' : 'none';
     }
 
     function botonesRun() {
@@ -448,18 +485,21 @@
       botonesRun().forEach(function (b) { b.disabled = si; });
     }
 
-    function detener(p) {
+    function terminar(p) {
       clearInterval(timer); timer = null;
       bloquear(false);
-      // el resumen de "Última corrida" solo se refresca recargando
-      if (p.estado === 'ok') setTimeout(function () { window.location.reload(); }, 2500);
+      if (btnDetener) btnDetener.disabled = false;
+      // el resumen y los conteos solo se refrescan recargando
+      if (p.estado === 'ok' || p.estado === 'cancelada') {
+        setTimeout(function () { window.location.reload(); }, 2500);
+      }
     }
 
     function sondear() {
       post(API_SCRAPER + 'progreso_scrape').then(function (p) {
         if (!p || p.estado === 'idle') { clearInterval(timer); timer = null; return; }
         pintar(p);
-        if (p.estado !== 'corriendo') detener(p);
+        if (p.estado !== 'corriendo') terminar(p);
       }).catch(function () { /* un fallo de red suelto no corta el sondeo */ });
     }
 
@@ -489,6 +529,32 @@
 
     botonesRun().forEach(function (btn) {
       btn.addEventListener('click', function () { lanzar(btn.dataset.run); });
+    });
+
+    // pausar / reanudar una marca: se guarda con el resto de la configuración
+    document.querySelectorAll('[data-pausa]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var fila = btn.closest('.cfg-marca');
+        var pausada = fila.classList.toggle('is-pausada');
+        btn.classList.toggle('is-on', pausada);
+        var run = fila.querySelector('[data-run]');
+        if (run) run.disabled = pausada;
+        btn.title = (pausada ? 'Reanudar' : 'Pausar') + ' el scrapeo de ' + fila.dataset.marca;
+        revisar();
+      });
+    });
+
+    if (btnDetener) btnDetener.addEventListener('click', function () {
+      btnDetener.disabled = true;
+      pasoTxt.textContent = 'Deteniendo…';
+      post(API_SCRAPER + 'cancelar_scrape').then(function (r) {
+        toast(r && r.abortados
+          ? 'Corrida detenida · ' + r.abortados + ' run(s) abortados en Apify.'
+          : 'Corrida detenida.');
+      }).catch(function (e) {
+        btnDetener.disabled = false;
+        toast(e.message);
+      });
     });
 
     // si se recarga la página con una corrida en curso, retomar la barra

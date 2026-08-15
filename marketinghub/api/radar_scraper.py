@@ -30,6 +30,7 @@ COSTE_ITEM = {"Instagram": 0.0027, "TikTok": 0.0037}
 # No se usa publish_realtime porque /radar/settings es una página standalone sin
 # el bundle de socket.io de Frappe.
 PROGRESO_KEY = "radar_scrape_progreso"
+CANCELAR_KEY = "radar_scrape_cancelar"
 PROGRESO_TTL = 3600
 
 # marca las corridas reconstruidas desde el histórico de Apify (sin datos de items)
@@ -46,6 +47,46 @@ def _set_progreso(pct, paso, estado="corriendo", **extra):
 	except Exception:
 		pass  # el progreso es cosmético: nunca debe tumbar la corrida
 	return datos
+
+
+def _pedir_cancelacion(valor):
+	try:
+		if valor:
+			frappe.cache().set_value(CANCELAR_KEY, "1", expires_in_sec=PROGRESO_TTL)
+		else:
+			frappe.cache().delete_value(CANCELAR_KEY)
+	except Exception:
+		pass
+
+
+def _cancelacion_pedida():
+	try:
+		return bool(frappe.cache().get_value(CANCELAR_KEY))
+	except Exception:
+		return False
+
+
+@frappe.whitelist()
+def cancelar_scrape():
+	"""Detiene la corrida en curso y aborta el run que esté vivo en Apify.
+
+	Abortar en Apify es lo que corta el gasto: el ERP puede dejar de esperar, pero
+	el run seguiría facturando por su cuenta. Lo ya consumido no se recupera."""
+	from frappe.utils.password import get_decrypted_password
+
+	roles = set(frappe.get_roles(frappe.session.user))
+	if not (roles & set(INGEST_ROLES)):
+		frappe.throw("Permiso denegado", frappe.PermissionError)
+
+	_pedir_cancelacion(True)
+	actual = progreso_scrape()
+	_set_progreso(actual.get("pct") or 0, "Deteniendo la corrida…", estado="corriendo")
+
+	abortados = []
+	token = get_decrypted_password("Radar Settings", "Radar Settings", "apify_token")
+	if token:
+		abortados = apify_actor.abortar_runs(token, act_ids=_act_ids_radar(token))
+	return {"ok": True, "abortados": len(abortados)}
 
 
 @frappe.whitelist()
@@ -251,6 +292,12 @@ def limites_por_marca():
 	return {f["name"]: int(f["limite_posts"]) for f in filas}
 
 
+def marcas_pausadas():
+	"""Competidores excluidos del scrapeo (interruptor de pausa por marca)."""
+	filas = frappe.db.get_all("Competidor", filters={"pausar_radar": 1}, pluck="name")
+	return set(filas)
+
+
 def _limite_de(cuenta, limites, limit_ig, limit_tt):
 	"""El límite de la marca manda; si no tiene, el default global de su red."""
 	propio = limites.get(cuenta.get("competidor")) or 0
@@ -276,6 +323,7 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 	stats = {"insert": 0, "update": 0, "skip": 0, "error": 0}
 	log_lines = []
 	items_por_red = {"Instagram": 0, "TikTok": 0}
+	_pedir_cancelacion(False)   # limpiar una cancelación vieja antes de empezar
 	_set_progreso(2, "Leyendo configuración…")
 
 	settings = frappe.get_cached_doc("Radar Settings")
@@ -305,17 +353,24 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 
 	# Un grupo = una marca en una red = una llamada a Apify. Se scrapea marca por
 	# marca para poder imputarle a cada una sus items y su coste real.
+	pausadas = marcas_pausadas()
 	grupos = defaultdict(list)
 	for c in cuentas:
 		if c["plataforma"] not in ("Instagram", "TikTok"):
 			continue
 		if solo_marca and c["competidor"] != solo_marca:
 			continue
+		if c["competidor"] in pausadas:
+			continue
 		grupos[(c["competidor"], c["plataforma"])].append(c)
 
 	if not grupos:
-		aviso = (f"la marca {solo_marca} no tiene cuentas activas de Instagram/TikTok"
-		         if solo_marca else "sin cuentas de Instagram/TikTok activas")
+		if solo_marca and solo_marca in pausadas:
+			aviso = f"la marca {solo_marca} está pausada"
+		elif solo_marca:
+			aviso = f"la marca {solo_marca} no tiene cuentas activas de Instagram/TikTok"
+		else:
+			aviso = "sin cuentas de Instagram/TikTok activas"
 		_registrar_corrida(0, stats, "ok", aviso)
 		_set_progreso(100, aviso.capitalize(), estado="ok")
 		return {"ok": True, "mensaje": aviso}
@@ -326,8 +381,15 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 	ancho = 90.0 / len(claves)
 	por_marca = []
 	sin_credito = False
+	cancelada = False
 
 	for i, (marca, plataforma) in enumerate(claves):
+		# la cancelación se atiende entre llamadas: la que ya está en vuelo se
+		# aborta desde Apify, no desde aquí
+		if _cancelacion_pedida():
+			cancelada = True
+			log_lines.append(f"CANCELADA antes de {marca} · {plataforma}")
+			break
 		base = 5 + ancho * i
 		delcaso = grupos[(marca, plataforma)]
 		limite = _limite_de(delcaso[0], limites, limit_ig, limit_tt)
@@ -354,8 +416,15 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 				f"({pinned_skip} anclados descartados)"
 			)
 		except Exception as e:
-			stats["error"] += 1
 			fila["fin_epoch"] = time.time()
+			if _cancelacion_pedida():
+				# el run se abortó desde Apify: no es un fallo, es la cancelación
+				cancelada = True
+				fila["error"] = "Cancelada"
+				log_lines.append(f"{marca} · {plataforma} · CANCELADA")
+				por_marca.append(fila)
+				break
+			stats["error"] += 1
 			if _es_sin_credito(e):
 				sin_credito = True
 				fila["error"] = "Sin crédito en Apify"
@@ -372,7 +441,9 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 
 	duracion = round(time.time() - inicio, 1)
 	resumen = f"insert={stats['insert']} update={stats['update']} skip={stats['skip']} error={stats['error']}"
-	if sin_credito:
+	if cancelada:
+		estado = "cancelada"
+	elif sin_credito:
 		estado = "error"
 	else:
 		estado = "ok" if stats["error"] == 0 else "warn"
@@ -386,7 +457,15 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 	)
 
 	frappe.db.commit()
-	if sin_credito:
+	_pedir_cancelacion(False)
+	if cancelada:
+		_set_progreso(
+			100,
+			f"Corrida detenida · {stats['update'] + stats['insert']} publicaciones guardadas"
+			f" · ${coste['coste_usd']:.3f} consumidos",
+			estado="cancelada", stats=stats, duracion=duracion, coste=coste,
+		)
+	elif sin_credito:
 		credito_apify(forzar=True)  # refrescar el saldo que pinta la página
 		_set_progreso(
 			100,
@@ -628,29 +707,56 @@ def resumen_gasto(limite=8):
 		WHERE fecha_inicio >= %s
 	""", (frappe.utils.get_first_day(frappe.utils.nowdate()),))[0]
 
-	# desglose por marca: acumulado, mes en curso y lo que costó la última corrida
-	por_marca = frappe.db.sql("""
-		SELECT m.marca AS marca,
+	desde_mes = frappe.utils.get_first_day(frappe.utils.nowdate())
+
+	# desglose por marca y red: acumulado, mes en curso y coste
+	filas = frappe.db.sql("""
+		SELECT m.marca AS marca, m.plataforma AS plataforma,
 		       SUM(m.coste_usd) AS total,
 		       SUM(CASE WHEN c.fecha_inicio >= %(desde)s THEN m.coste_usd ELSE 0 END) AS mes,
 		       SUM(m.items) AS items,
+		       SUM(CASE WHEN c.fecha_inicio >= %(desde)s THEN m.items ELSE 0 END) AS items_mes,
 		       COUNT(DISTINCT m.parent) AS corridas
 		FROM `tabRadar Corrida Marca` m
 		JOIN `tabRadar Corrida` c ON c.name = m.parent
-		GROUP BY m.marca
-		ORDER BY total DESC
-	""", {"desde": frappe.utils.get_first_day(frappe.utils.nowdate())}, as_dict=True)
+		GROUP BY m.marca, m.plataforma
+	""", {"desde": desde_mes}, as_dict=True)
 
+	por_marca, por_red = {}, {}
+	for f in filas:
+		clave = "ig" if f["plataforma"] == "Instagram" else "tt"
+		m = por_marca.setdefault(f["marca"], {
+			"marca": f["marca"], "total": 0.0, "mes": 0.0, "items": 0,
+			"items_ig": 0, "items_tt": 0, "corridas": 0,
+		})
+		m["total"] += float(f["total"] or 0)
+		m["mes"] += float(f["mes"] or 0)
+		m["items"] += int(f["items"] or 0)
+		m["items_" + clave] += int(f["items"] or 0)
+		m["corridas"] = max(m["corridas"], int(f["corridas"] or 0))
+
+		r = por_red.setdefault(f["plataforma"], {"items": 0, "items_mes": 0,
+		                                         "total": 0.0, "mes": 0.0})
+		r["items"] += int(f["items"] or 0)
+		r["items_mes"] += int(f["items_mes"] or 0)
+		r["total"] += float(f["total"] or 0)
+		r["mes"] += float(f["mes"] or 0)
+
+	por_marca = sorted(por_marca.values(), key=lambda m: m["total"], reverse=True)
+
+	# lo que trajo cada marca en la última corrida, separado por red
 	ultima_por_marca = {}
 	if ultimas:
 		for fila in frappe.db.get_all(
 			"Radar Corrida Marca",
 			filters={"parent": ultimas[0]["name"]},
-			fields=["marca", "coste_usd", "items"],
+			fields=["marca", "plataforma", "coste_usd", "items"],
 		):
-			acc = ultima_por_marca.setdefault(fila["marca"], {"coste": 0.0, "items": 0})
+			acc = ultima_por_marca.setdefault(
+				fila["marca"], {"coste": 0.0, "items": 0, "ig": 0, "tt": 0})
 			acc["coste"] += float(fila["coste_usd"] or 0)
 			acc["items"] += int(fila["items"] or 0)
+			acc["ig" if fila["plataforma"] == "Instagram" else "tt"] += int(fila["items"] or 0)
 
 	return {
 		"ultimas": ultimas,
@@ -660,6 +766,7 @@ def resumen_gasto(limite=8):
 		"mes_corridas": int(mes[1] or 0),
 		"ultima_usd": float(ultimas[0]["coste_usd"]) if ultimas else 0.0,
 		"por_marca": por_marca,
+		"por_red": por_red,
 		"ultima_por_marca": ultima_por_marca,
 		"credito": credito_apify(),
 	}

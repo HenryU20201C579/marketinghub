@@ -36,6 +36,36 @@ def _post_run_sync(actor_id: str, token: str, payload: dict, timeout_s: int = 30
 		raise ApifyError(f"Respuesta no JSON: {body[:200]}") from e
 
 
+def abortar_runs(token: str, act_ids=None):
+	"""Aborta los runs en curso (RUNNING/READY) de nuestros actores.
+
+	Es lo único que corta el consumo en Apify: matar el job del ERP no detiene el
+	run, que sigue facturando en su nube. Devuelve la lista de runs abortados."""
+	url = f"https://api.apify.com/v2/actor-runs?token={token}&desc=1&limit=20"
+	try:
+		with urllib.request.urlopen(url, timeout=30) as resp:
+			items = json.loads(resp.read().decode("utf-8"))["data"].get("items") or []
+	except Exception:
+		return []
+
+	abortados = []
+	for run in items:
+		if run.get("status") not in ("RUNNING", "READY"):
+			continue
+		if act_ids and run.get("actId") not in act_ids:
+			continue
+		req = urllib.request.Request(
+			f"https://api.apify.com/v2/actor-runs/{run['id']}/abort?token={token}",
+			method="POST",
+		)
+		try:
+			urllib.request.urlopen(req, timeout=30).read()
+			abortados.append(run["id"])
+		except Exception:
+			continue
+	return abortados
+
+
 def credito(token: str):
 	"""Consumo del ciclo de facturación: {usado, limite, restante, renueva}.
 

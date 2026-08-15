@@ -114,6 +114,19 @@ def get_context(context):
 	else:
 		context.credito = None
 
+	# conteo de lo scrapeado por red social
+	context.redes = [
+		{
+			"nombre": red,
+			"corto": "IG" if red == "Instagram" else "TT",
+			"unidad": "posts" if red == "Instagram" else "videos",
+			"items": (gasto["por_red"].get(red) or {}).get("items", 0),
+			"items_mes": (gasto["por_red"].get(red) or {}).get("items_mes", 0),
+			"coste": f"{(gasto['por_red'].get(red) or {}).get('total', 0):.3f}",
+		}
+		for red in ("Instagram", "TikTok")
+	]
+
 	context.corridas = []
 	for c in gasto["ultimas"]:
 		# las corridas reconstruidas desde Apify no tienen conteo de items; ojo,
@@ -141,8 +154,8 @@ def get_context(context):
 	# resuelve el método del dict, no el valor
 	context.corrida = {
 		"cuando": frappe.utils.format_datetime(s.ultima_corrida, "dd/MM HH:mm") if s.ultima_corrida else "—",
-		"estado": {"ok": "Correcta", "warn": "Con avisos", "error": "Con errores"}.get(
-			s.ultima_corrida_estado or "", "Sin datos"),
+		"estado": {"ok": "Correcta", "warn": "Con avisos", "error": "Con errores",
+		           "cancelada": "Detenida"}.get(s.ultima_corrida_estado or "", "Sin datos"),
 		"insertados": int(stats.get("insert") or 0),
 		"actualizados": int(stats.get("update") or 0),
 		"saltados": int(stats.get("skip") or 0),
@@ -203,15 +216,16 @@ def _marcas_con_cuentas():
 		m = por_marca.setdefault(c["competidor"], {"ig": 0, "tt": 0})
 		m["ig" if c["plataforma"] == "Instagram" else "tt"] += 1
 
-	limites = dict(frappe.db.get_all(
-		"Competidor",
-		filters={"name": ["in", list(por_marca)]},
-		fields=["name", "limite_posts"],
-		as_list=True,
-	))
-	# lo que costó cada marca: en la última corrida y acumulado
+	ajustes = {
+		c["name"]: c for c in frappe.db.get_all(
+			"Competidor",
+			filters={"name": ["in", list(por_marca)]},
+			fields=["name", "limite_posts", "pausar_radar"],
+		)
+	}
+	# lo que trajo y costó cada marca: en la última corrida y acumulado
 	gasto = resumen_gasto()
-	acumulado = {g["marca"]: float(g["total"] or 0) for g in gasto["por_marca"]}
+	acumulado = {g["marca"]: g for g in gasto["por_marca"]}
 	ultima = gasto["ultima_por_marca"]
 
 	marcas = []
@@ -222,16 +236,24 @@ def _marcas_con_cuentas():
 				f"{redes['tt']} TikTok" if redes["tt"] else "",
 			) if t
 		)
+		ult = ultima.get(nombre, {})
+		acum = acumulado.get(nombre, {})
 		marcas.append({
 			"nombre": nombre,
 			"ini": _iniciales(nombre),
-			"limite": int(limites.get(nombre) or 0),
+			"limite": int((ajustes.get(nombre) or {}).get("limite_posts") or 0),
+			"pausada": int((ajustes.get(nombre) or {}).get("pausar_radar") or 0),
 			"ig": redes["ig"],
 			"tt": redes["tt"],
 			"redes": redes_txt,
-			"gasto_ultima": f"{ultima.get(nombre, {}).get('coste', 0):.3f}",
-			"gasto_total": f"{acumulado.get(nombre, 0):.3f}",
+			"gasto_ultima": f"{ult.get('coste', 0):.3f}",
+			"gasto_total": f"{acum.get('total', 0):.3f}",
 			"scrapeada": nombre in ultima,
+			# conteo de lo scrapeado, por red
+			"ult_ig": ult.get("ig", 0),
+			"ult_tt": ult.get("tt", 0),
+			"tot_ig": acum.get("items_ig", 0),
+			"tot_tt": acum.get("items_tt", 0),
 		})
 	marcas.sort(key=lambda m: m["nombre"].lower())
 	return marcas
@@ -303,6 +325,7 @@ def guardar_settings(
 	posts_por_perfil_tiktok=None,
 	tiers=None,
 	limites_marca=None,
+	pausas_marca=None,
 ):
 	"""Guarda los valores de Radar Settings. tiers = JSON string con la tabla.
 
@@ -355,6 +378,18 @@ def guardar_settings(
 				continue
 			if frappe.db.get_value("Competidor", marca, "limite_posts") != valor:
 				frappe.db.set_value("Competidor", marca, "limite_posts", valor)
+
+	if pausas_marca is not None:
+		try:
+			mapa = _json.loads(pausas_marca) if isinstance(pausas_marca, str) else pausas_marca
+		except Exception:
+			frappe.throw("Las pausas por marca deben ser un JSON válido.")
+		for marca, pausada in (mapa or {}).items():
+			if not frappe.db.exists("Competidor", marca):
+				continue
+			valor = 1 if pausada else 0
+			if int(frappe.db.get_value("Competidor", marca, "pausar_radar") or 0) != valor:
+				frappe.db.set_value("Competidor", marca, "pausar_radar", valor)
 
 	frappe.db.commit()
 	return {"ok": True}

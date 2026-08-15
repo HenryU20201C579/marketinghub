@@ -269,7 +269,7 @@
 .cfg-col-left > .cfg-card--fill { flex:1 1 auto; }
 .cfg-marca-list { max-height:190px; overflow:auto; }
 .cfg-marca-head, .cfg-marca {
-  display:grid; grid-template-columns:22px 1fr 78px 72px 26px; gap:9px; align-items:center;
+  display:grid; grid-template-columns:22px 1fr 72px 72px 60px 56px; gap:8px; align-items:center;
 }
 .cfg-marca-head {
   padding:8px 18px; background:var(--raise); border-bottom:1px solid var(--hair);
@@ -280,7 +280,26 @@
 .cfg-marca {
   padding:7px 18px; border-bottom:1px solid var(--hair);
 }
-.cfg-marca__gasto { display:flex; flex-direction:column; gap:1px; text-align:right; }
+.cfg-marca__gasto, .cfg-marca__conteo {
+  display:flex; flex-direction:column; gap:1px; text-align:right; min-width:0;
+}
+/* pausa por marca */
+.cfg-marca__acciones { display:flex; align-items:center; gap:4px; justify-content:flex-end; }
+.cfg-marca__pausa {
+  width:26px; height:26px; display:flex; align-items:center; justify-content:center;
+  border-radius:7px; border:1px solid var(--line); background:var(--bg);
+  color:var(--muted); cursor:pointer; padding:0;
+}
+.cfg-marca__pausa:hover { border-color:var(--top); color:var(--top); }
+.cfg-marca__pausa.is-on { border-color:transparent; background:var(--top-soft); color:var(--top); }
+.cfg-marca.is-pausada { background:var(--raise); }
+.cfg-marca.is-pausada .cfg-marca__nom,
+.cfg-marca.is-pausada .cfg-marca__ult { color:var(--faint); }
+.cfg-marca__tag {
+  margin-left:6px; padding:1px 6px; border-radius:999px;
+  font-size:9.5px; font-weight:700; letter-spacing:.04em;
+  color:var(--top); background:var(--top-soft); text-transform:uppercase;
+}
 .cfg-marca__ult {
   font-size:12px; font-weight:700; color:var(--text); font-variant-numeric:tabular-nums;
 }
@@ -327,6 +346,22 @@
 }
 .cfg-progress.is-error .cfg-progress__pct { color:var(--top); }
 .cfg-progress.is-error .cfg-progress__bar { background:var(--top); }
+.cfg-progress__stop {
+  flex:none; display:flex; align-items:center; gap:5px; padding:3px 9px;
+  border-radius:999px; border:1px solid var(--line); background:var(--bg);
+  font-family:inherit; font-size:11px; font-weight:700; color:var(--muted); cursor:pointer;
+}
+.cfg-progress__stop:hover { border-color:var(--top); color:var(--top); }
+.cfg-progress__stop:disabled { opacity:.5; cursor:default; }
+
+/* conteo por red social */
+.cfg-redes { display:grid; grid-template-columns:1fr 1fr; border-top:1px solid var(--hair); }
+.cfg-red { padding:10px 18px; display:flex; flex-direction:column; gap:2px; }
+.cfg-red + .cfg-red { border-left:1px solid var(--hair); }
+.cfg-red__k { font-size:11px; font-weight:600; color:var(--muted); }
+.cfg-red__v { font-size:16px; font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; }
+.cfg-red__v em { font-size:11px; font-weight:600; font-style:normal; color:var(--faint); }
+.cfg-red__c { font-size:10.5px; color:var(--faint); font-variant-numeric:tabular-nums; }
 
 /* ---------- 9d. Crédito de Apify ---------- */
 .cfg-credito { padding:11px 18px 12px; border-bottom:1px solid var(--hair); }

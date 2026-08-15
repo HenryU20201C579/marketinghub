@@ -132,7 +132,7 @@
    "fieldname": "ultima_corrida_estado",
    "fieldtype": "Select",
    "label": "Estado",
-   "options": "\nok\nwarn\nerror",
+   "options": "\nok\nwarn\nerror\ncancelada",
    "read_only": 1
   },
   {"fieldname": "cb_ult1", "fieldtype": "Column Break"},
