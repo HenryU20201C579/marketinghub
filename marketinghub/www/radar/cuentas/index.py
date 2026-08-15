@@ -17,6 +17,8 @@ no_cache = 1
 
 # el diseño colorea Instagram y TikTok; el resto queda en el estilo neutro
 CLASE_PLATAFORMA = {"Instagram": "ig", "TikTok": "tt"}
+# siglas para la cabecera de marca, donde no cabe el nombre completo
+SIGLA = {"Instagram": "IG", "TikTok": "TT", "Facebook": "FB", "YouTube": "YT"}
 
 ADMIN_ROLES = ("Marketinghub-Radar-Administrar", "System Manager")
 VIEW_ROLES = (
@@ -84,6 +86,7 @@ def get_context(context):
 	]
 
 	context.cuentas = visibles
+	context.grupos = _agrupar_por_marca(visibles)
 	# el diálogo de edición necesita los datos en JS; `frappe.as_json` no está
 	# disponible dentro del sandbox de Jinja, así que se serializa aquí
 	context.cuentas_json = frappe.as_json(visibles).replace("</", "<\\/")
@@ -110,6 +113,35 @@ def get_context(context):
 		context.csrf_token = frappe.local.session.data.csrf_token
 	except Exception:
 		context.csrf_token = ""
+
+
+def _agrupar_por_marca(cuentas):
+	"""Una entrada por marca con sus perfiles dentro y los totales de la fila
+	cabecera. `cuentas` ya viene ordenada por competidor (ver `listar`).
+
+	Nada de llamar `grupo.cuentas` «items» ni «values»: en Jinja esas claves
+	las tapa el método homónimo del dict y la fila saldría vacía."""
+	grupos = []
+	for c in cuentas:
+		if not grupos or grupos[-1]["marca"] != c["marca"]:
+			grupos.append({"marca": c["marca"], "inicial": c["inicial"], "cuentas": []})
+		grupos[-1]["cuentas"].append(c)
+
+	tope = max([sum(x["n_publicaciones"] for x in g["cuentas"]) for g in grupos] + [1])
+	for g in grupos:
+		perfiles = g["cuentas"]
+		g["n_perfiles"] = len(perfiles)
+		g["n_pubs"] = sum(x["n_publicaciones"] for x in perfiles)
+		g["pct"] = round(g["n_pubs"] / tope * 100) if g["n_pubs"] else 0
+		g["activas"] = sum(1 for x in perfiles if x.get("activo"))
+		g["redes"] = [
+			{"plataforma": p, "cls": CLASE_PLATAFORMA.get(p, ""), "sigla": SIGLA[p],
+			 "n": sum(1 for x in perfiles if x.get("plataforma") == p)}
+			for p in PLATAFORMAS if any(x.get("plataforma") == p for x in perfiles)
+		]
+		ultimos = [x.get("ultimo_scrapeo") for x in perfiles if x.get("ultimo_scrapeo")]
+		g["scrapeo"] = _hace(max(ultimos)) if ultimos else "—"
+	return grupos
 
 
 def _url_corta(url):
