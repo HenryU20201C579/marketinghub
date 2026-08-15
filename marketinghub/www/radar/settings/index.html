@@ -78,7 +78,23 @@
               </div>
               <span class="cfg-field__hint">Default; ≈ ${{ coste_tt }} por video en Apify.</span>
             </div>
+
+            <div class="cfg-field">
+              <span class="cfg-field__label">Máximo por marca</span>
+              <div class="cfg-field__box">
+                <input type="text" name="max_posts_marca" value="{{ techo }}"{% if not can_edit %} disabled{% endif %}>
+                <span class="cfg-field__unit">techo</span>
+              </div>
+              <span class="cfg-field__hint">Ninguna marca puede pedir más. <strong>0</strong> = sin techo.</span>
+            </div>
           </div>
+
+          {% if techo_justo %}
+          <div class="cfg-aviso">
+            <span class="cfg-aviso__ico">!</span>
+            <span>Con el techo en <strong>{{ techo }}</strong>: Instagram y TikTok devuelven hasta <strong>3 posts anclados</strong> que el Radar descarta por viejos. Puedes pagar la corrida completa y guardar <strong>0 posts</strong>. Para asegurar {{ techo }} útiles harían falta {{ techo + 3 }}.</span>
+          </div>
+          {% endif %}
 
           <div class="cfg-card__foot">
             <span>Coste estimado de todas las marcas activas: <strong id="coste">${{ coste_total }}</strong></span>
@@ -97,7 +113,7 @@
           <p class="cfg-card__note">Cada marca se scrapea por separado. <strong>0</strong> = usar el default de arriba (IG {{ ig }} · TikTok {{ tt }}). Las marcas en pausa no se scrapean ni cuentan para el estimado.</p>
           <div class="cfg-marca-head">
             <div>Marca</div>
-            <div class="cfg-tier-head__end">Posts</div>
+            <div class="cfg-tier-head__end">Posts{% if techo %} <span class="cfg-marca-head__max">máx {{ techo }}</span>{% endif %}</div>
             <div></div>
           </div>
           <div class="cfg-marca-list">
@@ -331,6 +347,7 @@
       return {
         posts_por_perfil_ig: valor('posts_por_perfil_ig'),
         posts_por_perfil_tiktok: valor('posts_por_perfil_tiktok'),
+        max_posts_marca: valor('max_posts_marca'),
         tope_ciclo_usd: valor('tope_ciclo_usd'),
         limites_marca: leerLimites(),
         pausas_marca: leerPausas()
@@ -342,6 +359,7 @@
       return {
         posts_por_perfil_ig: datos.posts_por_perfil_ig,
         posts_por_perfil_tiktok: datos.posts_por_perfil_tiktok,
+        max_posts_marca: datos.max_posts_marca,
         tope_ciclo_usd: datos.tope_ciclo_usd,
         limites_marca: JSON.stringify(datos.limites_marca),
         pausas_marca: JSON.stringify(datos.pausas_marca)
@@ -361,24 +379,41 @@
       if (dirty) dirty.style.display = cambiado ? '' : 'none';
       if (btnGuardar) btnGuardar.classList.toggle('is-idle', !cambiado);
       if (!cambiado) { cajaCoste.textContent = COSTE_SERVER; return; }
-      // coste estimado en vivo; las marcas en pausa no suman, igual que en el server
-      var ig = parseInt(valor('posts_por_perfil_ig'), 10) || 0;
-      var tt = parseInt(valor('posts_por_perfil_tiktok'), 10) || 0;
-      var limites = leerLimites();
-      var pausas = leerPausas();
       var total = 0;
-      MARCAS.forEach(function (m) {
-        if (pausas[m.nombre]) return;
-        var lim = limites[m.nombre] || 0;
-        total += m.ig * (lim || ig) * COSTE_ITEM.ig;
-        total += m.tt * (lim || tt) * COSTE_ITEM.tt;
-      });
+      MARCAS.forEach(function (m) { total += estimadoDe(m.nombre); });
       document.getElementById('coste').textContent = '$' + total.toFixed(3);
     }
 
+    // mismo cálculo que estimar_corrida() en el server: límite propio o default,
+    // recortado por el techo, y las pausadas no suman
+    function estimadoDe(marca) {
+      var pausas = leerPausas();
+      if (pausas[marca]) return 0;
+      var m = MARCAS.filter(function (x) { return x.nombre === marca; })[0];
+      if (!m) return 0;
+      var techo = parseInt(valor('max_posts_marca'), 10) || 0;
+      var ig = parseInt(valor('posts_por_perfil_ig'), 10) || 0;
+      var tt = parseInt(valor('posts_por_perfil_tiktok'), 10) || 0;
+      var propio = leerLimites()[marca] || 0;
+      function recorta(n) { return techo ? Math.min(n, techo) : n; }
+      return m.ig * recorta(propio || ig) * COSTE_ITEM.ig
+           + m.tt * recorta(propio || tt) * COSTE_ITEM.tt;
+    }
+
+    // el server rechaza un límite por encima del techo; aquí se marca en rojo
+    // mientras escribes para no descubrirlo al guardar
+    function marcarExcesos() {
+      var techo = parseInt(valor('max_posts_marca'), 10) || 0;
+      document.querySelectorAll('.cfg-marca[data-marca]').forEach(function (fila) {
+        var campo = fila.querySelector('[data-campo=limite]');
+        var v = parseInt(campo.value, 10) || 0;
+        campo.classList.toggle('is-error', !!techo && v > techo);
+      });
+    }
+
     document.querySelectorAll('.cfg-input, .cfg-field__box input').forEach(function (el) {
-      el.addEventListener('input', revisar);
-      el.addEventListener('change', revisar);
+      el.addEventListener('input', function () { revisar(); marcarExcesos(); });
+      el.addEventListener('change', function () { revisar(); marcarExcesos(); });
     });
 
     var reset = document.getElementById('reset');
@@ -457,7 +492,8 @@
 
     // antes de gastar: se dice cuánto cuesta y con cuánto crédito te quedas
     function confirmar(fila, marca) {
-      var est = parseFloat(fila.dataset.estimado) || 0;
+      // se recalcula: si hay cambios sin guardar, se cobrarán esos, no los del server
+      var est = estimadoDe(marca);
       var lineas = ['Scrapear ' + marca + ': gastarás ≈$' + est.toFixed(3) + ' de crédito.'];
       if (RESTANTE) {
         lineas.push('Te quedarán ≈$' + Math.max(RESTANTE - est, 0).toFixed(2) + ' de $' + TECHO + '.');
@@ -524,6 +560,7 @@
     });
 
     revisar();
+    marcarExcesos();
   })();
 </script>
 

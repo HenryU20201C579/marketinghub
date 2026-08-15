@@ -315,12 +315,22 @@ def marcas_pausadas():
 	return set(filas)
 
 
-def _limite_de(cuenta, limites, limit_ig, limit_tt):
-	"""El límite de la marca manda; si no tiene, el default global de su red."""
+def _limite_de(cuenta, limites, limit_ig, limit_tt, techo=0):
+	"""El límite de la marca manda; si no tiene, el default global de su red.
+
+	`techo` (max_posts_marca) recorta el resultado venga de donde venga: es el
+	único punto por el que pasan todas las corridas, así que subir el límite por
+	la vía del doctype tampoco lo salta."""
 	propio = limites.get(cuenta.get("competidor")) or 0
-	if propio > 0:
-		return propio
-	return limit_ig if cuenta["plataforma"] == "Instagram" else limit_tt
+	limite = propio if propio > 0 else (
+		limit_ig if cuenta["plataforma"] == "Instagram" else limit_tt
+	)
+	return min(limite, techo) if techo else limite
+
+
+def techo_posts():
+	"""Máximo de posts que se le puede pedir a una marca. 0 = sin techo."""
+	return int(frappe.get_cached_doc("Radar Settings").get("max_posts_marca") or 0)
 
 
 def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=None,
@@ -396,6 +406,7 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 	# Apify consume el 60% del tramo y los upserts el 40% restante.
 	claves = sorted(grupos.keys())
 	ancho = 90.0 / len(claves)
+	techo = techo_posts()
 	por_marca = []
 	sin_credito = False
 	cancelada = False
@@ -409,7 +420,7 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 			break
 		base = 5 + ancho * i
 		delcaso = grupos[(marca, plataforma)]
-		limite = _limite_de(delcaso[0], limites, limit_ig, limit_tt)
+		limite = _limite_de(delcaso[0], limites, limit_ig, limit_tt, techo)
 		antes = dict(stats)
 		fila = {"marca": marca, "plataforma": plataforma, "limite": limite,
 		        "items": 0, "inicio_epoch": time.time(), "fin_epoch": None, "error": ""}
@@ -780,6 +791,7 @@ def estimar_corrida(solo_marca=None):
 	s = frappe.get_cached_doc("Radar Settings")
 	lim_ig = int(s.posts_por_perfil_ig or 20)
 	lim_tt = int(s.posts_por_perfil_tiktok or 20)
+	techo = int(s.get("max_posts_marca") or 0)
 	precio = coste_item()
 
 	filtros = {"activo": 1, "plataforma": ["in", ("Instagram", "TikTok")]}
@@ -806,6 +818,8 @@ def estimar_corrida(solo_marca=None):
 		propio = int(ajuste.get("limite_posts") or 0)
 		es_ig = c["plataforma"] == "Instagram"
 		limite = propio or (lim_ig if es_ig else lim_tt)
+		if techo:
+			limite = min(limite, techo)
 		coste = limite * precio["Instagram" if es_ig else "TikTok"]
 		por_marca[c["competidor"]] = round(por_marca.get(c["competidor"], 0) + coste, 4)
 		total += coste

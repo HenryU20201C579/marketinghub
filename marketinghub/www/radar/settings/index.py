@@ -60,6 +60,10 @@ def get_context(context):
 
 	context.ig = datos["posts_por_perfil_ig"]
 	context.tt = datos["posts_por_perfil_tiktok"]
+	context.techo = datos["max_posts_marca"]
+	# IG y TikTok devuelven hasta 3 anclados que el scraper descarta: con un techo
+	# así de bajo se puede pagar la corrida entera y no guardar ni un post
+	context.techo_justo = bool(context.techo and context.techo <= 3)
 
 	# Límite por marca: una fila por competidor con cuentas activas
 	context.marcas = datos["marcas"]
@@ -280,6 +284,7 @@ def obtener_settings(estimados=None):
 	return {
 		"posts_por_perfil_ig": s.posts_por_perfil_ig or 20,
 		"posts_por_perfil_tiktok": s.posts_por_perfil_tiktok or 20,
+		"max_posts_marca": int(s.get("max_posts_marca") or 0),
 		"tope_ciclo_usd": float(s.get("tope_ciclo_usd") or 0),
 		"marcas": _marcas_con_cuentas(estimados),
 	}
@@ -289,6 +294,7 @@ def obtener_settings(estimados=None):
 def guardar_settings(
 	posts_por_perfil_ig=None,
 	posts_por_perfil_tiktok=None,
+	max_posts_marca=None,
 	tope_ciclo_usd=None,
 	limites_marca=None,
 	pausas_marca=None,
@@ -304,9 +310,17 @@ def guardar_settings(
 			frappe.PermissionError,
 		)
 	s = frappe.get_single("Radar Settings")
+	if max_posts_marca is not None:          s.max_posts_marca = max(0, int(max_posts_marca or 0))
 	if posts_por_perfil_ig is not None:      s.posts_por_perfil_ig = int(posts_por_perfil_ig)
 	if posts_por_perfil_tiktok is not None:  s.posts_por_perfil_tiktok = int(posts_por_perfil_tiktok)
 	if tope_ciclo_usd is not None:           s.tope_ciclo_usd = _usd(tope_ciclo_usd, "tope por ciclo")
+
+	# el techo recorta también los defaults: si no, la marca sin límite propio
+	# pediría más que el máximo por la puerta de atrás
+	techo = int(s.max_posts_marca or 0)
+	if techo:
+		s.posts_por_perfil_ig = min(int(s.posts_por_perfil_ig or 0), techo)
+		s.posts_por_perfil_tiktok = min(int(s.posts_por_perfil_tiktok or 0), techo)
 
 	s.save(ignore_permissions=True)
 
@@ -320,6 +334,11 @@ def guardar_settings(
 				valor = max(0, int(limite or 0))
 			except (TypeError, ValueError):
 				frappe.throw(f"El límite de «{marca}» debe ser un número entero.")
+			if techo and valor > techo:
+				frappe.throw(
+					f"«{marca}» pide {valor} posts y el máximo por marca es {techo}. "
+					f"Sube el máximo si de verdad quieres pedir más."
+				)
 			if not frappe.db.exists("Competidor", marca):
 				continue
 			if frappe.db.get_value("Competidor", marca, "limite_posts") != valor:

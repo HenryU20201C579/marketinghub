@@ -16,6 +16,7 @@
   "apify_token",
   "posts_por_perfil_ig",
   "posts_por_perfil_tiktok",
+  "max_posts_marca",
   "posts_por_perfil",
   "sb_topes",
   "tope_ciclo_usd",
@@ -177,12 +178,19 @@
    "fieldtype": "Float",
    "label": "Tope por ciclo de Apify (USD)",
    "precision": "2"
+  },
+  {
+   "default": "3",
+   "description": "Techo duro: ninguna marca puede pedir mas posts que esto, ni desde la pagina ni desde aqui. 0 = sin techo. Ojo: IG y TikTok devuelven hasta 3 anclados que se descartan, asi que un techo de 3 puede guardar 0 posts.",
+   "fieldname": "max_posts_marca",
+   "fieldtype": "Int",
+   "label": "Maximo de posts por marca"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-08-15 19:00:00.000000",
+ "modified": "2026-08-15 20:00:00.000000",
  "modified_by": "Administrator",
  "module": "MarketingHub",
  "name": "Radar Settings",
