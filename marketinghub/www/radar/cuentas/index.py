@@ -5,6 +5,7 @@ extiende `templates/web.html`); `styles.css` y `app.js` son copia literal del
 diseño. `get_context` solo arma los datos que pinta ese markup; el alta, la
 edición, el borrado y el scrape siguen pasando por los endpoints de abajo.
 """
+import re
 from datetime import datetime
 
 from frappe.utils import get_datetime
@@ -25,6 +26,16 @@ VIEW_ROLES = (
 	"System Manager",
 )
 PLATAFORMAS = ("Instagram", "TikTok", "Facebook", "YouTube")
+
+# Dominio -> plataforma, para deducir la red al pegar una URL en el alta rápida.
+DOMINIOS = (
+	("instagram.com", "Instagram"),
+	("tiktok.com", "TikTok"),
+	("facebook.com", "Facebook"),
+	("fb.com", "Facebook"),
+	("youtube.com", "YouTube"),
+	("youtu.be", "YouTube"),
+)
 
 
 def _has_role(roles):
@@ -221,6 +232,137 @@ def guardar(name=None, competidor=None, plataforma=None,
 		doc.insert(ignore_permissions=True)
 	frappe.db.commit()
 	return {"ok": True, "name": doc.name, "handle": doc.handle}
+
+
+def detectar_plataforma(url):
+	"""Deduce la red social a partir del dominio. None si no la reconoce."""
+	u = (url or "").strip().lower()
+	for dominio, plataforma in DOMINIOS:
+		if dominio in u:
+			return plataforma
+	return None
+
+
+def _normalizar_url(cruda):
+	"""Limpia lo que se pega desde el móvil: comillas, scheme ausente, tracking.
+
+	El `?igsh=…` de los enlaces compartidos se descarta, salvo en los perfiles
+	de Facebook tipo `profile.php?id=…`, donde el query ES el identificador."""
+	url = (cruda or "").strip().strip('"\'<>')
+	if not url:
+		return ""
+	if not url.lower().startswith(("http://", "https://")):
+		url = "https://" + url.lstrip("/")
+	if "?" in url and "profile.php" not in url.lower():
+		url = url.split("?", 1)[0]
+	return url
+
+
+def _partir_urls(urls):
+	"""Acepta el textarea completo: una URL por línea, o separadas por coma."""
+	if isinstance(urls, (list, tuple)):
+		crudas = urls
+	else:
+		crudas = re.split(r"[\s,]+", urls or "")
+	vistas, limpias = set(), []
+	for c in crudas:
+		c = (c or "").strip()
+		if c and c.lower() not in vistas:
+			vistas.add(c.lower())
+			limpias.append(c)
+	return limpias
+
+
+def _asegurar_competidor(nombre):
+	"""Devuelve el name del Competidor, creándolo si aún no existe."""
+	nombre = (nombre or "").strip()
+	if not nombre:
+		frappe.throw("El nombre de la marca no puede estar vacío.")
+	# la colación de MariaDB no distingue mayúsculas: «boboluv» reusa «Boboluv»
+	existente = frappe.db.get_value("Competidor", {"name": nombre}, "name")
+	if existente:
+		return existente
+	doc = frappe.new_doc("Competidor")
+	doc.nombre_comercial = nombre
+	doc.activo = 1
+	doc.insert(ignore_permissions=True)
+	return doc.name
+
+
+@frappe.whitelist()
+def guardar_lote(competidor=None, nueva_marca=None, urls=None, activo=1):
+	"""Alta rápida: una marca + N URLs de perfil, la red se deduce del dominio.
+
+	Cada URL se inserta dentro de su propio savepoint, así una que falle no
+	tumba a las demás. Devuelve el detalle para que el diálogo deje en el
+	textarea solo las que quedaron pendientes."""
+	if not _has_role(ADMIN_ROLES):
+		frappe.throw("Solo un administrador puede modificar.", frappe.PermissionError)
+
+	nueva_marca = (nueva_marca or "").strip()
+	competidor = (competidor or "").strip()
+	marca_creada = False
+	if nueva_marca:
+		marca_creada = not frappe.db.get_value("Competidor", {"name": nueva_marca}, "name")
+		competidor = _asegurar_competidor(nueva_marca)
+	if not competidor:
+		frappe.throw("Elige una marca o escribe el nombre de una nueva.")
+	if not frappe.db.exists("Competidor", competidor):
+		frappe.throw(f"La marca {competidor!r} no existe.")
+
+	pendientes = _partir_urls(urls)
+	if not pendientes:
+		frappe.throw("Pega al menos una URL de perfil.")
+
+	activo = int(activo) if activo not in (None, "") else 1
+	creadas, omitidas, errores = [], [], []
+
+	for i, cruda in enumerate(pendientes):
+		url = _normalizar_url(cruda)
+		plataforma = detectar_plataforma(url)
+		if not plataforma:
+			errores.append({"url": cruda, "motivo": "No reconozco la red social de esa URL."})
+			continue
+		handle = extraer_handle(url, plataforma)
+		if not handle:
+			errores.append({"url": cruda,
+			                "motivo": f"No pude extraer el handle de esa URL de {plataforma}."})
+			continue
+
+		# el name de Cuenta Social es "{plataforma}-{handle}" y es global: el
+		# mismo perfil no puede estar en dos marcas a la vez
+		duenio = frappe.db.get_value("Cuenta Social", f"{plataforma}-{handle}", "competidor")
+		if duenio:
+			if duenio == competidor:
+				omitidas.append({"url": cruda, "plataforma": plataforma, "handle": handle})
+			else:
+				errores.append({"url": cruda,
+				                "motivo": f"Ese perfil ya está registrado en la marca «{duenio}»."})
+			continue
+
+		punto = f"alta_cuenta_{i}"
+		frappe.db.savepoint(punto)
+		try:
+			doc = frappe.new_doc("Cuenta Social")
+			doc.competidor = competidor
+			doc.plataforma = plataforma
+			doc.url_perfil = url
+			doc.activo = activo
+			doc.insert(ignore_permissions=True)
+			creadas.append({"name": doc.name, "plataforma": plataforma, "handle": doc.handle})
+		except Exception as e:
+			frappe.db.rollback(save_point=punto)
+			errores.append({"url": cruda,
+			                "motivo": frappe.utils.strip_html(str(e)) or "No se pudo crear."})
+
+	frappe.db.commit()
+	return {
+		"competidor": competidor,
+		"marca_creada": marca_creada,
+		"creadas": creadas,
+		"omitidas": omitidas,
+		"errores": errores,
+	}
 
 
 @frappe.whitelist()

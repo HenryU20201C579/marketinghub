@@ -138,6 +138,25 @@
 {% if can_edit %}
 <!-- Diálogos: el diseño no trae modal, así que se componen con .card y .btn -->
 <div id="overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:24px">
+  <div class="card" id="dlg-nueva" style="display:none;width:520px;max-width:94vw;padding:20px">
+    <div style="font-size:16px;font-weight:700;margin-bottom:4px">Nueva cuenta</div>
+    <div class="meta" style="margin-bottom:14px">Elige la marca y pega las URLs de sus perfiles, una por línea. La red se detecta sola.</div>
+    <select id="nv-competidor" style="height:36px;width:100%;padding:0 10px;margin-bottom:10px;border:1px solid var(--border);border-radius:8px;font:inherit;font-size:13px;color:var(--text);background:var(--input-bg)">
+      <option value="">+ Marca nueva…</option>
+      {% for c in competidores %}<option value="{{ c|e }}">{{ c|e }}</option>
+      {% endfor %}
+    </select>
+    <input id="nv-marca" placeholder="Nombre de la marca. Ej: Boboluv" style="height:36px;width:100%;padding:0 12px;margin-bottom:10px;border:1px solid var(--border);border-radius:8px;font:inherit;font-size:13px;color:var(--text);background:var(--input-bg)" />
+    <textarea id="nv-urls" rows="5" spellcheck="false" placeholder="https://www.instagram.com/bobolu_shop/&#10;https://www.tiktok.com/@bobolu_shop" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font:inherit;font-size:13px;line-height:1.6;color:var(--text);background:var(--input-bg);resize:vertical"></textarea>
+    <div id="nv-preview" class="meta" style="margin-top:8px;min-height:18px"></div>
+    <label class="check" style="margin-top:10px;width:100%"><input type="checkbox" id="nv-activo" checked />Activas (entran al próximo scrapeo)</label>
+    <div id="nv-error" class="meta" style="color:var(--danger-fg);margin-top:10px;display:none;white-space:pre-line"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+      <button class="btn" data-cerrar>Cancelar</button>
+      <button class="btn primary" id="nv-guardar">Añadir</button>
+    </div>
+  </div>
+
   <div class="card" id="dlg-editar" style="display:none;width:440px;max-width:94vw;padding:20px">
     <div style="font-size:16px;font-weight:700;margin-bottom:14px" id="ed-titulo">Nueva cuenta</div>
     <select id="ed-competidor" style="height:36px;width:100%;padding:0 10px;margin-bottom:10px;border:1px solid var(--border);border-radius:8px;font:inherit;font-size:13px;color:var(--text);background:var(--input-bg)">
@@ -226,27 +245,100 @@
 
     var overlay = document.getElementById('overlay');
     if (!overlay) return;
+    var nueva = document.getElementById('dlg-nueva');
     var edit = document.getElementById('dlg-editar');
     var del = document.getElementById('dlg-borrar');
-    var editando = null, borrando = null;
+    var editando = null, borrando = null, huboAltas = false;
 
     function abrir(cual) {
       overlay.style.display = 'flex';
+      nueva.style.display = cual === 'nueva' ? '' : 'none';
       edit.style.display = cual === 'edit' ? '' : 'none';
       del.style.display = cual === 'del' ? '' : 'none';
     }
-    function cerrar() { overlay.style.display = 'none'; }
+    // si ya se creó algo, al cerrar hay que recargar para refrescar la tabla
+    function cerrar() {
+      if (huboAltas) { window.location.reload(); return; }
+      overlay.style.display = 'none';
+    }
     document.querySelectorAll('[data-cerrar]').forEach(function (b) { b.addEventListener('click', cerrar); });
     overlay.addEventListener('click', function (ev) { if (ev.target === overlay) cerrar(); });
 
+    // --- alta rápida: una marca, N URLs ---------------------------------
+    var nvCompetidor = document.getElementById('nv-competidor');
+    var nvMarca = document.getElementById('nv-marca');
+    var nvUrls = document.getElementById('nv-urls');
+    var nvPreview = document.getElementById('nv-preview');
+
+    // mismo criterio que DOMINIOS en index.py; aquí solo alimenta el preview
+    var REDES = [['instagram.com', 'Instagram'], ['tiktok.com', 'TikTok'],
+                 ['facebook.com', 'Facebook'], ['fb.com', 'Facebook'],
+                 ['youtube.com', 'YouTube'], ['youtu.be', 'YouTube']];
+
+    function detectar(url) {
+      var u = url.toLowerCase();
+      for (var i = 0; i < REDES.length; i++) if (u.indexOf(REDES[i][0]) >= 0) return REDES[i][1];
+      return null;
+    }
+    function lineas() {
+      return nvUrls.value.split(/[\s,]+/).filter(function (s) { return s.trim(); });
+    }
+    function pintarPreview() {
+      var urls = lineas(), cuenta = {}, sinRed = 0;
+      urls.forEach(function (u) {
+        var p = detectar(u);
+        if (p) cuenta[p] = (cuenta[p] || 0) + 1; else sinRed++;
+      });
+      if (!urls.length) { nvPreview.textContent = ''; return; }
+      var partes = Object.keys(cuenta).map(function (p) { return cuenta[p] + ' ' + p; });
+      if (sinRed) partes.push(sinRed + ' sin red reconocida');
+      nvPreview.textContent = urls.length + (urls.length === 1 ? ' URL · ' : ' URLs · ') + partes.join(' · ');
+    }
+    function sincronizarMarca() {
+      nvMarca.style.display = nvCompetidor.value ? 'none' : '';
+      if (!nvCompetidor.value) nvMarca.focus();
+    }
+    nvCompetidor.addEventListener('change', sincronizarMarca);
+    nvUrls.addEventListener('input', pintarPreview);
+
     document.querySelectorAll('[data-nueva]').forEach(function (b) {
       b.addEventListener('click', function () {
-        editando = null;
-        document.getElementById('ed-titulo').textContent = 'Nueva cuenta';
-        document.getElementById('ed-url').value = '';
-        document.getElementById('ed-activo').checked = true;
-        document.getElementById('ed-error').style.display = 'none';
-        abrir('edit');
+        nvMarca.value = '';
+        nvUrls.value = '';
+        document.getElementById('nv-activo').checked = true;
+        document.getElementById('nv-error').style.display = 'none';
+        nvPreview.textContent = '';
+        sincronizarMarca();
+        abrir('nueva');
+      });
+    });
+
+    document.getElementById('nv-guardar').addEventListener('click', function () {
+      var btn = this, err = document.getElementById('nv-error');
+      err.style.display = 'none';
+      btn.disabled = true;
+      llamar('guardar_lote', {
+        competidor: nvCompetidor.value,
+        nueva_marca: nvCompetidor.value ? '' : nvMarca.value.trim(),
+        urls: nvUrls.value,
+        activo: document.getElementById('nv-activo').checked ? 1 : 0
+      }).then(function (r) {
+        btn.disabled = false;
+        if (r.creadas.length) huboAltas = true;
+        if (!r.errores.length) { window.location.reload(); return; }
+        // deja pendientes solo las que fallaron, para corregirlas en el sitio
+        nvUrls.value = r.errores.map(function (e) { return e.url; }).join('\n');
+        pintarPreview();
+        var resumen = [];
+        if (r.creadas.length) resumen.push(r.creadas.length + ' añadida(s)');
+        if (r.omitidas.length) resumen.push(r.omitidas.length + ' ya existía(n)');
+        err.textContent = (resumen.length ? resumen.join(' · ') + '\n' : '')
+          + r.errores.map(function (e) { return '· ' + e.url + ' → ' + e.motivo; }).join('\n');
+        err.style.display = '';
+      }).catch(function (e) {
+        btn.disabled = false;
+        err.textContent = String(e.message).replace(/<[^>]*>/g, '');
+        err.style.display = '';
       });
     });
     document.querySelectorAll('[data-editar]').forEach(function (b) {
