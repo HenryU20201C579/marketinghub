@@ -18,8 +18,7 @@
   "posts_por_perfil_tiktok",
   "posts_por_perfil",
   "sb_topes",
-  "tope_corrida_usd",
-  "tope_mes_usd",
+  "tope_ciclo_usd",
   "sb_scheduler",
   "preset_frecuencia",
   "cron_scrape",
@@ -169,29 +168,21 @@
   {
    "fieldname": "sb_topes",
    "fieldtype": "Section Break",
-   "label": "Tope de gasto en Apify"
+   "label": "Presupuesto de Apify"
   },
   {
-   "default": "0",
-   "description": "Coste maximo estimado de una sola corrida. 0 = sin tope. Si el estimado lo supera, el boton de ejecutar se bloquea.",
-   "fieldname": "tope_corrida_usd",
+   "default": "15",
+   "description": "Gasto maximo dentro del ciclo de facturacion de Apify (el que renueva cada 14). 0 = sin tope. Se compara contra el consumo real que reporta Apify.",
+   "fieldname": "tope_ciclo_usd",
    "fieldtype": "Float",
-   "label": "Tope por corrida (USD)",
-   "precision": "3"
-  },
-  {
-   "default": "0",
-   "description": "Gasto maximo acumulado en el mes en curso. 0 = sin tope. Se compara contra lo ya gastado mas el estimado de la corrida.",
-   "fieldname": "tope_mes_usd",
-   "fieldtype": "Float",
-   "label": "Tope mensual (USD)",
+   "label": "Tope por ciclo de Apify (USD)",
    "precision": "2"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-08-15 13:00:00.000000",
+ "modified": "2026-08-15 19:00:00.000000",
  "modified_by": "Administrator",
  "module": "MarketingHub",
  "name": "Radar Settings",

@@ -2,7 +2,7 @@
 
 El cron diario se llevaba el 80% del gasto en Apify corriendo solo (8 corridas
 programadas = $2.92 vs 7 manuales = $0.74). Ahora la unica forma de gastar es
-el boton de /radar/settings, que valida los topes.
+el boton de /radar/settings, que valida el tope del ciclo.
 
 `scheduler_events` ya no declara el job, asi que `sync_jobs` lo borra en el
 migrate; este patch lo detiene antes por si el borrado no llega, y normaliza el

@@ -52,7 +52,11 @@ def get_context(context):
 		return
 
 	s = frappe.get_cached_doc("Radar Settings")
-	datos = obtener_settings()
+
+	# precio por item ya calibrado con lo que Apify cobró de verdad
+	estimacion = estimar_corrida()
+	datos = obtener_settings(estimacion["por_marca"])
+	precio = estimacion["precio"]
 
 	context.ig = datos["posts_por_perfil_ig"]
 	context.tt = datos["posts_por_perfil_tiktok"]
@@ -60,10 +64,6 @@ def get_context(context):
 	# Límite por marca: una fila por competidor con cuentas activas
 	context.marcas = datos["marcas"]
 	context.marcas_json = frappe.as_json(datos["marcas"]).replace("</", "<\\/")
-
-	# precio por item ya calibrado con lo que Apify cobró de verdad
-	estimacion = estimar_corrida()
-	precio = estimacion["precio"]
 	context.coste_ig = f"{precio['Instagram']:.4f}"
 	context.coste_tt = f"{precio['TikTok']:.4f}"
 	# el JS recalcula el estimado mientras editas: con el precio redondeado a 4
@@ -78,44 +78,45 @@ def get_context(context):
 		"sube": precio["factor"] > 1,
 	}
 
-	# Control de gasto: cada corrida, el acumulado y los topes
+	# Control de gasto: cada corrida, el acumulado y el presupuesto del ciclo
 	gasto = resumen_gasto()
+	propias = gasto["propias"]
 	context.gasto = {
 		"ultima": f"{gasto['ultima_usd']:.3f}",
 		"mes": f"{gasto['mes_usd']:.2f}",
 		"mes_corridas": gasto["mes_corridas"],
 		"total": f"{gasto['total_usd']:.2f}",
 		"total_corridas": gasto["total_corridas"],
-		"promedio": f"{(gasto['total_usd'] / gasto['total_corridas']):.3f}" if gasto["total_corridas"] else "0.000",
+		# el promedio solo cuenta las corridas del panel: las importadas del
+		# histórico de Apify no traen items y ensucian la media
+		"promedio": f"{propias['promedio']:.3f}",
+		"propias_n": propias["corridas"],
+		"importadas_n": gasto["total_corridas"] - propias["corridas"],
+		"importadas_usd": f"{gasto['total_usd'] - propias['usd']:.2f}",
 	}
 
-	topes = gasto["topes"]
-	context.topes = {
-		"corrida": _num(topes["corrida"]),
-		"mes": _num(topes["mes"]),
-		"pct_mes": topes["pct_mes"],
-		"agotado": topes["agotado"],
-		"restante": f"{topes['restante_mes']:.2f}" if topes["restante_mes"] is not None else "",
-		"hay_mes": bool(topes["mes"]),
-		# con el estimado actual, ¿cuántas corridas completas caben?
-		"caben": int(topes["restante_mes"] / estimacion["total"])
-		if topes["restante_mes"] and estimacion["total"] else None,
+	p = gasto["presupuesto"]
+	context.presupuesto = {
+		"tope": _num(p["tope"]),
+		"hay_tope": bool(p["tope"]),
+		"techo": f"{p['techo']:.2f}" if p["techo"] else "",
+		"limite_apify": f"{p['limite_apify']:.0f}" if p["limite_apify"] else "",
+		"gastado": f"{p['gastado']:.2f}",
+		"restante": f"{p['restante']:.2f}" if p["restante"] is not None else "",
+		"restante_num": p["restante"] if p["restante"] is not None else 0,
+		"pct": p["pct"],
+		"agotado": p["agotado"],
+		"renueva": _fecha_corta(p.get("renueva")),
+		"dias_a_renovar": p["dias_a_renovar"],
+		"ritmo": f"{p['ritmo_dia']:.2f}",
+		"hay_ritmo": p["ritmo_dia"] > 0,
+		"agotamiento": frappe.utils.formatdate(p["agotamiento"], "dd/MM") if p["agotamiento"] else "",
+		"dias_restantes": p["dias_restantes"],
+		"llega": p["llega"],
+		"corridas_media": p["corridas_media"],
+		"corridas_completas": p["corridas_completas"],
+		"media_corrida": f"{p['media_corrida']:.3f}",
 	}
-
-	# crédito del ciclo de Apify: si llega a 0, el scraper no puede traer nada
-	cred = gasto.get("credito")
-	if cred and cred["limite"]:
-		usado_pct = min(100, round(cred["usado"] / cred["limite"] * 100))
-		context.credito = {
-			"restante": f"{cred['restante']:.2f}",
-			"usado": f"{cred['usado']:.2f}",
-			"limite": f"{cred['limite']:.0f}",
-			"pct": usado_pct,
-			"agotado": cred["restante"] < 0.05,
-			"renueva": _fecha_corta(cred.get("renueva")),
-		}
-	else:
-		context.credito = None
 
 	# conteo de lo scrapeado por red social.
 	# las claves NO pueden llamarse "items": en Jinja `r.items` resuelve el método
@@ -202,8 +203,21 @@ def _fecha_corta(iso):
 	return f"{iso[8:10]}/{iso[5:7]}"
 
 
-def _marcas_con_cuentas():
-	"""Competidores que tienen al menos una cuenta activa, con su límite propio."""
+def _ultima_por_marca():
+	"""Fecha y hora de la última corrida en la que entró cada marca."""
+	filas = frappe.db.sql("""
+		SELECT m.marca AS marca, MAX(c.fecha_inicio) AS ultima
+		FROM `tabRadar Corrida Marca` m
+		JOIN `tabRadar Corrida` c ON c.name = m.parent
+		GROUP BY m.marca
+	""", as_dict=True)
+	return {f["marca"]: f["ultima"] for f in filas if f["ultima"]}
+
+
+def _marcas_con_cuentas(estimados=None):
+	"""Competidores que tienen al menos una cuenta activa, con su límite propio.
+
+	`estimados` = {marca: usd} de estimar_corrida(), para no recalcularlo aquí."""
 	cuentas = frappe.db.get_all(
 		"Cuenta Social",
 		filters={"activo": 1, "plataforma": ["in", ("Instagram", "TikTok")]},
@@ -223,6 +237,9 @@ def _marcas_con_cuentas():
 			fields=["name", "limite_posts", "pausar_radar"],
 		)
 	}
+	ultimas = _ultima_por_marca()
+	estimados = estimados or {}
+	ahora = frappe.utils.now_datetime()
 
 	marcas = []
 	for nombre, redes in por_marca.items():
@@ -232,6 +249,10 @@ def _marcas_con_cuentas():
 				f"{redes['tt']} TikTok" if redes["tt"] else "",
 			) if t
 		)
+		ultima = ultimas.get(nombre)
+		# aviso si se scrapeó hace poco: repetir el mismo día vuelve a pagar los
+		# mismos posts, que es donde se fue el dinero el 15/08
+		horas = ((ahora - ultima).total_seconds() / 3600) if ultima else None
 		marcas.append({
 			"nombre": nombre,
 			"ini": _iniciales(nombre),
@@ -240,13 +261,16 @@ def _marcas_con_cuentas():
 			"ig": redes["ig"],
 			"tt": redes["tt"],
 			"redes": redes_txt,
+			"ultima": frappe.utils.format_datetime(ultima, "dd/MM/yy HH:mm") if ultima else "",
+			"reciente": bool(horas is not None and horas < 24),
+			"estimado": f"{estimados.get(nombre, 0):.3f}",
 		})
 	marcas.sort(key=lambda m: m["nombre"].lower())
 	return marcas
 
 
 @frappe.whitelist()
-def obtener_settings():
+def obtener_settings(estimados=None):
 	"""Valores actuales de Radar Settings que pinta la página."""
 	if not _has_role(VIEW_ROLES):
 		frappe.throw("Acceso denegado", frappe.PermissionError)
@@ -254,9 +278,8 @@ def obtener_settings():
 	return {
 		"posts_por_perfil_ig": s.posts_por_perfil_ig or 20,
 		"posts_por_perfil_tiktok": s.posts_por_perfil_tiktok or 20,
-		"tope_corrida_usd": float(s.get("tope_corrida_usd") or 0),
-		"tope_mes_usd": float(s.get("tope_mes_usd") or 0),
-		"marcas": _marcas_con_cuentas(),
+		"tope_ciclo_usd": float(s.get("tope_ciclo_usd") or 0),
+		"marcas": _marcas_con_cuentas(estimados),
 	}
 
 
@@ -264,8 +287,7 @@ def obtener_settings():
 def guardar_settings(
 	posts_por_perfil_ig=None,
 	posts_por_perfil_tiktok=None,
-	tope_corrida_usd=None,
-	tope_mes_usd=None,
+	tope_ciclo_usd=None,
 	limites_marca=None,
 	pausas_marca=None,
 ):
@@ -282,8 +304,7 @@ def guardar_settings(
 	s = frappe.get_single("Radar Settings")
 	if posts_por_perfil_ig is not None:      s.posts_por_perfil_ig = int(posts_por_perfil_ig)
 	if posts_por_perfil_tiktok is not None:  s.posts_por_perfil_tiktok = int(posts_por_perfil_tiktok)
-	if tope_corrida_usd is not None:         s.tope_corrida_usd = _usd(tope_corrida_usd, "tope por corrida")
-	if tope_mes_usd is not None:             s.tope_mes_usd = _usd(tope_mes_usd, "tope mensual")
+	if tope_ciclo_usd is not None:           s.tope_ciclo_usd = _usd(tope_ciclo_usd, "tope por ciclo")
 
 	s.save(ignore_permissions=True)
 

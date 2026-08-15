@@ -18,7 +18,7 @@ class RadarSettings(Document):
 	def validate(self):
 		# no hay más modo que manual: cualquier valor heredado se normaliza
 		self.preset_frecuencia = PRESET_MANUAL
-		self._validar_topes()
+		self._validar_presupuesto()
 		self._validar_tiers()
 
 	def on_update(self):
@@ -34,22 +34,15 @@ class RadarSettings(Document):
 		if name and not frappe.db.get_value("Scheduled Job Type", name, "stopped"):
 			frappe.db.set_value("Scheduled Job Type", name, "stopped", 1)
 
-	# ------------------- Topes de gasto -------------------
-	def _validar_topes(self):
-		for campo, etiqueta in (
-			("tope_corrida_usd", "tope por corrida"),
-			("tope_mes_usd", "tope mensual"),
-		):
-			valor = float(self.get(campo) or 0)
-			if valor < 0:
-				frappe.throw(f"El {etiqueta} no puede ser negativo.")
-		corrida = float(self.tope_corrida_usd or 0)
-		mes = float(self.tope_mes_usd or 0)
-		if corrida and mes and corrida > mes:
-			frappe.throw(
-				f"El tope por corrida (${corrida:.3f}) no puede ser mayor "
-				f"que el tope mensual (${mes:.2f})."
-			)
+	# ------------------- Presupuesto -------------------
+	def _validar_presupuesto(self):
+		"""Un único tope, atado al ciclo de facturación de Apify (renueva cada 14).
+
+		Se mide contra el consumo que reporta Apify, no contra el mes natural: el
+		crédito no se renueva el día 1."""
+		tope = float(self.get("tope_ciclo_usd") or 0)
+		if tope < 0:
+			frappe.throw("El tope por ciclo no puede ser negativo.")
 
 	# ------------------- Tiers -------------------
 	def _validar_tiers(self):

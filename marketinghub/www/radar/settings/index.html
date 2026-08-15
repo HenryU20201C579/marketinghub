@@ -102,12 +102,15 @@
           </div>
           <div class="cfg-marca-list">
             {% for m in marcas %}
-            <div class="cfg-marca{% if m.pausada %} is-pausada{% endif %}" data-marca="{{ m.nombre|e }}" data-ig="{{ m.ig }}" data-tt="{{ m.tt }}">
+            <div class="cfg-marca{% if m.pausada %} is-pausada{% endif %}" data-marca="{{ m.nombre|e }}"
+                 data-estimado="{{ m.estimado }}" data-ultima="{{ m.ultima }}" data-reciente="{{ 1 if m.reciente else 0 }}">
               <span class="cfg-tier__ini">{{ m.ini|e }}</span>
               <div class="cfg-marca__txt">
                 <span class="cfg-marca__nom">{{ m.nombre|e }}
                   {%- if m.pausada %}<span class="cfg-marca__tag">en pausa</span>{% endif %}</span>
-                <span class="cfg-marca__redes">{{ m.redes|e }}</span>
+                <span class="cfg-marca__redes">{{ m.redes|e }} ·
+                  {%- if m.ultima %} <span class="cfg-marca__ultima{% if m.reciente %} is-reciente{% endif %}">{{ m.ultima }}</span>
+                  {%- else %} <span class="cfg-marca__ultima is-nunca">nunca</span>{% endif %}</span>
               </div>
               <input class="cfg-input cfg-input--num" type="text" value="{{ m.limite }}" data-campo="limite"{% if not can_edit %} disabled{% endif %}>
               {% if can_edit %}
@@ -140,67 +143,61 @@
       <!-- ---- Columna derecha: lo que cuesta ---- -->
       <div class="cfg-col-right">
 
-        <!-- Tope de gasto -->
+        <!-- Presupuesto de Apify -->
         <section class="cfg-card">
           <div class="cfg-card__head">
-            <span class="cfg-card__title"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z M12 7.5V12 M12 15.6v.1"/></svg>Tope de gasto</span>
-            <span class="cfg-card__meta">{% if topes.hay_mes %}${{ topes.mes }}/mes{% else %}Sin tope{% endif %}</span>
+            <span class="cfg-card__title"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z M12 7.5V12 M12 15.6v.1"/></svg>Presupuesto de Apify</span>
+            <span class="cfg-card__meta">{% if presupuesto.renueva %}renueva el {{ presupuesto.renueva }}{% endif %}</span>
           </div>
-          <p class="cfg-card__note">Si una corrida se pasa del tope, el ▶ la rechaza antes de llamar a Apify. <strong>0</strong> = sin tope.</p>
+
+          <div class="cfg-credito{% if presupuesto.agotado %} is-agotado{% endif %}">
+            <div class="cfg-credito__top">
+              <span class="cfg-credito__lbl">{% if presupuesto.agotado %}Presupuesto agotado{% else %}Crédito del ciclo{% endif %}</span>
+              <span class="cfg-credito__val" id="restante">${{ presupuesto.restante }} de ${{ presupuesto.techo }}</span>
+            </div>
+            <div class="cfg-progress__track"><div class="cfg-credito__bar" style="width:{{ presupuesto.pct }}%"></div></div>
+            <span class="cfg-credito__hint">
+              {% if presupuesto.agotado %}Las corridas quedan bloqueadas hasta que suba el tope o renueve el ciclo.
+              {% else %}Llevas ${{ presupuesto.gastado }} gastados{% if presupuesto.dias_a_renovar %}; quedan {{ presupuesto.dias_a_renovar }} días de ciclo{% endif %}.{% endif %}
+            </span>
+          </div>
+
+          <!-- predicciones -->
+          <div class="cfg-pred">
+            {% if presupuesto.hay_ritmo and presupuesto.agotamiento %}
+            <div class="cfg-pred__fila{% if presupuesto.llega == False %} is-alerta{% endif %}">
+              <span class="cfg-pred__ico">▸</span>
+              <span>A tu ritmo (<strong>${{ presupuesto.ritmo }}/día</strong>) se acaba el <strong>{{ presupuesto.agotamiento }}</strong>{% if presupuesto.llega == False %} — antes de renovar el {{ presupuesto.renueva }}{% elif presupuesto.llega %} — llegas de sobra al {{ presupuesto.renueva }}{% endif %}.</span>
+            </div>
+            {% endif %}
+            {% if presupuesto.corridas_media %}
+            <div class="cfg-pred__fila">
+              <span class="cfg-pred__ico">▸</span>
+              <span>Te alcanza para <strong>≈{{ presupuesto.corridas_media }} corridas</strong> como las tuyas (${{ presupuesto.media_corrida }}){% if presupuesto.corridas_completas %} · <strong>≈{{ presupuesto.corridas_completas }}</strong> de todas las marcas (${{ coste_total }}){% endif %}.</span>
+            </div>
+            {% endif %}
+          </div>
 
           <div class="cfg-fields">
             <div class="cfg-field">
-              <span class="cfg-field__label">Por corrida</span>
+              <span class="cfg-field__label">Tope del ciclo</span>
               <div class="cfg-field__box">
                 <span class="cfg-field__unit">$</span>
-                <input type="text" name="tope_corrida_usd" value="{{ topes.corrida }}"{% if not can_edit %} disabled{% endif %}>
+                <input type="text" name="tope_ciclo_usd" value="{{ presupuesto.tope }}"{% if not can_edit %} disabled{% endif %}>
               </div>
-              <span class="cfg-field__hint">Estimado de todas ahora mismo: ${{ coste_total }}.</span>
-            </div>
-
-            <div class="cfg-field">
-              <span class="cfg-field__label">Al mes</span>
-              <div class="cfg-field__box">
-                <span class="cfg-field__unit">$</span>
-                <input type="text" name="tope_mes_usd" value="{{ topes.mes }}"{% if not can_edit %} disabled{% endif %}>
-              </div>
-              <span class="cfg-field__hint">Llevas ${{ gasto.mes }} este mes.</span>
+              <span class="cfg-field__hint">Al llegar aquí, el ▶ se bloquea. <strong>0</strong> = sin tope, solo el crédito de Apify (${{ presupuesto.limite_apify }}).</span>
             </div>
           </div>
-
-          {% if topes.hay_mes %}
-          <div class="cfg-credito{% if topes.agotado %} is-agotado{% endif %}">
-            <div class="cfg-credito__top">
-              <span class="cfg-credito__lbl">{% if topes.agotado %}Tope mensual agotado{% else %}Consumido del tope{% endif %}</span>
-              <span class="cfg-credito__val">${{ gasto.mes }} de ${{ topes.mes }}</span>
-            </div>
-            <div class="cfg-progress__track"><div class="cfg-credito__bar" style="width:{{ topes.pct_mes }}%"></div></div>
-            <span class="cfg-credito__hint">
-              {% if topes.agotado %}Las corridas quedan bloqueadas hasta el mes que viene o hasta que subas el tope.
-              {% else %}Quedan ${{ topes.restante }}{% if topes.caben %} ≈ {{ topes.caben }} corridas completas{% endif %}.{% endif %}
-            </span>
-          </div>
-          {% endif %}
         </section>
 
         <!-- Gasto en Apify -->
         <section class="cfg-card">
           <div class="cfg-card__head">
             <span class="cfg-card__title"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v17 M15.5 7.5a3.5 3.5 0 0 0-3.5-2c-2 0-3.5 1-3.5 2.7 0 3.8 7 2.3 7 6.1 0 1.8-1.5 2.9-3.5 2.9a3.8 3.8 0 0 1-3.7-2.3"/></svg>Gasto en Apify</span>
-            <span class="cfg-card__meta">{{ gasto.total_corridas }} corridas registradas</span>
+            <span class="cfg-card__meta">{{ gasto.propias_n }} corridas tuyas{% if gasto.importadas_n %} · {{ gasto.importadas_n }} del histórico{% endif %}</span>
           </div>
-          {% if credito %}
-          <div class="cfg-credito{% if credito.agotado %} is-agotado{% endif %}">
-            <div class="cfg-credito__top">
-              <span class="cfg-credito__lbl">{% if credito.agotado %}Sin crédito en Apify{% else %}Crédito del ciclo{% endif %}</span>
-              <span class="cfg-credito__val">${{ credito.restante }} de ${{ credito.limite }}</span>
-            </div>
-            <div class="cfg-progress__track"><div class="cfg-credito__bar" style="width:{{ credito.pct }}%"></div></div>
-            <span class="cfg-credito__hint">
-              {% if credito.agotado %}Las corridas fallan hasta que recargues el plan{% if credito.renueva %} o se renueve el {{ credito.renueva }}{% endif %}.
-              {% else %}Llevas ${{ credito.usado }} usados{% if credito.renueva %}; renueva el {{ credito.renueva }}{% endif %}.{% endif %}
-            </span>
-          </div>
+          {% if gasto.importadas_n %}
+          <p class="cfg-card__note">El <strong>promedio</strong> es solo de tus corridas. Las {{ gasto.importadas_n }} importadas del histórico de Apify (${{ gasto.importadas_usd }}) sí suman al acumulado, pero no traen conteo de items.</p>
           {% endif %}
           <div class="cfg-stats">
             <div class="cfg-stat"><span class="cfg-stat__k">Última corrida</span><span class="cfg-stat__v cfg-stat__v--ok">${{ gasto.ultima }}</span></div>
@@ -272,6 +269,8 @@
     var MARCAS = {{ marcas_json }};
     var COSTE_ITEM = { ig: {{ coste_ig_js }}, tt: {{ coste_tt_js }} };
     var PUEDE_EDITAR = {{ 'true' if can_edit else 'false' }};
+    var RESTANTE = {{ presupuesto.restante_num or 0 }};
+    var TECHO = '{{ presupuesto.techo }}';
 
     function post(url, datos) {
       return fetch(url, {
@@ -332,8 +331,7 @@
       return {
         posts_por_perfil_ig: valor('posts_por_perfil_ig'),
         posts_por_perfil_tiktok: valor('posts_por_perfil_tiktok'),
-        tope_corrida_usd: valor('tope_corrida_usd'),
-        tope_mes_usd: valor('tope_mes_usd'),
+        tope_ciclo_usd: valor('tope_ciclo_usd'),
         limites_marca: leerLimites(),
         pausas_marca: leerPausas()
       };
@@ -344,8 +342,7 @@
       return {
         posts_por_perfil_ig: datos.posts_por_perfil_ig,
         posts_por_perfil_tiktok: datos.posts_por_perfil_tiktok,
-        tope_corrida_usd: datos.tope_corrida_usd,
-        tope_mes_usd: datos.tope_mes_usd,
+        tope_ciclo_usd: datos.tope_ciclo_usd,
         limites_marca: JSON.stringify(datos.limites_marca),
         pausas_marca: JSON.stringify(datos.pausas_marca)
       };
@@ -458,8 +455,29 @@
         });
     }
 
+    // antes de gastar: se dice cuánto cuesta y con cuánto crédito te quedas
+    function confirmar(fila, marca) {
+      var est = parseFloat(fila.dataset.estimado) || 0;
+      var lineas = ['Scrapear ' + marca + ': gastarás ≈$' + est.toFixed(3) + ' de crédito.'];
+      if (RESTANTE) {
+        lineas.push('Te quedarán ≈$' + Math.max(RESTANTE - est, 0).toFixed(2) + ' de $' + TECHO + '.');
+      }
+      if (fila.dataset.reciente === '1') {
+        lineas.push('');
+        lineas.push('Ojo: ya se scrapeó el ' + fila.dataset.ultima + ' (hace menos de 24 h). ' +
+                    'Volverás a pagar por los mismos posts.');
+      }
+      lineas.push('');
+      lineas.push('¿Correr igual?');
+      return window.confirm(lineas.join('\n'));
+    }
+
     botonesRun().forEach(function (btn) {
-      btn.addEventListener('click', function () { lanzar(btn.dataset.run); });
+      btn.addEventListener('click', function () {
+        var fila = btn.closest('.cfg-marca');
+        if (!confirmar(fila, btn.dataset.run)) return;
+        lanzar(btn.dataset.run);
+      });
     });
 
     // pausar / reanudar una marca: se guarda con el resto de la configuración

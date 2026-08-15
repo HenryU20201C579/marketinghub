@@ -251,6 +251,19 @@
   font-size:9.5px; font-weight:700; letter-spacing:.04em;
   color:var(--top); background:var(--top-soft); text-transform:uppercase;
 }
+/* fecha de la última corrida de la marca */
+.cfg-marca__ultima { font-variant-numeric:tabular-nums; }
+.cfg-marca__ultima.is-reciente { color:var(--top); font-weight:600; }
+.cfg-marca__ultima.is-nunca { font-style:italic; }
+
+/* predicciones del presupuesto */
+.cfg-pred { padding:11px 18px; border-bottom:1px solid var(--hair); display:flex; flex-direction:column; gap:7px; }
+.cfg-pred__fila { display:flex; gap:8px; font-size:12px; line-height:1.5; color:var(--muted); }
+.cfg-pred__fila strong { color:var(--text); font-weight:700; }
+.cfg-pred__ico { color:var(--accent); flex:none; }
+.cfg-pred__fila.is-alerta { color:var(--top); }
+.cfg-pred__fila.is-alerta .cfg-pred__ico,
+.cfg-pred__fila.is-alerta strong { color:var(--top); }
 .cfg-marca__run {
   width:26px; height:26px; display:flex; align-items:center; justify-content:center;
   border-radius:7px; border:1px solid var(--line); background:var(--bg);

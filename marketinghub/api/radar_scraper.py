@@ -813,34 +813,43 @@ def estimar_corrida(solo_marca=None):
 	return {"total": round(total, 4), "por_marca": por_marca, "precio": precio}
 
 
-def _validar_topes(solo_marca=None):
-	"""Bloquea la corrida si su estimado se pasa del tope por corrida o del mes.
+def _consumo_ciclo():
+	"""Cuánto se lleva gastado en el ciclo de facturación actual de Apify.
+
+	La cifra buena es la de Apify (incluye gasto de fuera del Radar). Si la API
+	no contesta, se cae al acumulado de Radar Corrida desde el inicio del ciclo,
+	que se deduce restando un mes a la fecha de renovación."""
+	cred = credito_apify()
+	if cred and cred.get("limite"):
+		return float(cred.get("usado") or 0), cred
+
+	desde = frappe.utils.add_months(frappe.utils.nowdate(), -1)
+	if cred and cred.get("renueva"):
+		desde = frappe.utils.add_months(cred["renueva"][:10], -1)
+	gastado = frappe.db.sql("""
+		SELECT COALESCE(SUM(coste_usd), 0) FROM `tabRadar Corrida`
+		WHERE fecha_inicio >= %s
+	""", (desde,))[0][0]
+	return float(gastado or 0), cred
+
+
+def _validar_tope_ciclo(solo_marca=None):
+	"""Bloquea la corrida si se pasa del tope del ciclo.
 
 	Se valida con el estimado porque el coste real solo se sabe cuando Apify ya
 	cobró: para entonces frenar no sirve de nada."""
-	s = frappe.get_cached_doc("Radar Settings")
-	tope_corrida = float(s.get("tope_corrida_usd") or 0)
-	tope_mes = float(s.get("tope_mes_usd") or 0)
-	if not tope_corrida and not tope_mes:
+	tope = float(frappe.get_cached_doc("Radar Settings").get("tope_ciclo_usd") or 0)
+	if not tope:
 		return
 
+	gastado, _ = _consumo_ciclo()
 	estimado = estimar_corrida(solo_marca)["total"]
-	if tope_corrida and estimado > tope_corrida:
+	if gastado + estimado > tope:
 		frappe.throw(
-			f"La corrida costaría ≈${estimado:.3f} y el tope por corrida es "
-			f"${tope_corrida:.3f}. Baja el límite de posts, pausa marcas o sube el tope."
+			f"Este ciclo llevas ${gastado:.2f} y la corrida sumaría ≈${estimado:.3f}: "
+			f"se pasa del tope de ${tope:.2f}. Baja el límite de posts, pausa marcas "
+			f"o sube el tope."
 		)
-
-	if tope_mes:
-		gastado = float(frappe.db.sql("""
-			SELECT COALESCE(SUM(coste_usd), 0) FROM `tabRadar Corrida`
-			WHERE fecha_inicio >= %s
-		""", (frappe.utils.get_first_day(frappe.utils.nowdate()),))[0][0] or 0)
-		if gastado + estimado > tope_mes:
-			frappe.throw(
-				f"Este mes llevas ${gastado:.2f} y la corrida sumaría ≈${estimado:.3f}: "
-				f"se pasa del tope mensual de ${tope_mes:.2f}."
-			)
 
 
 @frappe.whitelist()
@@ -928,23 +937,79 @@ def resumen_gasto(limite=8):
 		"por_red": por_red,
 		"ultima_por_marca": ultima_por_marca,
 		"credito": credito_apify(),
-		"topes": _estado_topes(float(mes[0] or 0)),
+		"presupuesto": _presupuesto(),
 		"precio": coste_item(),
+		"propias": _gasto_propio(),
 	}
 
 
-def _estado_topes(gastado_mes):
-	"""Topes configurados y cuánto margen queda este mes."""
-	s = frappe.get_cached_doc("Radar Settings")
-	tope_corrida = float(s.get("tope_corrida_usd") or 0)
-	tope_mes = float(s.get("tope_mes_usd") or 0)
+def _gasto_propio():
+	"""Solo las corridas que lanzó alguien desde el panel.
+
+	Las importadas del histórico de Apify tienen coste real pero ningún conteo de
+	items, así que promediarlas junto con las tuyas da una cifra que no describe
+	ni unas ni otras."""
+	fila = frappe.db.sql("""
+		SELECT COUNT(*), COALESCE(SUM(coste_usd), 0) FROM `tabRadar Corrida`
+		WHERE disparada_por != %s
+	""", (IMPORTADA,))[0]
+	n, usd = int(fila[0] or 0), float(fila[1] or 0)
+	return {"corridas": n, "usd": usd, "promedio": (usd / n) if n else 0.0}
+
+
+def _presupuesto():
+	"""Crédito del ciclo, tope propio y predicciones de a dónde va el gasto.
+
+	El "ritmo" se calcula sobre el consumo del ciclo en curso, no sobre el
+	histórico completo: interesa a qué velocidad se está quemando ahora."""
+	tope = float(frappe.get_cached_doc("Radar Settings").get("tope_ciclo_usd") or 0)
+	gastado, cred = _consumo_ciclo()
+
+	limite = float((cred or {}).get("limite") or 0)
+	# el techo real es el más bajo de los dos: tu tope o lo que Apify te da
+	techo = min([x for x in (tope, limite) if x] or [0])
+	restante = round(max(techo - gastado, 0), 4) if techo else None
+
+	renueva = (cred or {}).get("renueva")
+	dias_ciclo = None
+	if renueva:
+		inicio = frappe.utils.add_months(renueva[:10], -1)
+		dias_ciclo = frappe.utils.date_diff(frappe.utils.nowdate(), inicio)
+
+	# ritmo diario: se cuenta el día en curso como uno completo para no dividir
+	# entre cero ni inflar el ritmo con unas horas sueltas
+	ritmo = round(gastado / max(dias_ciclo or 1, 1), 4)
+	propio = _gasto_propio()
+	media_corrida = propio["promedio"]
+	corrida_completa = estimar_corrida()["total"]
+
+	agotamiento, dias_restantes = None, None
+	if restante and ritmo > 0:
+		dias_restantes = int(restante / ritmo)
+		agotamiento = frappe.utils.add_days(frappe.utils.nowdate(), dias_restantes)
+
+	dias_a_renovar = frappe.utils.date_diff(renueva[:10], frappe.utils.nowdate()) if renueva else None
 	return {
-		"corrida": tope_corrida,
-		"mes": tope_mes,
-		"gastado_mes": round(gastado_mes, 4),
-		"restante_mes": round(max(tope_mes - gastado_mes, 0), 4) if tope_mes else None,
-		"pct_mes": min(100, round(gastado_mes / tope_mes * 100)) if tope_mes else 0,
-		"agotado": bool(tope_mes and gastado_mes >= tope_mes),
+		"tope": tope,
+		"limite_apify": limite,
+		"techo": techo,
+		"gastado": round(gastado, 4),
+		"restante": restante,
+		"pct": min(100, round(gastado / techo * 100)) if techo else 0,
+		"agotado": bool(techo and gastado >= techo),
+		"renueva": renueva,
+		"dias_a_renovar": dias_a_renovar,
+		"ritmo_dia": ritmo,
+		"dias_ciclo": dias_ciclo,
+		"agotamiento": agotamiento,
+		"dias_restantes": dias_restantes,
+		# ¿el crédito aguanta hasta la renovación al ritmo actual?
+		"llega": None if (dias_restantes is None or dias_a_renovar is None)
+		         else dias_restantes >= dias_a_renovar,
+		"corridas_media": int(restante / media_corrida) if restante and media_corrida else None,
+		"corridas_completas": int(restante / corrida_completa) if restante and corrida_completa else None,
+		"media_corrida": round(media_corrida, 4),
+		"corrida_completa": corrida_completa,
 	}
 
 
@@ -1064,7 +1129,7 @@ def ejecutar_scrape_ahora(marca=None):
 		frappe.throw(f"La marca «{marca}» no existe.")
 
 	# el tope se valida antes de encolar: una vez que Apify corre, ya cobró
-	_validar_topes(marca)
+	_validar_tope_ciclo(marca)
 
 	actual = progreso_scrape()
 	# si el worker murió a medias, el progreso se queda "corriendo" para siempre:

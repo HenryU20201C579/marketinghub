@@ -110,4 +110,4 @@ fixtures = [
 # la unica forma de dispararlo es el boton ▶ de /radar/settings, que ademas
 # valida los topes de gasto. El cron diario de 6 AM se llevaba el 80% de la
 # factura corriendo solo. Si algun dia vuelve a programarse, tiene que pasar
-# por _validar_topes primero.
+# por _validar_tope_ciclo primero.
