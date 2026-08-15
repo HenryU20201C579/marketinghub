@@ -50,18 +50,26 @@ def _set_progreso(pct, paso, estado="corriendo", **extra):
 
 
 def _pedir_cancelacion(valor):
+	"""Escribe la bandera de cancelación directamente en redis.
+
+	Ojo: `frappe.cache().get_value()` memoriza el valor en `frappe.local.cache`
+	durante todo el job, así que el worker leería siempre el primer resultado y
+	nunca se enteraría de la cancelación. Por eso se usa redis en crudo."""
 	try:
+		cache = frappe.cache()
+		clave = cache.make_key(CANCELAR_KEY)
 		if valor:
-			frappe.cache().set_value(CANCELAR_KEY, "1", expires_in_sec=PROGRESO_TTL)
+			cache.set(clave, "1", ex=PROGRESO_TTL)
 		else:
-			frappe.cache().delete_value(CANCELAR_KEY)
+			cache.delete(clave)
 	except Exception:
 		pass
 
 
 def _cancelacion_pedida():
 	try:
-		return bool(frappe.cache().get_value(CANCELAR_KEY))
+		cache = frappe.cache()
+		return bool(cache.get(cache.make_key(CANCELAR_KEY)))
 	except Exception:
 		return False
 
@@ -550,13 +558,24 @@ def _registrar_gasto(token, inicio, duracion, stats, estado, detalle, items_por_
 		_repartir_coste(mios, por_marca)
 	confirmado = real is not None and n_runs > 0
 
-	# si Apify no confirmó, cada marca se queda con su parte estimada
-	for fila in por_marca:
-		if not confirmado or "coste_usd" not in fila:
+	if not confirmado:
+		# sin confirmación de Apify, cada marca se queda con su parte estimada
+		for fila in por_marca:
 			fila["coste_usd"] = round(fila["items"] * COSTE_ITEM[fila["plataforma"]], 4)
 			fila["coste_real"] = 0
-		else:
-			fila["coste_real"] = 1
+	else:
+		# las filas a las que no se pudo emparejar un run se reparten el sobrante
+		# del total real (proporcional a items), para que la suma por marca cuadre
+		sin_run = [f for f in por_marca if "coste_usd" not in f]
+		sobrante = max(real - sum(f.get("coste_usd", 0) for f in por_marca), 0)
+		base = sum(f["items"] for f in sin_run)
+		for fila in por_marca:
+			if "coste_usd" in fila:
+				fila["coste_real"] = 1
+				continue
+			peso = (fila["items"] / base) if base else (1.0 / len(sin_run))
+			fila["coste_usd"] = round(sobrante * peso, 4)
+			fila["coste_real"] = 0
 
 	doc = frappe.new_doc("Radar Corrida")
 	doc.fecha_inicio = frappe.utils.add_to_date(now_datetime(), seconds=-int(duracion))
