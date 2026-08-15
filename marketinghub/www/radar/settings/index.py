@@ -261,17 +261,6 @@ def obtener_settings():
 
 
 @frappe.whitelist()
-def coste_estimado(marca=None):
-	"""Estimado en vivo de lo que costaría la corrida (todas o una marca).
-
-	La página lo recalcula en JS mientras editas, pero el ▶ pregunta aquí antes
-	de lanzar: el JS no conoce las cuentas ni el precio calibrado del momento."""
-	if not _has_role(VIEW_ROLES):
-		frappe.throw("Acceso denegado", frappe.PermissionError)
-	return estimar_corrida(marca)
-
-
-@frappe.whitelist()
 def guardar_settings(
 	posts_por_perfil_ig=None,
 	posts_por_perfil_tiktok=None,

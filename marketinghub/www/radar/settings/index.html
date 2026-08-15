@@ -354,11 +354,16 @@
     var INICIAL = JSON.stringify(leerTodo());
     var dirty = document.getElementById('dirty');
     var btnGuardar = document.getElementById('guardar');
+    var cajaCoste = document.getElementById('coste');
+    // el server ya pintó el estimado; sin cambios se respeta ese número, que es
+    // el mismo que sale en el hint del tope (JS y Python redondean distinto)
+    var COSTE_SERVER = cajaCoste.textContent;
 
     function revisar() {
       var cambiado = JSON.stringify(leerTodo()) !== INICIAL;
       if (dirty) dirty.style.display = cambiado ? '' : 'none';
       if (btnGuardar) btnGuardar.classList.toggle('is-idle', !cambiado);
+      if (!cambiado) { cajaCoste.textContent = COSTE_SERVER; return; }
       // coste estimado en vivo; las marcas en pausa no suman, igual que en el server
       var ig = parseInt(valor('posts_por_perfil_ig'), 10) || 0;
       var tt = parseInt(valor('posts_por_perfil_tiktok'), 10) || 0;
