@@ -112,8 +112,9 @@ a{color:var(--accent);text-decoration:none} a:hover{color:var(--accent-2);text-d
 .comp .qt{font-size:11px;font-weight:600;color:var(--faint)}
 .comp.off{border-color:var(--hair)} .comp.off .sw{opacity:.3} .comp.off .nm{color:var(--faint)}
 /* swatch de color editable + paleta */
-.sw--edit{cursor:pointer;box-shadow:0 0 0 1px var(--line)}
-.sw--edit:hover{box-shadow:0 0 0 2px var(--c,var(--accent))}
+.sw--edit{width:13px;height:13px;border-radius:4px;cursor:pointer;box-shadow:0 0 0 1px rgba(0,0,0,.14);transition:transform .12s ease,box-shadow .12s ease}
+/* al pasar por la fila se marca que el cuadro es clicable */
+.comp:hover .sw--edit{transform:scale(1.15);box-shadow:0 0 0 2px var(--panel),0 0 0 3px var(--c,var(--accent))}
 .paleta{
   position:fixed;z-index:80;width:186px;padding:10px;border-radius:11px;
   border:1px solid var(--line);background:var(--panel);box-shadow:0 16px 40px rgba(0,0,0,.22)
@@ -135,6 +136,15 @@ a{color:var(--accent);text-decoration:none} a:hover{color:var(--accent-2);text-d
   background:var(--bg);font-family:inherit;font-size:11.5px;font-weight:600;color:var(--muted);cursor:pointer
 }
 .paleta__auto:hover{border-color:var(--accent);color:var(--accent)}
+/* color libre: el picker nativo del navegador para cualquier hex */
+.paleta__libre{
+  display:flex;align-items:center;gap:8px;width:100%;margin-top:9px;padding:5px 8px;border-radius:7px;
+  border:1px solid var(--line);background:var(--bg);font-size:11.5px;font-weight:600;color:var(--muted);cursor:pointer
+}
+.paleta__libre:hover{border-color:var(--accent);color:var(--accent)}
+.paleta__libre input{width:22px;height:22px;flex:none;padding:0;border:none;background:none;cursor:pointer}
+.paleta__libre input::-webkit-color-swatch-wrapper{padding:0}
+.paleta__libre input::-webkit-color-swatch{border:none;border-radius:6px;box-shadow:0 0 0 1px rgba(0,0,0,.14)}
 
 /* cabecera de la lista de marcas + "Todas" */
 .rail-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -168,13 +178,13 @@ a{color:var(--accent);text-decoration:none} a:hover{color:var(--accent-2);text-d
 .cell.sel .num{color:var(--accent);background:var(--accent-soft);font-weight:700}
 .cell.today .num{color:var(--onaccent);background:var(--accent);font-weight:700}
 .cell-n{font-size:10.5px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--faint)}
-.chip{flex:none;display:flex;align-items:center;gap:5px;height:20px;padding:0 6px;border-radius:5px;overflow:hidden}
-.chip .p{flex:none;font-size:9px;font-weight:700;letter-spacing:.03em}
+/* cada chip toma el color de su marca (--c / --c-soft, inline desde el JS).
+   El color se lee por la barra sólida de la izquierda, no por el texto: así los
+   colores claros de la paleta (Plátano, Lavanda) siguen siendo legibles. */
+.chip{flex:none;display:flex;align-items:center;gap:5px;height:20px;padding:0 6px;border-radius:5px;overflow:hidden;
+  border-left:4px solid var(--c,var(--accent));background:var(--c-soft,var(--accent-soft));color:var(--text)}
+.chip .p{flex:none;font-size:9px;font-weight:700;letter-spacing:.03em;color:var(--muted)}
 .chip .t{min-width:0;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-/* cada chip toma el color de su marca (--c / --c-soft, inline desde el JS) */
-.chip{background:var(--c-soft,var(--accent-soft));box-shadow:inset 0 0 0 1px var(--c,var(--accent));color:var(--c,var(--accent))}
-.chip.a{background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent);color:var(--accent)}
-.chip.e{background:var(--top-soft);box-shadow:inset 0 0 0 1px var(--top);color:var(--top)}
 .more{flex:none;font-size:10.5px;font-weight:600;color:var(--muted);padding:1px 4px}
 
 /* panel día */
@@ -186,12 +196,12 @@ a{color:var(--accent);text-decoration:none} a:hover{color:var(--accent-2);text-d
 .day-close{width:24px;height:24px;flex:none;border:0;border-radius:6px;background:none;display:flex;align-items:center;justify-content:center;color:var(--faint);cursor:pointer;padding:0}
 .day-close:hover{color:var(--text);background:var(--raise)}
 .day-list{flex:1;min-height:0;overflow:auto;padding:10px 12px 14px;display:flex;flex-direction:column;gap:8px}
-.ev{border-radius:9px;border:1px solid var(--hair);border-left:3px solid var(--c,var(--accent));background:var(--bg);padding:9px 10px;display:flex;flex-direction:column;gap:5px}
-.ev.e{border-left-color:var(--top)}
+.ev{border-radius:9px;border:1px solid var(--hair);border-left:4px solid var(--c,var(--accent));background:var(--bg);padding:9px 10px;display:flex;flex-direction:column;gap:5px}
 .ev-top{display:flex;align-items:center;gap:7px}
-.ev-p{font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:4px;color:var(--c,var(--accent));background:var(--c-soft,var(--accent-soft))}
-.ev.e .ev-p{color:var(--top);background:var(--top-soft)}
-.ev-c{font-size:11.5px;font-weight:600;color:var(--muted)}
+.ev-p{font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:4px;color:var(--muted);background:var(--raise)}
+/* punto sólido delante del nombre: repite el color de la marca a tamaño legible */
+.ev-c{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--muted)}
+.ev-c::before{content:"";width:8px;height:8px;flex:none;border-radius:999px;background:var(--c,var(--accent))}
 .ev-h{margin-left:auto;font-size:11px;font-variant-numeric:tabular-nums;color:var(--faint)}
 .ev-t{font-size:12.5px;line-height:1.45;text-wrap:pretty}
 .day-empty{padding:32px 8px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;color:var(--muted);font-size:12.5px}

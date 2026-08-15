@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/radar/comparativa/calendario.css?v=cal2">
+<link rel="stylesheet" href="/radar/comparativa/calendario.css?v=cal3">
 <style>
   /* Las celdas del calendario son <button> y el diseño solo declara
      border-right y border-bottom, así que arriba y a la izquierda seguía
@@ -168,13 +168,17 @@
             <button class="paleta__c" type="button" data-hex="{{ p.color }}" title="{{ p.nombre|e }}" style="background:{{ p.color }}"></button>
             {% endfor %}
           </div>
+          <label class="paleta__libre" title="Elegir cualquier color">
+            <input type="color" id="paleta-libre" value="#008060"><span>Otro color…</span>
+          </label>
           <button class="paleta__auto" type="button" data-hex="">Color automático</button>
         </div>
         {% endif %}
 
         <div class="tips">
           <span class="t"><svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="M12 3.5a5.5 5.5 0 0 0-3 10.1V17h6v-3.4a5.5 5.5 0 0 0-3-10.1zM10 20h4"/></svg>Atajos</span>
-          <b>T</b> hoy · flechas para navegar. Clic en un día para ver sus publicaciones.
+          <b>T</b> hoy · flechas para navegar. Clic en un día para ver sus publicaciones.{% if puede_color %}
+          Clic en el <b>cuadro de color</b> de una marca para cambiarlo.{% endif %}
         </div>
       </aside>
 
@@ -240,7 +244,7 @@
 
   /* color de la marca, inyectado como variables CSS en cada chip/evento */
   function estilo(comp){
-    var c = COLORES[comp] || { color: '#94a3b8', tenue: 'rgba(148,163,184,0.13)' };
+    var c = COLORES[comp] || { color: '#94a3b8', tenue: 'rgba(148,163,184,0.16)' };
     return '--c:' + c.color + ';--c-soft:' + c.tenue;
   }
 
@@ -377,33 +381,42 @@
     paleta.querySelectorAll('[data-hex]').forEach(function(b){
       b.classList.toggle('is-on', b.dataset.hex === (COLORES[marca] || {}).color);
     });
+    // el picker nativo arranca en el color que la marca tiene ahora
+    var libre = document.getElementById('paleta-libre');
+    if(libre) libre.value = (COLORES[marca] || {}).color || '#008060';
   }
 
   function cerrarPaleta(){ if(paleta){ paleta.hidden = true; marcaEnEdicion = null; } }
 
+  /* hex vacío = vuelve al color automático */
+  function guardarColor(hex){
+    var marca = marcaEnEdicion;
+    if(!marca) return;
+    fetch('/api/method/marketinghub.www.radar.comparativa.index.guardar_color_competidor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': CSRF },
+      body: JSON.stringify({ competidor: marca, color: hex })
+    }).then(function(r){ return r.json(); }).then(function(j){
+      var d = j.message;
+      if(!d || !d.ok) throw new Error('No se pudo guardar el color');
+      COLORES[marca] = { color: d.color, tenue: d.tenue };
+      var fila = document.querySelector('[data-comp="' + marca.replace(/"/g,'\\"') + '"]');
+      if(fila){
+        fila.style.setProperty('--c', d.color);
+        fila.querySelector('.sw').style.background = d.color;
+      }
+      cerrarPaleta();
+      render();
+    }).catch(function(e){ alert(e.message); });
+  }
+
   if(paleta){
     document.getElementById('paleta-cerrar').addEventListener('click', cerrarPaleta);
     paleta.querySelectorAll('[data-hex]').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        var marca = marcaEnEdicion;
-        if(!marca) return;
-        fetch('/api/method/marketinghub.www.radar.comparativa.index.guardar_color_competidor', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': CSRF },
-          body: JSON.stringify({ competidor: marca, color: btn.dataset.hex })
-        }).then(function(r){ return r.json(); }).then(function(j){
-          var d = j.message;
-          if(!d || !d.ok) throw new Error('No se pudo guardar el color');
-          COLORES[marca] = { color: d.color, tenue: d.tenue };
-          var fila = document.querySelector('[data-comp="' + marca.replace(/"/g,'\\"') + '"]');
-          if(fila){
-            fila.style.setProperty('--c', d.color);
-            fila.querySelector('.sw').style.background = d.color;
-          }
-          cerrarPaleta();
-          render();
-        }).catch(function(e){ alert(e.message); });
-      });
+      btn.addEventListener('click', function(){ guardarColor(btn.dataset.hex); });
+    });
+    document.getElementById('paleta-libre').addEventListener('change', function(){
+      guardarColor(this.value);
     });
     document.addEventListener('keydown', function(e){ if(e.key === 'Escape') cerrarPaleta(); });
     document.addEventListener('click', function(e){

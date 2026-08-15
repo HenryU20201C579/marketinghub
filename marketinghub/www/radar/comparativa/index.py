@@ -95,7 +95,7 @@ def _colores_por_competidor():
 	return colores
 
 
-def _tenue(hex_color, alpha=0.13):
+def _tenue(hex_color, alpha=0.16):
 	"""#0b8043 -> 'rgba(11,128,67,0.13)' para el fondo de los chips."""
 	h = (hex_color or "").lstrip("#")
 	if len(h) == 3:
