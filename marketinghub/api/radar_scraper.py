@@ -32,6 +32,9 @@ COSTE_ITEM = {"Instagram": 0.0027, "TikTok": 0.0037}
 PROGRESO_KEY = "radar_scrape_progreso"
 PROGRESO_TTL = 3600
 
+# marca las corridas reconstruidas desde el histórico de Apify (sin datos de items)
+IMPORTADA = "Importado de Apify"
+
 
 def _set_progreso(pct, paso, estado="corriendo", **extra):
 	"""Publica el avance de la corrida. pct 0-100, estado corriendo|ok|error."""
@@ -369,7 +372,10 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 
 	duracion = round(time.time() - inicio, 1)
 	resumen = f"insert={stats['insert']} update={stats['update']} skip={stats['skip']} error={stats['error']}"
-	estado = "ok" if stats["error"] == 0 else "warn"
+	if sin_credito:
+		estado = "error"
+	else:
+		estado = "ok" if stats["error"] == 0 else "warn"
 	detalle = " · ".join(log_lines) + " · " + resumen
 	_registrar_corrida(duracion, stats, estado, detalle)
 
@@ -559,7 +565,7 @@ def importar_gasto_historico(limite=200, hueco_min=15):
 		doc.fecha_inicio = arranque
 		doc.estado = "warn" if fallidos else "ok"
 		doc.origen = "Programada"
-		doc.disparada_por = "Importado de Apify"
+		doc.disparada_por = IMPORTADA
 		doc.duracion_segundos = round(grupo[-1]["fin_epoch"] - grupo[0]["inicio_epoch"], 1)
 		doc.coste_usd = round(sum(r["usd"] for r in grupo), 4)
 		doc.coste_estimado_usd = 0
@@ -610,7 +616,7 @@ def resumen_gasto(limite=8):
 		"Radar Corrida",
 		fields=["name", "fecha_inicio", "estado", "origen", "alcance", "coste_usd",
 		        "coste_real", "items_total", "insertados", "actualizados",
-		        "duracion_segundos"],
+		        "duracion_segundos", "disparada_por"],
 		order_by="fecha_inicio desc",
 		limit=int(limite),
 	)

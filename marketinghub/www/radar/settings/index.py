@@ -11,7 +11,7 @@ from datetime import date, timedelta
 import frappe
 
 # el precio por item está calibrado con runs reales; vive en el scraper para no duplicarlo
-from marketinghub.api.radar_scraper import COSTE_ITEM, resumen_gasto
+from marketinghub.api.radar_scraper import COSTE_ITEM, IMPORTADA, resumen_gasto
 from marketinghub.marketinghub.doctype.radar_settings.radar_settings import PRESET_MANUAL
 
 no_cache = 1
@@ -116,8 +116,9 @@ def get_context(context):
 
 	context.corridas = []
 	for c in gasto["ultimas"]:
-		# las corridas reconstruidas desde Apify no tienen conteo de items
-		historica = not c["items_total"] and not c["insertados"]
+		# las corridas reconstruidas desde Apify no tienen conteo de items; ojo,
+		# no vale mirar items==0 porque una corrida fallida también trae cero
+		historica = c["disparada_por"] == IMPORTADA
 		context.corridas.append({
 			"cuando": frappe.utils.format_datetime(c["fecha_inicio"], "dd/MM HH:mm"),
 			"coste": f"{float(c['coste_usd'] or 0):.3f}",
