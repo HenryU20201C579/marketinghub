@@ -329,15 +329,22 @@ def guardar_lote(competidor=None, nueva_marca=None, urls=None, activo=1):
 			                "motivo": f"No pude extraer el handle de esa URL de {plataforma}."})
 			continue
 
-		# el name de Cuenta Social es "{plataforma}-{handle}" y es global: el
-		# mismo perfil no puede estar en dos marcas a la vez
-		duenio = frappe.db.get_value("Cuenta Social", f"{plataforma}-{handle}", "competidor")
-		if duenio:
-			if duenio == competidor:
+		# Un handle es único dentro de su red, así que el perfil no puede estar
+		# en dos marcas. Se busca por (plataforma, handle) y NO por el name:
+		# las cuentas creadas antes del patch de autoname tienen name tipo hash
+		# y un lookup por name las pasaría por alto, duplicando el perfil.
+		ya = frappe.db.get_value(
+			"Cuenta Social",
+			{"plataforma": plataforma, "handle": handle},
+			["name", "competidor"],
+			as_dict=True,
+		)
+		if ya:
+			if ya.competidor == competidor:
 				omitidas.append({"url": cruda, "plataforma": plataforma, "handle": handle})
 			else:
 				errores.append({"url": cruda,
-				                "motivo": f"Ese perfil ya está registrado en la marca «{duenio}»."})
+				                "motivo": f"Ese perfil ya está registrado en la marca «{ya.competidor}»."})
 			continue
 
 		punto = f"alta_cuenta_{i}"
