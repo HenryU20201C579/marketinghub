@@ -71,6 +71,44 @@ def _color_for(nombre):
 	return PALETA[hashlib.md5(nombre.encode()).digest()[0] % len(PALETA)]
 
 
+def _colores_por_competidor():
+	"""{competidor: {color, personalizado}} sin dos marcas del mismo color.
+
+	El color propio manda. Para el resto se usa el hash del nombre (estable: no
+	cambia al dar de alta otras marcas) y, si ese color ya está cogido, se avanza
+	por la paleta en orden alfabético para que el reparto sea determinista."""
+	comps = frappe.db.get_all(
+		"Competidor", fields=["name", "color"], order_by="name asc"
+	)
+	usados = {c["color"] for c in comps if c["color"]}
+	colores = {}
+	for c in comps:
+		if c["color"]:
+			colores[c["name"]] = {"color": c["color"], "personalizado": True}
+			continue
+		elegido = _color_for(c["name"])
+		if elegido in usados:
+			libres = [p for p in PALETA if p not in usados]
+			elegido = libres[0] if libres else elegido
+		usados.add(elegido)
+		colores[c["name"]] = {"color": elegido, "personalizado": False}
+	return colores
+
+
+def _tenue(hex_color, alpha=0.13):
+	"""#0b8043 -> 'rgba(11,128,67,0.13)' para el fondo de los chips."""
+	h = (hex_color or "").lstrip("#")
+	if len(h) == 3:
+		h = "".join(c * 2 for c in h)
+	if len(h) != 6:
+		return "transparent"
+	try:
+		r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+	except ValueError:
+		return "transparent"
+	return f"rgba({r},{g},{b},{alpha})"
+
+
 # ============ ARMADO DE LA VISTA ============
 
 def get_context(context):
@@ -87,9 +125,9 @@ def get_context(context):
 	if context.no_access:
 		return
 
-	comps = [c.name for c in frappe.db.get_all("Competidor", fields=["name"], order_by="name asc")]
-	# el diseño colorea dos marcas: la primera con el acento y la segunda en dorado
-	clase = {c: ("a" if i % 2 == 0 else "e") for i, c in enumerate(comps)}
+	# cada marca lleva su propio color (el guardado o el que le toca de la paleta)
+	colores = _colores_por_competidor()
+	comps = sorted(colores)
 
 	eventos = []
 	for p in frappe.db.get_all(
@@ -113,7 +151,6 @@ def get_context(context):
 			"dia": int(iso[8:10]),
 			"plat": REDES.get(p.plataforma, (p.plataforma or "--")[:2].upper()),
 			"comp": p.competidor or "",
-			"cls": clase.get(p.competidor or "", "a"),
 			"titulo": _limpiar(p.titulo_hook) or p.name,
 			"vistas": int(p.vistas_actual or 0),
 			"tier": p.tier or "Sin tier",
@@ -124,9 +161,23 @@ def get_context(context):
 	context.eventos_json = frappe.as_json(eventos).replace("</", "<\\/")
 	context.hoy_json = frappe.as_json({"dia": hoy.day, "mes": hoy.month - 1, "anio": hoy.year})
 	context.competidores = [
-		{"nombre": c, "cls": clase[c], "color": "var(--top)" if clase[c] == "e" else "var(--accent)"}
+		{
+			"nombre": c,
+			"color": colores[c]["color"],
+			"tenue": _tenue(colores[c]["color"]),
+			"personalizado": colores[c]["personalizado"],
+		}
 		for c in comps
 	]
+	# el JS pinta cada publicación con el color de su marca
+	context.colores_json = frappe.as_json({
+		c: {"color": colores[c]["color"], "tenue": _tenue(colores[c]["color"])}
+		for c in comps
+	}).replace("</", "<\\/")
+	context.paleta = PALETA_LABELS
+	context.puede_color = _has_role((
+		"Marketinghub-Radar-Administrar", "Marketinghub-Radar-Analista", "System Manager",
+	))
 	context.tiers = _tiers()
 	context.redes = [
 		{"sigla": s, "nombre": n} for n, s in REDES.items()
@@ -139,6 +190,10 @@ def get_context(context):
 	except Exception:
 		context.contadores = {}
 	context.ultima_corrida = _ultima_corrida()
+	try:
+		context.csrf_token = frappe.local.session.data.csrf_token
+	except Exception:
+		context.csrf_token = ""
 
 
 def _tiers():
@@ -173,18 +228,10 @@ def obtener_competidores():
 	Usa el campo `color` si está seteado; sino asigna uno estable por hash."""
 	if not _has_role(VIEW_ROLES):
 		frappe.throw("Acceso denegado", frappe.PermissionError)
-	comps = frappe.db.get_all(
-		"Competidor",
-		fields=["name", "color"],
-		order_by="nombre_comercial asc",
-	)
+	colores = _colores_por_competidor()
 	return [
-		{
-			"nombre": c["name"],
-			"color": c["color"] or _color_for(c["name"]),
-			"personalizado": bool(c["color"]),
-		}
-		for c in comps
+		{"nombre": c, "color": datos["color"], "personalizado": datos["personalizado"]}
+		for c, datos in sorted(colores.items())
 	]
 
 
@@ -212,8 +259,14 @@ def guardar_color_competidor(competidor=None, color=None):
 		frappe.throw(f"Color inválido: {color!r} (debe ser #rrggbb o vacío)")
 	frappe.db.set_value("Competidor", competidor, "color", color or None)
 	frappe.db.commit()
-	nuevo = color or _color_for(competidor)
-	return {"ok": True, "color": nuevo, "personalizado": bool(color)}
+	# al resetear, el color vuelve a salir del reparto automático (sin colisiones)
+	asignado = _colores_por_competidor().get(competidor, {})
+	return {
+		"ok": True,
+		"color": asignado.get("color") or _color_for(competidor),
+		"tenue": _tenue(asignado.get("color") or _color_for(competidor)),
+		"personalizado": bool(color),
+	}
 
 
 @frappe.whitelist()

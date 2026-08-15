@@ -148,9 +148,29 @@
             <button class="rail-all" type="button" id="comp-todas" title="Ver todas las marcas">Todas</button>
           </div>
           {% for c in competidores %}
-          <button class="comp" data-comp="{{ c.nombre|e }}"><span class="sw" style="background:{{ c.color }}"></span><span class="nm">{{ c.nombre|e }}</span><span class="qt tnum" data-qt></span><span class="solo" data-solo="{{ c.nombre|e }}" title="Ver solo {{ c.nombre|e }}">solo</span></button>
+          <button class="comp" data-comp="{{ c.nombre|e }}" style="--c:{{ c.color }}">
+            <span class="sw{% if puede_color %} sw--edit{% endif %}" style="background:{{ c.color }}"
+                  {% if puede_color %}data-color="{{ c.nombre|e }}" title="Cambiar el color de {{ c.nombre|e }}"{% endif %}></span>
+            <span class="nm">{{ c.nombre|e }}</span>
+            <span class="qt tnum" data-qt></span>
+            <span class="solo" data-solo="{{ c.nombre|e }}" title="Ver solo {{ c.nombre|e }}">solo</span>
+          </button>
           {% endfor %}
         </div>
+
+        {% if puede_color %}
+        <!-- paleta para elegir el color de una marca -->
+        <div class="paleta" id="paleta" hidden>
+          <div class="paleta__top"><span class="paleta__nom" id="paleta-nom"></span>
+            <button class="paleta__x" type="button" id="paleta-cerrar" title="Cerrar">×</button></div>
+          <div class="paleta__grid">
+            {% for p in paleta %}
+            <button class="paleta__c" type="button" data-hex="{{ p.color }}" title="{{ p.nombre|e }}" style="background:{{ p.color }}"></button>
+            {% endfor %}
+          </div>
+          <button class="paleta__auto" type="button" data-hex="">Color automático</button>
+        </div>
+        {% endif %}
 
         <div class="tips">
           <span class="t"><svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="M12 3.5a5.5 5.5 0 0 0-3 10.1V17h6v-3.4a5.5 5.5 0 0 0-3-10.1zM10 20h4"/></svg>Atajos</span>
@@ -215,6 +235,14 @@
   /* datos */
   var EVENTOS = {{ eventos_json }};
   var HOY = {{ hoy_json }};
+  var COLORES = {{ colores_json }};
+  var CSRF = '{{ csrf_token }}';
+
+  /* color de la marca, inyectado como variables CSS en cada chip/evento */
+  function estilo(comp){
+    var c = COLORES[comp] || { color: '#94a3b8', tenue: 'rgba(148,163,184,0.13)' };
+    return '--c:' + c.color + ';--c-soft:' + c.tenue;
+  }
 
   var MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   var CORTO = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
@@ -258,7 +286,7 @@
         + '<span class="cell-top"><span class="num">' + label + '</span>'
         + (list.length ? '<span class="cell-n">' + list.length + '</span>' : '') + '</span>'
         + list.slice(0,3).map(function(e){
-            return '<span class="chip ' + e.cls + '" title="' + esc(e.comp + ' · ' + e.titulo + ' · ' + fmt(e.vistas) + ' vistas') + '">'
+            return '<span class="chip" style="' + estilo(e.comp) + '" title="' + esc(e.comp + ' · ' + e.titulo + ' · ' + fmt(e.vistas) + ' vistas') + '">'
               + '<span class="p">' + esc(e.plat) + '</span><span class="t">' + esc(e.titulo) + '</span></span>';
           }).join('')
         + (list.length > 3 ? '<span class="more">+' + (list.length - 3) + ' más</span>' : '')
@@ -293,7 +321,7 @@
     document.getElementById('daySub').textContent = list.length + (list.length === 1 ? ' publicación' : ' publicaciones');
     document.getElementById('dayList').innerHTML = list.length
       ? list.map(function(e){
-          return '<article class="ev' + (e.cls === 'e' ? ' e' : '') + '"' + (e.url ? ' data-url="' + esc(e.url) + '"' : '') + '>'
+          return '<article class="ev" style="' + estilo(e.comp) + '"' + (e.url ? ' data-url="' + esc(e.url) + '"' : '') + '>'
             + '<div class="ev-top"><span class="ev-p">' + esc(e.plat) + '</span><span class="ev-c">' + esc(e.comp) + '</span><span class="ev-h">' + fmt(e.vistas) + '</span></div>'
             + '<span class="ev-t">' + esc(e.titulo) + '</span></article>';
         }).join('')
@@ -331,8 +359,63 @@
   var MARCAS = Array.prototype.map.call(document.querySelectorAll('[data-comp]'), function(b){
     return b.dataset.comp;
   });
+  /* ---- color por marca ---- */
+  var paleta = document.getElementById('paleta');
+  var marcaEnEdicion = null;
+
+  function abrirPaleta(marca, ancla){
+    if(!paleta) return;
+    marcaEnEdicion = marca;
+    document.getElementById('paleta-nom').textContent = marca;
+    var r = ancla.getBoundingClientRect();
+    paleta.hidden = false;
+    // se ancla al swatch; si no cabe abajo, se dibuja hacia arriba
+    var alto = paleta.offsetHeight || 150;
+    var top = (r.bottom + alto + 8 > window.innerHeight) ? (r.top - alto - 6) : (r.bottom + 6);
+    paleta.style.top = Math.max(8, top) + 'px';
+    paleta.style.left = Math.max(8, r.left) + 'px';
+    paleta.querySelectorAll('[data-hex]').forEach(function(b){
+      b.classList.toggle('is-on', b.dataset.hex === (COLORES[marca] || {}).color);
+    });
+  }
+
+  function cerrarPaleta(){ if(paleta){ paleta.hidden = true; marcaEnEdicion = null; } }
+
+  if(paleta){
+    document.getElementById('paleta-cerrar').addEventListener('click', cerrarPaleta);
+    paleta.querySelectorAll('[data-hex]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var marca = marcaEnEdicion;
+        if(!marca) return;
+        fetch('/api/method/marketinghub.www.radar.comparativa.index.guardar_color_competidor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': CSRF },
+          body: JSON.stringify({ competidor: marca, color: btn.dataset.hex })
+        }).then(function(r){ return r.json(); }).then(function(j){
+          var d = j.message;
+          if(!d || !d.ok) throw new Error('No se pudo guardar el color');
+          COLORES[marca] = { color: d.color, tenue: d.tenue };
+          var fila = document.querySelector('[data-comp="' + marca.replace(/"/g,'\\"') + '"]');
+          if(fila){
+            fila.style.setProperty('--c', d.color);
+            fila.querySelector('.sw').style.background = d.color;
+          }
+          cerrarPaleta();
+          render();
+        }).catch(function(e){ alert(e.message); });
+      });
+    });
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape') cerrarPaleta(); });
+    document.addEventListener('click', function(e){
+      if(paleta.hidden) return;
+      if(!e.target.closest('#paleta') && !e.target.closest('[data-color]')) cerrarPaleta();
+    });
+  }
+
   document.querySelectorAll('[data-comp]').forEach(function(b){
     b.addEventListener('click', function(e){
+      var sw = e.target.closest('[data-color]');
+      if(sw){ abrirPaleta(sw.dataset.color, sw); return; }
       var solo = e.target.closest('[data-solo]');
       if(solo){
         var unica = solo.dataset.solo;
