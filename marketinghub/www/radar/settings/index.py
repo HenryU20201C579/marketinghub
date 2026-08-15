@@ -207,7 +207,7 @@ def _marcas_con_cuentas():
 			"tt": redes["tt"],
 			"redes": redes_txt,
 			"gasto_ultima": f"{ultima.get(nombre, {}).get('coste', 0):.3f}",
-			"gasto_total": f"{acumulado.get(nombre, 0):.2f}",
+			"gasto_total": f"{acumulado.get(nombre, 0):.3f}",
 			"scrapeada": nombre in ultima,
 		})
 	marcas.sort(key=lambda m: m["nombre"].lower())
