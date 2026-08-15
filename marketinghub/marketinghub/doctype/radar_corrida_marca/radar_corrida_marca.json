@@ -1,0 +1,127 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-15 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "istable": 1,
+ "description": "Lo que trajo y lo que costó una marca dentro de una corrida del Radar.",
+ "field_order": [
+  "marca",
+  "plataforma",
+  "limite",
+  "items",
+  "coste_usd",
+  "coste_real",
+  "runs_apify",
+  "insertados",
+  "actualizados",
+  "saltados",
+  "errores",
+  "mensaje"
+ ],
+ "fields": [
+  {
+   "fieldname": "marca",
+   "fieldtype": "Link",
+   "label": "Marca",
+   "options": "Competidor",
+   "in_list_view": 1,
+   "columns": 2,
+   "read_only": 1
+  },
+  {
+   "fieldname": "plataforma",
+   "fieldtype": "Select",
+   "label": "Red",
+   "options": "\nInstagram\nTikTok\nFacebook\nYouTube",
+   "in_list_view": 1,
+   "columns": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "limite",
+   "fieldtype": "Int",
+   "label": "Límite",
+   "in_list_view": 1,
+   "columns": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Int",
+   "label": "Items",
+   "in_list_view": 1,
+   "columns": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "coste_usd",
+   "fieldtype": "Currency",
+   "label": "Coste (USD)",
+   "options": "USD",
+   "precision": "4",
+   "in_list_view": 1,
+   "columns": 2,
+   "read_only": 1
+  },
+  {
+   "fieldname": "coste_real",
+   "fieldtype": "Check",
+   "label": "Confirmado por Apify",
+   "default": "0",
+   "read_only": 1
+  },
+  {
+   "fieldname": "runs_apify",
+   "fieldtype": "Int",
+   "label": "Runs",
+   "read_only": 1
+  },
+  {
+   "fieldname": "insertados",
+   "fieldtype": "Int",
+   "label": "Insertados",
+   "in_list_view": 1,
+   "columns": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "actualizados",
+   "fieldtype": "Int",
+   "label": "Actualizados",
+   "read_only": 1
+  },
+  {
+   "fieldname": "saltados",
+   "fieldtype": "Int",
+   "label": "Saltados",
+   "read_only": 1
+  },
+  {
+   "fieldname": "errores",
+   "fieldtype": "Int",
+   "label": "Errores",
+   "read_only": 1
+  },
+  {
+   "fieldname": "mensaje",
+   "fieldtype": "Small Text",
+   "label": "Mensaje",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-08-15 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "MarketingHub",
+ "name": "Radar Corrida Marca",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

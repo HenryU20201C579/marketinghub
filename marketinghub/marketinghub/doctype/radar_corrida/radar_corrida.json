@@ -26,6 +26,8 @@
   "cb_3",
   "saltados",
   "errores",
+  "sb_marcas",
+  "marcas",
   "sb_detalle",
   "detalle"
  ],
@@ -141,6 +143,18 @@
    "fieldname": "errores",
    "fieldtype": "Int",
    "label": "Errores",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_marcas",
+   "fieldtype": "Section Break",
+   "label": "Por marca"
+  },
+  {
+   "fieldname": "marcas",
+   "fieldtype": "Table",
+   "label": "Marcas",
+   "options": "Radar Corrida Marca",
    "read_only": 1
   },
   {

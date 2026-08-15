@@ -186,6 +186,11 @@ def _marcas_con_cuentas():
 		fields=["name", "limite_posts"],
 		as_list=True,
 	))
+	# lo que costó cada marca: en la última corrida y acumulado
+	gasto = resumen_gasto()
+	acumulado = {g["marca"]: float(g["total"] or 0) for g in gasto["por_marca"]}
+	ultima = gasto["ultima_por_marca"]
+
 	marcas = []
 	for nombre, redes in por_marca.items():
 		redes_txt = " · ".join(
@@ -201,6 +206,9 @@ def _marcas_con_cuentas():
 			"ig": redes["ig"],
 			"tt": redes["tt"],
 			"redes": redes_txt,
+			"gasto_ultima": f"{ultima.get(nombre, {}).get('coste', 0):.3f}",
+			"gasto_total": f"{acumulado.get(nombre, 0):.2f}",
+			"scrapeada": nombre in ultima,
 		})
 	marcas.sort(key=lambda m: m["nombre"].lower())
 	return marcas

@@ -93,7 +93,13 @@
           <span class="cfg-card__title"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16 M4 12h16 M4 17.5h10"/></svg>Posts por marca</span>
           <span class="cfg-card__meta">{{ marcas|length }} marcas activas</span>
         </div>
-        <p class="cfg-card__note">Cuántas publicaciones traer de cada marca en la corrida. <strong>0</strong> = usar el default de arriba (IG {{ ig }} · TikTok {{ tt }}).</p>
+        <p class="cfg-card__note">Cada marca se scrapea por separado: su propio límite, su propio coste. <strong>0</strong> = usar el default de arriba (IG {{ ig }} · TikTok {{ tt }}).</p>
+        <div class="cfg-marca-head">
+          <div>Marca</div>
+          <div class="cfg-tier-head__end">Último · total</div>
+          <div class="cfg-tier-head__end">Posts</div>
+          <div></div>
+        </div>
         <div class="cfg-marca-list">
           {% for m in marcas %}
           <div class="cfg-marca" data-marca="{{ m.nombre|e }}">
@@ -102,7 +108,14 @@
               <span class="cfg-marca__nom">{{ m.nombre|e }}</span>
               <span class="cfg-marca__redes">{{ m.redes|e }}</span>
             </div>
+            <div class="cfg-marca__gasto">
+              <span class="cfg-marca__ult">{% if m.scrapeada %}${{ m.gasto_ultima }}{% else %}—{% endif %}</span>
+              <span class="cfg-marca__acum">${{ m.gasto_total }} total</span>
+            </div>
             <input class="cfg-input cfg-input--num" type="text" value="{{ m.limite }}" data-campo="limite"{% if not can_edit %} disabled{% endif %}>
+            {% if can_edit %}
+            <button class="cfg-marca__run" type="button" data-run="{{ m.nombre|e }}" title="Scrapear solo {{ m.nombre|e }}"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5v13l10-6.5z"/></svg></button>
+            {% else %}<span></span>{% endif %}
           </div>
           {% else %}
           <div class="cfg-marca cfg-marca--vacia">No hay cuentas sociales activas. Agrégalas en <a href="/radar/cuentas">Radar · Cuentas</a>.</div>
@@ -405,9 +418,18 @@
       pasoTxt.textContent = p.paso || '';
     }
 
+    function botonesRun() {
+      return Array.prototype.slice.call(document.querySelectorAll('[data-run]'));
+    }
+
+    function bloquear(si) {
+      if (ejecutar) ejecutar.disabled = si;
+      botonesRun().forEach(function (b) { b.disabled = si; });
+    }
+
     function detener(p) {
       clearInterval(timer); timer = null;
-      if (ejecutar) { ejecutar.disabled = false; }
+      bloquear(false);
       // el resumen de "Última corrida" solo se refresca recargando
       if (p.estado === 'ok') setTimeout(function () { window.location.reload(); }, 2500);
     }
@@ -426,22 +448,30 @@
       sondear();
     }
 
-    if (ejecutar) ejecutar.addEventListener('click', function () {
-      ejecutar.disabled = true;
-      pintar({ pct: 1, paso: 'Encolando la corrida…', estado: 'corriendo' });
-      post(API_SCRAPER + 'ejecutar_scrape_ahora').then(function () {
-        seguir();
-      }).catch(function (e) {
-        ejecutar.disabled = false;
-        caja.style.display = 'none';
-        toast(e.message);
+    function lanzar(marca) {
+      bloquear(true);
+      pintar({
+        pct: 1, estado: 'corriendo',
+        paso: marca ? ('Encolando la corrida de ' + marca + '…') : 'Encolando la corrida…'
       });
+      post(API_SCRAPER + 'ejecutar_scrape_ahora', marca ? { marca: marca } : {})
+        .then(function () { seguir(); })
+        .catch(function (e) {
+          bloquear(false);
+          caja.style.display = 'none';
+          toast(e.message);
+        });
+    }
+
+    if (ejecutar) ejecutar.addEventListener('click', function () { lanzar(null); });
+    botonesRun().forEach(function (btn) {
+      btn.addEventListener('click', function () { lanzar(btn.dataset.run); });
     });
 
     // si se recarga la página con una corrida en curso, retomar la barra
     post(API_SCRAPER + 'progreso_scrape').then(function (p) {
       if (p && p.estado === 'corriendo') {
-        if (ejecutar) ejecutar.disabled = true;
+        bloquear(true);
         pintar(p); seguir();
       }
     }).catch(function () {});

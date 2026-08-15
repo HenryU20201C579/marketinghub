@@ -256,15 +256,17 @@ def _limite_de(cuenta, limites, limit_ig, limit_tt):
 	return limit_ig if cuenta["plataforma"] == "Instagram" else limit_tt
 
 
-def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=None):
+def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=None,
+                  solo_marca=None):
 	"""Se invoca desde el scheduled job o manualmente. NO usa HTTP — corre in-process.
 
-	El límite de posts se resuelve por cuenta: `Competidor.limite_posts` si la marca
-	tiene uno propio, si no el default global de Radar Settings según la red. Las
-	cuentas se agrupan por (plataforma, límite) para hacer una sola llamada a Apify
-	por grupo en vez de una por perfil.
+	El scrapeo va marca por marca: cada marca en cada red es una llamada
+	independiente a Apify, así se sabe cuántos items trajo y cuánto costó cada una.
+	El límite de posts sale de `Competidor.limite_posts` y, si la marca no tiene uno
+	propio, del default global de Radar Settings según la red.
 
-	limit_per_profile: fallback global si Radar Settings no tiene nada configurado."""
+	limit_per_profile: fallback global si Radar Settings no tiene nada configurado.
+	solo_marca: si se pasa un Competidor, se scrapea únicamente esa marca."""
 	from frappe.utils.password import get_decrypted_password
 
 	inicio = time.time()
@@ -298,48 +300,66 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 		_set_progreso(100, "No hay cuentas activas que scrapear.", estado="ok")
 		return {"ok": True, "mensaje": "sin cuentas activas"}
 
-	# Agrupar por (plataforma, límite): un grupo = una llamada a Apify
+	# Un grupo = una marca en una red = una llamada a Apify. Se scrapea marca por
+	# marca para poder imputarle a cada una sus items y su coste real.
 	grupos = defaultdict(list)
 	for c in cuentas:
 		if c["plataforma"] not in ("Instagram", "TikTok"):
 			continue
-		grupos[(c["plataforma"], _limite_de(c, limites, limit_ig, limit_tt))].append(c)
+		if solo_marca and c["competidor"] != solo_marca:
+			continue
+		grupos[(c["competidor"], c["plataforma"])].append(c)
 
 	if not grupos:
-		_registrar_corrida(0, stats, "ok", "sin cuentas de Instagram/TikTok activas")
-		_set_progreso(100, "No hay cuentas de Instagram/TikTok activas.", estado="ok")
-		return {"ok": True, "mensaje": "sin cuentas activas"}
+		aviso = (f"la marca {solo_marca} no tiene cuentas activas de Instagram/TikTok"
+		         if solo_marca else "sin cuentas de Instagram/TikTok activas")
+		_registrar_corrida(0, stats, "ok", aviso)
+		_set_progreso(100, aviso.capitalize(), estado="ok")
+		return {"ok": True, "mensaje": aviso}
 
 	# El tramo 5→95 se reparte entre los grupos; dentro de cada uno, la llamada a
 	# Apify consume el 60% del tramo y los upserts el 40% restante.
 	claves = sorted(grupos.keys())
 	ancho = 90.0 / len(claves)
+	por_marca = []
 
-	for i, (plataforma, limite) in enumerate(claves):
+	for i, (marca, plataforma) in enumerate(claves):
 		base = 5 + ancho * i
-		delcaso = grupos[(plataforma, limite)]
-		marcas = ", ".join(sorted({c.get("competidor") or "?" for c in delcaso}))
-		_set_progreso(base, f"{plataforma} · {marcas} · pidiendo {limite} por perfil…")
+		delcaso = grupos[(marca, plataforma)]
+		limite = _limite_de(delcaso[0], limites, limit_ig, limit_tt)
+		antes = dict(stats)
+		fila = {"marca": marca, "plataforma": plataforma, "limite": limite,
+		        "items": 0, "inicio_epoch": time.time(), "fin_epoch": None, "error": ""}
+		_set_progreso(base, f"{marca} · {plataforma} · pidiendo {limite}…")
 		try:
 			items = _scrape_grupo(token, plataforma, delcaso, limite)
+			fila["fin_epoch"] = time.time()
+			fila["items"] = len(items)
 			items_por_red[plataforma] += len(items)
 			_set_progreso(base + ancho * 0.6,
-			              f"{plataforma} · {marcas} · procesando {len(items)} items…")
+			              f"{marca} · {plataforma} · procesando {len(items)} items…")
 			pinned_skip = _procesar_items(
 				plataforma, items, delcaso, stats,
 				lambda hechos, total: _set_progreso(
 					base + ancho * (0.6 + 0.4 * (hechos / total if total else 1)),
-					f"{plataforma} · {marcas} · {hechos}/{total} guardados",
+					f"{marca} · {plataforma} · {hechos}/{total} guardados",
 				),
 			)
 			log_lines.append(
-				f"{plataforma} · {marcas} · límite {limite} · {len(items)} items "
+				f"{marca} · {plataforma} · límite {limite} · {len(items)} items "
 				f"({pinned_skip} anclados descartados)"
 			)
 		except Exception as e:
 			stats["error"] += 1
-			log_lines.append(f"{plataforma} · {marcas} · ERROR: {e}")
-			frappe.log_error(traceback.format_exc(), f"Radar Scraper · {plataforma}")
+			fila["fin_epoch"] = time.time()
+			fila["error"] = str(e)[:140]
+			log_lines.append(f"{marca} · {plataforma} · ERROR: {e}")
+			frappe.log_error(traceback.format_exc(), f"Radar Scraper · {marca} · {plataforma}")
+		fila["insertados"] = stats["insert"] - antes["insert"]
+		fila["actualizados"] = stats["update"] - antes["update"]
+		fila["saltados"] = stats["skip"] - antes["skip"]
+		fila["errores"] = stats["error"] - antes["error"]
+		por_marca.append(fila)
 
 	duracion = round(time.time() - inicio, 1)
 	resumen = f"insert={stats['insert']} update={stats['update']} skip={stats['skip']} error={stats['error']}"
@@ -350,7 +370,7 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 	_set_progreso(97, "Consultando el coste en Apify…")
 	coste = _registrar_gasto(
 		token, inicio, duracion, stats, estado, detalle, items_por_red,
-		origen, disparada_por,
+		origen, disparada_por, por_marca,
 	)
 
 	frappe.db.commit()
@@ -383,16 +403,56 @@ def _act_ids_radar(token):
 	return ids
 
 
+def _repartir_coste(runs, por_marca):
+	"""Asigna cada run de Apify a la marca en cuya ventana temporal arrancó.
+
+	Como las marcas se scrapean en serie, el run que arrancó entre el inicio y el
+	fin de la llamada de una marca es suyo. Devuelve el nº de runs sin dueño."""
+	huerfanos = 0
+	for run in runs:
+		duenio = None
+		for fila in por_marca:
+			# margen de 20 s: el run arranca en Apify un pelín antes de que la
+			# petición HTTP nos devuelva el control
+			desde = fila["inicio_epoch"] - 20
+			hasta = (fila["fin_epoch"] or fila["inicio_epoch"]) + 20
+			if desde <= run["inicio_epoch"] <= hasta:
+				duenio = fila
+				break
+		if duenio is None:
+			huerfanos += 1
+			continue
+		duenio["coste_usd"] = round(duenio.get("coste_usd", 0) + run["usd"], 4)
+		duenio["runs"] = duenio.get("runs", 0) + 1
+	return huerfanos
+
+
 def _registrar_gasto(token, inicio, duracion, stats, estado, detalle, items_por_red,
-                     origen, disparada_por):
+                     origen, disparada_por, por_marca=None):
 	"""Crea el Radar Corrida con el coste real de Apify (o el estimado si falla)."""
+	por_marca = por_marca or []
 	estimado = round(
 		items_por_red["Instagram"] * COSTE_ITEM["Instagram"]
 		+ items_por_red["TikTok"] * COSTE_ITEM["TikTok"], 4
 	)
 	# margen de 60 s hacia atrás: el run arranca en Apify antes de que volvamos aquí
-	real, n_runs = apify_actor.coste_desde(token, inicio - 60, act_ids=_act_ids_radar(token))
+	runs = apify_actor.listar_runs(token, 100, act_ids=_act_ids_radar(token))
+	if runs is None:
+		real, n_runs = None, 0
+	else:
+		mios = [r for r in runs if r["inicio_epoch"] >= inicio - 60]
+		real = round(sum(r["usd"] for r in mios), 4)
+		n_runs = len(mios)
+		_repartir_coste(mios, por_marca)
 	confirmado = real is not None and n_runs > 0
+
+	# si Apify no confirmó, cada marca se queda con su parte estimada
+	for fila in por_marca:
+		if not confirmado or "coste_usd" not in fila:
+			fila["coste_usd"] = round(fila["items"] * COSTE_ITEM[fila["plataforma"]], 4)
+			fila["coste_real"] = 0
+		else:
+			fila["coste_real"] = 1
 
 	doc = frappe.new_doc("Radar Corrida")
 	doc.fecha_inicio = frappe.utils.add_to_date(now_datetime(), seconds=-int(duracion))
@@ -410,9 +470,26 @@ def _registrar_gasto(token, inicio, duracion, stats, estado, detalle, items_por_
 	doc.saltados = stats["skip"]
 	doc.errores = stats["error"]
 	doc.detalle = (detalle or "")[:1000]
+	for fila in por_marca:
+		doc.append("marcas", {
+			"marca": fila["marca"],
+			"plataforma": fila["plataforma"],
+			"limite": fila["limite"],
+			"items": fila["items"],
+			"insertados": fila.get("insertados") or 0,
+			"actualizados": fila.get("actualizados") or 0,
+			"saltados": fila.get("saltados") or 0,
+			"errores": fila.get("errores") or 0,
+			"coste_usd": fila.get("coste_usd") or 0,
+			"coste_real": fila.get("coste_real") or 0,
+			"runs_apify": fila.get("runs") or 0,
+			"mensaje": fila.get("error") or "",
+		})
 	doc.insert(ignore_permissions=True)
 	return {"coste_usd": float(doc.coste_usd), "estimado": estimado,
-	        "real": confirmado, "runs": n_runs}
+	        "real": confirmado, "runs": n_runs,
+	        "marcas": [{"marca": f["marca"], "plataforma": f["plataforma"],
+	                    "coste_usd": f.get("coste_usd") or 0} for f in por_marca]}
 
 
 @frappe.whitelist()
@@ -502,6 +579,30 @@ def resumen_gasto(limite=8):
 		WHERE fecha_inicio >= %s
 	""", (frappe.utils.get_first_day(frappe.utils.nowdate()),))[0]
 
+	# desglose por marca: acumulado, mes en curso y lo que costó la última corrida
+	por_marca = frappe.db.sql("""
+		SELECT m.marca AS marca,
+		       SUM(m.coste_usd) AS total,
+		       SUM(CASE WHEN c.fecha_inicio >= %(desde)s THEN m.coste_usd ELSE 0 END) AS mes,
+		       SUM(m.items) AS items,
+		       COUNT(DISTINCT m.parent) AS corridas
+		FROM `tabRadar Corrida Marca` m
+		JOIN `tabRadar Corrida` c ON c.name = m.parent
+		GROUP BY m.marca
+		ORDER BY total DESC
+	""", {"desde": frappe.utils.get_first_day(frappe.utils.nowdate())}, as_dict=True)
+
+	ultima_por_marca = {}
+	if ultimas:
+		for fila in frappe.db.get_all(
+			"Radar Corrida Marca",
+			filters={"parent": ultimas[0]["name"]},
+			fields=["marca", "coste_usd", "items"],
+		):
+			acc = ultima_por_marca.setdefault(fila["marca"], {"coste": 0.0, "items": 0})
+			acc["coste"] += float(fila["coste_usd"] or 0)
+			acc["items"] += int(fila["items"] or 0)
+
 	return {
 		"ultimas": ultimas,
 		"total_usd": float(total[0] or 0),
@@ -509,6 +610,8 @@ def resumen_gasto(limite=8):
 		"mes_usd": float(mes[0] or 0),
 		"mes_corridas": int(mes[1] or 0),
 		"ultima_usd": float(ultimas[0]["coste_usd"]) if ultimas else 0.0,
+		"por_marca": por_marca,
+		"ultima_por_marca": ultima_por_marca,
 	}
 
 
@@ -616,11 +719,16 @@ def _registrar_corrida(duracion_s, stats, estado, mensaje):
 
 
 @frappe.whitelist()
-def ejecutar_scrape_ahora():
-	"""Endpoint para el boton 'Ejecutar ahora' en /radar/settings."""
+def ejecutar_scrape_ahora(marca=None):
+	"""Endpoint para el boton 'Ejecutar ahora' en /radar/settings.
+
+	`marca` (un Competidor) limita la corrida a esa marca; sin ella van todas."""
 	roles = set(frappe.get_roles(frappe.session.user))
 	if not (roles & set(INGEST_ROLES)):
 		frappe.throw("Permiso denegado", frappe.PermissionError)
+
+	if marca and not frappe.db.exists("Competidor", marca):
+		frappe.throw(f"La marca «{marca}» no existe.")
 
 	actual = progreso_scrape()
 	# si el worker murió a medias, el progreso se queda "corriendo" para siempre:
@@ -630,7 +738,7 @@ def ejecutar_scrape_ahora():
 		frappe.throw(f"Ya hay una corrida en curso ({actual.get('pct', 0)}%).")
 
 	# 1% de arranque: la UI necesita ver la barra antes de que el worker despierte
-	_set_progreso(1, "Encolando la corrida…")
+	_set_progreso(1, f"Encolando la corrida de {marca}…" if marca else "Encolando la corrida…")
 	# Encolar en background — usa los limites de Radar Settings y de cada marca
 	frappe.enqueue(
 		"marketinghub.api.radar_scraper.correr_scrape",
@@ -638,8 +746,9 @@ def ejecutar_scrape_ahora():
 		timeout=1800,
 		origen="Manual",
 		disparada_por=frappe.session.user,
+		solo_marca=marca or None,
 	)
-	return {"ok": True, "mensaje": "Corrida encolada."}
+	return {"ok": True, "mensaje": f"Corrida de {marca} encolada." if marca else "Corrida encolada."}
 
 
 @frappe.whitelist()
