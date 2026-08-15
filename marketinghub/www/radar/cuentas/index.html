@@ -127,7 +127,8 @@
             <div class="pl"><input type="checkbox" /></div>
             <div class="acc">
               <span class="avatar {{ c.cls }}">{{ c.inicial|e }}</span>
-              <span class="acc-txt"><span class="acc-handle">{{ c.handle_txt|e }}</span><span class="acc-brand">{{ c.marca|e }}</span></span>
+              {# la marca ya la lleva la cabecera del grupo: aquí basta el handle #}
+              <span class="acc-txt"><span class="acc-handle">{{ c.handle_txt|e }}</span></span>
             </div>
             <div><span class="pill {{ c.cls }}"><span class="dot"></span>{{ c.plataforma|e }}</span></div>
             <div class="url">{% if c.url %}<a href="{{ c.url|e }}" target="_blank" rel="noopener">{{ c.url_txt|e }}</a>{% else %}<span class="empty">{{ c.url_txt|e }}</span>{% endif %}</div>
