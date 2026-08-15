@@ -8,7 +8,9 @@ SCHEDULER_METHOD = "marketinghub.api.radar_scraper.correr_scrape"
 
 # Con este preset el Scheduled Job Type queda detenido: el scrapeo solo corre
 # cuando alguien pulsa "Ejecutar ahora" en /radar/settings.
-PRESET_MANUAL = "Manual (solo con el botón)"
+PRESET_MANUAL = "Manual"
+# valor que usó la primera versión del campo; se normaliza en el patch
+PRESET_MANUAL_LEGACY = "Manual (solo con el botón)"
 
 PRESETS = {
 	"Diario a las 6 AM": "0 6 * * *",
