@@ -191,26 +191,10 @@ def listar():
 	return cuentas
 
 
-@frappe.whitelist()
-def scrapear_ahora(cuenta_social=None):
-	"""Dispara un scrape solo de esta cuenta (background job).
-
-	Reusa la lógica del scraper principal pero filtrando a UNA cuenta.
-	Se implementa via correr_scrape con filtro (por ahora corre todas)."""
-	roles = set(frappe.get_roles(frappe.session.user))
-	if not (roles & {"Marketinghub-Radar-Administrar",
-	                 "Marketinghub-Radar-Analista", "System Manager"}):
-		frappe.throw("Permiso denegado", frappe.PermissionError)
-	if not cuenta_social:
-		frappe.throw("cuenta_social requerido")
-	if not frappe.db.exists("Cuenta Social", cuenta_social):
-		frappe.throw(f"Cuenta {cuenta_social!r} no existe")
-	# encolar
-	frappe.enqueue(
-		"marketinghub.api.radar_scraper.correr_scrape",
-		queue="long", timeout=600,
-	)
-	return {"ok": True, "mensaje": f"Scrape encolado. Verifica en unos minutos."}
+# Esta página no dispara scrapeos: el endpoint `scrapear_ahora` que había aquí
+# ignoraba la cuenta recibida y encolaba `correr_scrape()` entera (una corrida
+# completa de Apify por clic, sin comprobar si ya había otra en curso). El
+# scrapeo se lanza desde /radar/settings, que sí filtra por marca.
 
 
 @frappe.whitelist()

@@ -45,7 +45,16 @@
   .gr-redes .pill { padding:2px 8px; font-size:11px; }
   .tr:nth-child(even) { background:var(--panel); }
   .tr.sub .acc { padding-left:20px; }
-  .tr.oculta { display:none; }
+  /* `oculta` = grupo plegado; `nomatch` = fuera de la búsqueda. Son
+     independientes: al buscar se ignora el plegado y al borrar el texto se
+     recupera tal cual estaba. */
+  .tr.oculta, .tr.nomatch { display:none; }
+  .sinres { padding:26px 18px; text-align:center; font-size:13px; color:var(--muted);
+            border-bottom:1px solid var(--border); }
+
+  /* sin la columna de scrapeo, Acciones necesita bastante menos ancho */
+  .page { --cols-acc:44px 1.1fr 118px 1.5fr 120px 150px 108px 150px; }
+  .grid { min-width:1180px; }
 </style>
 <link rel="stylesheet" href="/radar/radar-sidebar.css?v=1">
 </head>
@@ -88,8 +97,7 @@
     <label class="check"><input type="checkbox" id="activas"{% if f_activas %} checked{% endif %} />Solo activas</label>
     <div class="spacer"></div>
     <button class="btn" id="toggle-grupos"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span id="tg-txt">Contraer todo</span></button>
-    {% if can_edit %}<button class="btn" id="actualizar-todas"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5A8.5 8.5 0 1 1 17.4 6M20 4v4.5h-4.5"/></svg>Actualizar todas</button>{% endif %}
-    <div class="meta num">{{ mostradas }} / {{ total }}</div>
+    <div class="meta num" id="contador">{{ mostradas }} de {{ total }}</div>
   </div>
 
   <div class="wrap">
@@ -97,7 +105,7 @@
       <div class="scroll">
         <div class="grid">
           <div class="thead">
-            <div class="pl"><input type="checkbox" id="check-todas" /></div>
+            <div class="pl"></div>
             <div>Cuenta ↑</div>
             <div>Plataforma</div>
             <div>URL</div>
@@ -108,23 +116,25 @@
           </div>
 
           {% for g in grupos %}{% set gi = loop.index0 %}
-          <div class="gr" data-grupo="{{ gi }}" data-marca="{{ g.marca|e }}">
+          <div class="gr" data-grupo="{{ gi }}" data-marca="{{ g.marca|e }}" data-pubs="{{ g.n_pubs }}">
             <div class="pl"><span class="gr-tog"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></div>
             <div class="acc">
               <span class="avatar">{{ g.inicial|e }}</span>
-              <span class="acc-txt"><span class="acc-handle">{{ g.marca|e }}</span><span class="acc-brand">{{ g.n_perfiles }} perfil{% if g.n_perfiles != 1 %}es{% endif %}</span></span>
+              <span class="acc-txt"><span class="acc-handle">{{ g.marca|e }}</span><span class="acc-brand gr-perfiles">{{ g.n_perfiles }} perfil{% if g.n_perfiles != 1 %}es{% endif %}</span></span>
             </div>
-            <div class="gr-redes">{% for r in g.redes %}<span class="pill {{ r.cls }}"><span class="dot"></span>{{ r.sigla }}{% if r.n > 1 %}·{{ r.n }}{% endif %}</span>{% endfor %}</div>
+            <div class="gr-redes">{% for r in g.redes %}<span class="pill {{ r.cls }}" data-red="{{ r.plataforma|e }}"><span class="dot"></span>{{ r.sigla }}{% if r.n > 1 %}·{{ r.n }}{% endif %}</span>{% endfor %}</div>
             <div></div>
             <div class="bar"><div class="track"><div class="fill" style="width:{{ g.pct }}%"></div></div><span class="badge{% if not g.n_pubs %} off{% endif %} num">{{ g.n_pubs }}</span></div>
             <div class="date"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3.2 2"/></svg>{{ g.scrapeo }}</div>
-            <div class="meta">{{ g.activas }} activa{% if g.activas != 1 %}s{% endif %}</div>
+            <div class="meta gr-activas">{{ g.activas }} activa{% if g.activas != 1 %}s{% endif %}</div>
             <div></div>
           </div>
 
           {% for c in g.cuentas %}
-          <div class="tr sub" data-de="{{ gi }}">
-            <div class="pl"><input type="checkbox" /></div>
+          <div class="tr sub" data-de="{{ gi }}" data-red="{{ c.plataforma|e }}"
+               data-pubs="{{ c.n_publicaciones }}" data-activa="{{ 1 if c.activo else 0 }}"
+               data-busca="{{ (c.handle_txt ~ ' ' ~ c.marca ~ ' ' ~ c.url_txt)|lower|e }}">
+            <div class="pl"></div>
             <div class="acc">
               <span class="avatar {{ c.cls }}">{{ c.inicial|e }}</span>
               {# la marca ya la lleva la cabecera del grupo: aquí basta el handle #}
@@ -138,12 +148,15 @@
             <div class="actions">
               {% if can_edit %}
               <button class="btn sm" data-editar="{{ c.name|e }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Editar</button>
-              <button class="btn sm primary" data-scrapear="{{ c.name|e }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5A8.5 8.5 0 1 1 17.4 6M20 4v4.5h-4.5"/></svg>Actualizar</button>
               <button class="btn sm icon" data-borrar="{{ c.name|e }}" data-usos="{{ c.n_publicaciones }}"><svg class="danger" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg></button>
               {% endif %}
             </div>
           </div>
           {% endfor %}{% endfor %}
+
+          <div class="sinres" id="sinres" style="display:none">
+            Ninguna cuenta coincide con la búsqueda.
+          </div>
 
           {% if can_edit %}
           <div class="addrow">
@@ -152,7 +165,7 @@
           </div>
           {% endif %}
 
-          <div class="tfoot">
+          <div class="tfoot" id="tfoot">
             <div></div>
             <div class="strong">Total</div>
             <div class="meta">{{ por_plataforma }}</div>
@@ -231,20 +244,17 @@
     function aplicar(nombre, valor) {
       var p = new URLSearchParams(window.location.search);
       if (valor) p.set(nombre, valor); else p.delete(nombre);
+      // los filtros recargan; el texto buscado viaja en la URL para no perderse
+      var txt = (document.getElementById('q').value || '').trim();
+      if (txt) p.set('q', txt); else p.delete('q');
       window.location.search = p.toString();
     }
     document.querySelectorAll('[data-plataforma]').forEach(function (b) {
       b.addEventListener('click', function () { aplicar('plataforma', b.dataset.plataforma); });
     });
     var q = document.getElementById('q');
-    q.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') aplicar('q', q.value.trim()); });
     document.getElementById('activas').addEventListener('change', function () {
       aplicar('activas', this.checked ? '1' : '');
-    });
-
-    var todas = document.getElementById('check-todas');
-    todas.addEventListener('change', function () {
-      document.querySelectorAll('.tr:not(.oculta) input[type=checkbox]').forEach(function (c) { c.checked = todas.checked; });
     });
 
     function llamar(metodo, datos) {
@@ -260,35 +270,22 @@
       });
     }
 
-    // scrapeo: el endpoint encola la corrida del scraper
-    function scrapear(name, btn) {
-      var texto = btn.innerHTML;
-      btn.disabled = true;
-      llamar('scrapear_ahora', { cuenta_social: name })
-        .then(function (r) { btn.innerHTML = 'Encolado'; setTimeout(function () { btn.innerHTML = texto; btn.disabled = false; }, 4000); })
-        .catch(function (e) { alert(String(e.message).replace(/<[^>]*>/g, '')); btn.disabled = false; });
-    }
-    document.querySelectorAll('[data-scrapear]').forEach(function (b) {
-      b.addEventListener('click', function () { scrapear(b.dataset.scrapear, b); });
-    });
-    var todasBtn = document.getElementById('actualizar-todas');
-    if (todasBtn && DATOS.length) {
-      todasBtn.addEventListener('click', function () { scrapear(DATOS[0].name, todasBtn); });
-    }
-
     // --- grupos por marca: plegar/desplegar (también sin permiso de edición) ---
     var CERRADOS_LS = 'radar_cuentas_cerrados';
     var cerrados = {};
     try { cerrados = JSON.parse(localStorage.getItem(CERRADOS_LS) || '{}') || {}; } catch (e) { cerrados = {}; }
     var cabeceras = Array.prototype.slice.call(document.querySelectorAll('.gr'));
+    var filas = Array.prototype.slice.call(document.querySelectorAll('.tr'));
     var tgTxt = document.getElementById('tg-txt');
     var buscando = !!q.value.trim();
 
+    function filasDe(cab) {
+      return filas.filter(function (tr) { return tr.dataset.de === cab.dataset.grupo; });
+    }
     function pintarGrupo(cab) {
-      var oculto = cab.classList.contains('cerrado');
-      document.querySelectorAll('.tr[data-de="' + cab.dataset.grupo + '"]').forEach(function (tr) {
-        tr.classList.toggle('oculta', oculto);
-      });
+      // mientras se busca no se aplica el plegado: escondería coincidencias
+      var oculto = !buscando && cab.classList.contains('cerrado');
+      filasDe(cab).forEach(function (tr) { tr.classList.toggle('oculta', oculto); });
     }
     function guardarCerrados() {
       try { localStorage.setItem(CERRADOS_LS, JSON.stringify(cerrados)); } catch (e) {}
@@ -325,6 +322,74 @@
       });
     }
     sincronizarBoton();
+
+    // --- búsqueda instantánea: filtra en el navegador, sin recargar ----------
+    var contador = document.getElementById('contador');
+    var sinres = document.getElementById('sinres');
+    var tfoot = document.getElementById('tfoot');
+    var TOTAL = filas.length;
+
+    function refrescarGrupo(cab) {
+      var suyas = filasDe(cab).filter(function (tr) { return !tr.classList.contains('nomatch'); });
+      cab.style.display = suyas.length ? '' : 'none';
+      if (!suyas.length) return;
+      var pubs = 0, activas = 0, redes = {};
+      suyas.forEach(function (tr) {
+        pubs += parseInt(tr.dataset.pubs, 10) || 0;
+        if (tr.dataset.activa === '1') activas++;
+        redes[tr.dataset.red] = 1;
+      });
+      cab.dataset.pubs = pubs;
+      cab.querySelector('.gr-perfiles').textContent = suyas.length + ' perfil' + (suyas.length === 1 ? '' : 'es');
+      cab.querySelector('.gr-activas').textContent = activas + ' activa' + (activas === 1 ? '' : 's');
+      var badge = cab.querySelector('.badge');
+      badge.textContent = pubs;
+      badge.classList.toggle('off', !pubs);
+      cab.querySelectorAll('.gr-redes .pill').forEach(function (p) {
+        p.style.display = redes[p.dataset.red] ? '' : 'none';
+      });
+    }
+
+    // las barras son relativas al mayor de lo que se está viendo
+    function barras() {
+      var vis = filas.filter(function (tr) { return !tr.classList.contains('nomatch'); });
+      var topeF = Math.max.apply(null, [1].concat(vis.map(function (tr) { return parseInt(tr.dataset.pubs, 10) || 0; })));
+      vis.forEach(function (tr) {
+        var f = tr.querySelector('.fill');
+        if (f) f.style.width = Math.round((parseInt(tr.dataset.pubs, 10) || 0) / topeF * 100) + '%';
+      });
+      var cabsVis = cabeceras.filter(function (c) { return c.style.display !== 'none'; });
+      var topeG = Math.max.apply(null, [1].concat(cabsVis.map(function (c) { return parseInt(c.dataset.pubs, 10) || 0; })));
+      cabsVis.forEach(function (c) {
+        var f = c.querySelector('.fill');
+        if (f) f.style.width = Math.round((parseInt(c.dataset.pubs, 10) || 0) / topeG * 100) + '%';
+      });
+    }
+
+    function buscar() {
+      var t = q.value.trim().toLowerCase();
+      buscando = !!t;
+      var visibles = 0;
+      filas.forEach(function (tr) {
+        var pasa = !t || (tr.dataset.busca || '').indexOf(t) >= 0;
+        tr.classList.toggle('nomatch', !pasa);
+        if (pasa) visibles++;
+      });
+      cabeceras.forEach(function (cab) { pintarGrupo(cab); refrescarGrupo(cab); });
+      barras();
+      contador.textContent = visibles + ' de ' + TOTAL;
+      sinres.style.display = visibles ? 'none' : '';
+      // los totales del pie son del conjunto sin buscar: al filtrar, estorban
+      if (tfoot) tfoot.style.display = t ? 'none' : '';
+      var btn = document.getElementById('toggle-grupos');
+      if (btn) btn.disabled = buscando;
+    }
+
+    q.addEventListener('input', buscar);
+    q.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') { q.value = ''; buscar(); }
+    });
+    if (buscando) buscar();
 
     var overlay = document.getElementById('overlay');
     if (!overlay) return;
