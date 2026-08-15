@@ -270,7 +270,7 @@
     var API_SCRAPER = '/api/method/marketinghub.api.radar_scraper.';
     var CSRF = '{{ csrf_token }}';
     var MARCAS = {{ marcas_json }};
-    var COSTE_ITEM = { ig: {{ coste_ig }}, tt: {{ coste_tt }} };
+    var COSTE_ITEM = { ig: {{ coste_ig_js }}, tt: {{ coste_tt_js }} };
     var PUEDE_EDITAR = {{ 'true' if can_edit else 'false' }};
 
     function post(url, datos) {

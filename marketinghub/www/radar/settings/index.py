@@ -66,6 +66,10 @@ def get_context(context):
 	precio = estimacion["precio"]
 	context.coste_ig = f"{precio['Instagram']:.4f}"
 	context.coste_tt = f"{precio['TikTok']:.4f}"
+	# el JS recalcula el estimado mientras editas: con el precio redondeado a 4
+	# decimales le salía un total distinto al del server en la misma pantalla
+	context.coste_ig_js = repr(precio["Instagram"])
+	context.coste_tt_js = repr(precio["TikTok"])
 	context.coste_total = f"{estimacion['total']:.3f}"
 	context.calibrado = precio["corridas"] and abs(precio["factor"] - 1) > 0.001
 	context.calibracion = {
