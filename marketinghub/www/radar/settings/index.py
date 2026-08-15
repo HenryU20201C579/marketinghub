@@ -114,14 +114,16 @@ def get_context(context):
 	else:
 		context.credito = None
 
-	# conteo de lo scrapeado por red social
+	# conteo de lo scrapeado por red social.
+	# las claves NO pueden llamarse "items": en Jinja `r.items` resuelve el método
+	# del dict en vez del valor (ya pasó con `corrida.update` y con `c.items`)
 	context.redes = [
 		{
 			"nombre": red,
 			"corto": "IG" if red == "Instagram" else "TT",
 			"unidad": "posts" if red == "Instagram" else "videos",
-			"items": (gasto["por_red"].get(red) or {}).get("items", 0),
-			"items_mes": (gasto["por_red"].get(red) or {}).get("items_mes", 0),
+			"cantidad": (gasto["por_red"].get(red) or {}).get("items", 0),
+			"cantidad_mes": (gasto["por_red"].get(red) or {}).get("items_mes", 0),
 			"coste": f"{(gasto['por_red'].get(red) or {}).get('total', 0):.3f}",
 		}
 		for red in ("Instagram", "TikTok")

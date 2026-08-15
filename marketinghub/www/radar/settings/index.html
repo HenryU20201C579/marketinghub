@@ -253,8 +253,8 @@
             {% for r in redes %}
             <div class="cfg-red">
               <span class="cfg-red__k">{{ r.nombre }}</span>
-              <span class="cfg-red__v">{{ r.items }} <em>{{ r.unidad }}</em></span>
-              <span class="cfg-red__c">${{ r.coste }} · {{ r.items_mes }} este mes</span>
+              <span class="cfg-red__v">{{ r.cantidad }} <em>{{ r.unidad }}</em></span>
+              <span class="cfg-red__c">${{ r.coste }} · {{ r.cantidad_mes }} este mes</span>
             </div>
             {% endfor %}
           </div>
