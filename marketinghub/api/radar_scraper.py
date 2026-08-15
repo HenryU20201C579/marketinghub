@@ -1001,6 +1001,9 @@ def _presupuesto():
 		"dias_a_renovar": dias_a_renovar,
 		"ritmo_dia": ritmo,
 		"dias_ciclo": dias_ciclo,
+		# con uno o dos días de ciclo, un día atípico manda en el promedio y la
+		# fecha de agotamiento se dispara: se marca para no venderla como firme
+		"ritmo_fiable": bool(dias_ciclo and dias_ciclo >= 3),
 		"agotamiento": agotamiento,
 		"dias_restantes": dias_restantes,
 		# ¿el crédito aguanta hasta la renovación al ritmo actual?

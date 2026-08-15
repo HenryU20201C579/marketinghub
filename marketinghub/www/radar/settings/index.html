@@ -167,7 +167,7 @@
             {% if presupuesto.hay_ritmo and presupuesto.agotamiento %}
             <div class="cfg-pred__fila{% if presupuesto.llega == False %} is-alerta{% endif %}">
               <span class="cfg-pred__ico">▸</span>
-              <span>A tu ritmo (<strong>${{ presupuesto.ritmo }}/día</strong>) se acaba el <strong>{{ presupuesto.agotamiento }}</strong>{% if presupuesto.llega == False %} — antes de renovar el {{ presupuesto.renueva }}{% elif presupuesto.llega %} — llegas de sobra al {{ presupuesto.renueva }}{% endif %}.</span>
+              <span>A tu ritmo (<strong>${{ presupuesto.ritmo }}/día</strong>) se acaba el <strong>{{ presupuesto.agotamiento }}</strong>{% if presupuesto.llega == False %} — antes de renovar el {{ presupuesto.renueva }}{% elif presupuesto.llega %} — llegas de sobra al {{ presupuesto.renueva }}{% endif %}.{% if not presupuesto.ritmo_fiable %} <em>Orientativo: solo {{ presupuesto.dias_ciclo }} día(s) de ciclo.</em>{% endif %}</span>
             </div>
             {% endif %}
             {% if presupuesto.corridas_media %}

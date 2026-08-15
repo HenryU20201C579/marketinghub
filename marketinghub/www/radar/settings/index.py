@@ -110,6 +110,8 @@ def get_context(context):
 		"dias_a_renovar": p["dias_a_renovar"],
 		"ritmo": f"{p['ritmo_dia']:.2f}",
 		"hay_ritmo": p["ritmo_dia"] > 0,
+		"ritmo_fiable": p["ritmo_fiable"],
+		"dias_ciclo": p["dias_ciclo"],
 		"agotamiento": frappe.utils.formatdate(p["agotamiento"], "dd/MM") if p["agotamiento"] else "",
 		"dias_restantes": p["dias_restantes"],
 		"llega": p["llega"],
