@@ -49,7 +49,8 @@
   <div class="cfg-body">
     <div class="cfg-grid">
 
-      <!-- ---- Columna izquierda: tiers ---- -->
+      <!-- ---- Columna izquierda: tiers + límite por marca ---- -->
+      <div class="cfg-col-left">
       <section class="cfg-card cfg-card--fill">
         <div class="cfg-card__head">
           <span class="cfg-card__title"><svg class="is-top" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 14.6 9l6 .9-4.3 4.2 1 6-5.3-2.8-5.3 2.8 1-6L3.4 9.9l6-.9z"/></svg>Tiers de viralidad</span>
@@ -86,6 +87,30 @@
         </div>
       </section>
 
+      <!-- Posts por marca -->
+      <section class="cfg-card">
+        <div class="cfg-card__head">
+          <span class="cfg-card__title"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16 M4 12h16 M4 17.5h10"/></svg>Posts por marca</span>
+          <span class="cfg-card__meta">{{ marcas|length }} marcas activas</span>
+        </div>
+        <p class="cfg-card__note">Cuántas publicaciones traer de cada marca en la corrida. <strong>0</strong> = usar el default de arriba (IG {{ ig }} · TikTok {{ tt }}).</p>
+        <div class="cfg-marca-list">
+          {% for m in marcas %}
+          <div class="cfg-marca" data-marca="{{ m.nombre|e }}">
+            <span class="cfg-tier__ini">{{ m.ini|e }}</span>
+            <div class="cfg-marca__txt">
+              <span class="cfg-marca__nom">{{ m.nombre|e }}</span>
+              <span class="cfg-marca__redes">{{ m.redes|e }}</span>
+            </div>
+            <input class="cfg-input cfg-input--num" type="text" value="{{ m.limite }}" data-campo="limite"{% if not can_edit %} disabled{% endif %}>
+          </div>
+          {% else %}
+          <div class="cfg-marca cfg-marca--vacia">No hay cuentas sociales activas. Agrégalas en <a href="/radar/cuentas">Radar · Cuentas</a>.</div>
+          {% endfor %}
+        </div>
+      </section>
+      </div>
+
       <!-- ---- Columna derecha ---- -->
       <div class="cfg-col-right">
 
@@ -106,7 +131,7 @@
                 </select>
                 <span class="cfg-select__caret"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg></span>
               </div>
-              <span class="cfg-field__hint">Cron: {{ cron|e }}</span>
+              <span class="cfg-field__hint">{% if es_manual %}Solo corre con «Ejecutar ahora».{% else %}Cron: {{ cron|e }}{% endif %}</span>
             </div>
 
             <div class="cfg-field">
@@ -124,7 +149,7 @@
                 <input type="text" name="posts_por_perfil_ig" value="{{ ig }}"{% if not can_edit %} disabled{% endif %}>
                 <span class="cfg-field__unit">posts</span>
               </div>
-              <span class="cfg-field__hint">≈ ${{ coste_ig }} por corrida en Apify.</span>
+              <span class="cfg-field__hint">Default; ≈ ${{ coste_ig }} por post en Apify.</span>
             </div>
 
             <div class="cfg-field">
@@ -133,13 +158,24 @@
                 <input type="text" name="posts_por_perfil_tiktok" value="{{ tt }}"{% if not can_edit %} disabled{% endif %}>
                 <span class="cfg-field__unit">videos</span>
               </div>
-              <span class="cfg-field__hint">≈ ${{ coste_tt }} por corrida en Apify.</span>
+              <span class="cfg-field__hint">Default; ≈ ${{ coste_tt }} por video en Apify.</span>
             </div>
           </div>
 
           <div class="cfg-card__foot">
             <span>Coste estimado por corrida: <strong id="coste">${{ coste_total }}</strong></span>
+            {% if can_edit %}
             <button class="cfg-btn" type="button" id="ejecutar"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5v13l10-6.5z"/></svg>Ejecutar ahora</button>
+            {% endif %}
+          </div>
+
+          <!-- barra de progreso de la corrida manual -->
+          <div class="cfg-progress" id="progreso" style="display:none">
+            <div class="cfg-progress__top">
+              <span class="cfg-progress__paso" id="progreso-paso">Encolando…</span>
+              <span class="cfg-progress__pct" id="progreso-pct">0%</span>
+            </div>
+            <div class="cfg-progress__track"><div class="cfg-progress__bar" id="progreso-bar" style="width:0%"></div></div>
           </div>
         </section>
 
@@ -187,10 +223,29 @@
 <script>
   (function () {
     var API = '/api/method/marketinghub.www.radar.settings.index.';
+    var API_SCRAPER = '/api/method/marketinghub.api.radar_scraper.';
     var CSRF = '{{ csrf_token }}';
     var TIERS = {{ tiers_json }};
-    var COSTE_POR_ITEM = 0.001;
+    var MARCAS = {{ marcas_json }};
+    var COSTE_ITEM = { ig: {{ coste_ig }}, tt: {{ coste_tt }} };
     var PUEDE_EDITAR = {{ 'true' if can_edit else 'false' }};
+
+    function post(url, datos) {
+      return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': CSRF },
+        body: JSON.stringify(datos || {})
+      }).then(function (r) {
+        return r.json().then(function (j) {
+          if (!r.ok) {
+            var msg = (j._server_messages && JSON.parse(j._server_messages)[0]) || j.exception || 'Error';
+            try { msg = JSON.parse(msg).message || msg; } catch (e) {}
+            throw new Error(String(msg).replace(/<[^>]*>/g, ''));
+          }
+          return j.message;
+        });
+      });
+    }
 
     // tema (persistido)
     var body = document.body;
@@ -226,6 +281,14 @@
       });
     }
 
+    function leerLimites() {
+      var mapa = {};
+      document.querySelectorAll('.cfg-marca[data-marca]').forEach(function (fila) {
+        mapa[fila.dataset.marca] = parseInt(fila.querySelector('[data-campo=limite]').value, 10) || 0;
+      });
+      return mapa;
+    }
+
     function leerTodo() {
       var canal = document.querySelector('.cfg-channel.is-on');
       return {
@@ -234,7 +297,8 @@
         posts_por_perfil_tiktok: document.querySelector('[name=posts_por_perfil_tiktok]').value.trim(),
         preset_frecuencia: document.querySelector('[name=preset_frecuencia]').value,
         canal_alerta: canal ? canal.dataset.canal : '',
-        tiers: leerTiers()
+        tiers: leerTiers(),
+        limites_marca: leerLimites()
       };
     }
 
@@ -251,7 +315,14 @@
         document.querySelectorAll('.cfg-tier.is-viral').length + ' marcados como viral';
       var ig = parseInt(document.querySelector('[name=posts_por_perfil_ig]').value, 10) || 0;
       var tt = parseInt(document.querySelector('[name=posts_por_perfil_tiktok]').value, 10) || 0;
-      document.getElementById('coste').textContent = '$' + ((ig + tt) * COSTE_POR_ITEM).toFixed(3);
+      var limites = leerLimites();
+      var total = 0;
+      MARCAS.forEach(function (m) {
+        var lim = limites[m.nombre] || 0;
+        total += m.ig * (lim || ig) * COSTE_ITEM.ig;
+        total += m.tt * (lim || tt) * COSTE_ITEM.tt;
+      });
+      document.getElementById('coste').textContent = '$' + total.toFixed(3);
     }
 
     document.querySelectorAll('.cfg-input, .cfg-field__box input, .cfg-select select').forEach(function (el) {
@@ -282,34 +353,78 @@
     var reset = document.getElementById('reset');
     if (reset) reset.addEventListener('click', function () { window.location.reload(); });
 
+    // ---- corrida manual + barra de progreso ----
     var ejecutar = document.getElementById('ejecutar');
+    var caja = document.getElementById('progreso');
+    var barra = document.getElementById('progreso-bar');
+    var pctTxt = document.getElementById('progreso-pct');
+    var pasoTxt = document.getElementById('progreso-paso');
+    var timer = null;
+
+    function pintar(p) {
+      caja.style.display = '';
+      caja.classList.toggle('is-error', p.estado === 'error');
+      barra.style.width = (p.pct || 0) + '%';
+      pctTxt.textContent = (p.pct || 0) + '%';
+      pasoTxt.textContent = p.paso || '';
+    }
+
+    function detener(p) {
+      clearInterval(timer); timer = null;
+      if (ejecutar) { ejecutar.disabled = false; }
+      // el resumen de "Última corrida" solo se refresca recargando
+      if (p.estado === 'ok') setTimeout(function () { window.location.reload(); }, 2500);
+    }
+
+    function sondear() {
+      post(API_SCRAPER + 'progreso_scrape').then(function (p) {
+        if (!p || p.estado === 'idle') { clearInterval(timer); timer = null; return; }
+        pintar(p);
+        if (p.estado !== 'corriendo') detener(p);
+      }).catch(function () { /* un fallo de red suelto no corta el sondeo */ });
+    }
+
+    function seguir() {
+      if (timer) return;
+      timer = setInterval(sondear, 1500);
+      sondear();
+    }
+
     if (ejecutar) ejecutar.addEventListener('click', function () {
-      toast('La corrida la dispara el orquestador del scraper según el cron configurado.');
+      ejecutar.disabled = true;
+      pintar({ pct: 1, paso: 'Encolando la corrida…', estado: 'corriendo' });
+      post(API_SCRAPER + 'ejecutar_scrape_ahora').then(function () {
+        seguir();
+      }).catch(function (e) {
+        ejecutar.disabled = false;
+        caja.style.display = 'none';
+        toast(e.message);
+      });
     });
+
+    // si se recarga la página con una corrida en curso, retomar la barra
+    post(API_SCRAPER + 'progreso_scrape').then(function (p) {
+      if (p && p.estado === 'corriendo') {
+        if (ejecutar) ejecutar.disabled = true;
+        pintar(p); seguir();
+      }
+    }).catch(function () {});
 
     if (btnGuardar) btnGuardar.addEventListener('click', function () {
       var datos = leerTodo();
-      fetch(API + 'guardar_settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': CSRF },
-        body: JSON.stringify({
-          dias_retencion_snapshots: datos.dias_retencion_snapshots,
-          posts_por_perfil_ig: datos.posts_por_perfil_ig,
-          posts_por_perfil_tiktok: datos.posts_por_perfil_tiktok,
-          preset_frecuencia: datos.preset_frecuencia,
-          canal_alerta: datos.canal_alerta,
-          tiers: JSON.stringify(datos.tiers)
-        })
-      }).then(function (r) {
-        return r.json().then(function (j) {
-          if (!r.ok) throw new Error((j._server_messages && JSON.parse(j._server_messages)[0]) || j.exception || 'Error');
-          return j.message;
-        });
+      post(API + 'guardar_settings', {
+        dias_retencion_snapshots: datos.dias_retencion_snapshots,
+        posts_por_perfil_ig: datos.posts_por_perfil_ig,
+        posts_por_perfil_tiktok: datos.posts_por_perfil_tiktok,
+        preset_frecuencia: datos.preset_frecuencia,
+        canal_alerta: datos.canal_alerta,
+        tiers: JSON.stringify(datos.tiers),
+        limites_marca: JSON.stringify(datos.limites_marca)
       }).then(function () {
         toast('Configuración guardada.');
         setTimeout(function () { window.location.reload(); }, 700);
       }).catch(function (e) {
-        toast(String(e.message).replace(/<[^>]*>/g, ''));
+        toast(e.message);
       });
     });
 

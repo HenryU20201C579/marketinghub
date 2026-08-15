@@ -13,6 +13,7 @@
   "website",
   "activo",
   "color",
+  "limite_posts",
   "sb_notas",
   "notas_estrategicas"
  ],
@@ -72,6 +73,13 @@
    "fieldtype": "Color",
    "label": "Color en el calendario",
    "description": "Color asignado al competidor en /radar/comparativa. Si está vacío, se auto-asigna."
+  },
+  {
+   "fieldname": "limite_posts",
+   "fieldtype": "Int",
+   "label": "Posts por corrida",
+   "default": "0",
+   "description": "Cuántas publicaciones traer de esta marca en cada corrida. 0 = usar el default global de Radar Settings (IG/TikTok). Aplica a todas sus cuentas sociales."
   },
   {
    "fieldname": "sb_notas",

@@ -106,8 +106,9 @@
    "fieldname": "preset_frecuencia",
    "fieldtype": "Select",
    "label": "Frecuencia",
-   "options": "Diario a las 6 AM\nDiario a las 8 PM\nCada 12 horas\nCada 6 horas\nCada hora\nPersonalizado",
-   "default": "Diario a las 6 AM"
+   "options": "Manual (solo con el botón)\nDiario a las 6 AM\nDiario a las 8 PM\nCada 12 horas\nCada 6 horas\nCada hora\nPersonalizado",
+   "default": "Manual (solo con el botón)",
+   "description": "En 'Manual' el scrapeo NO corre solo: se dispara únicamente desde el botón 'Ejecutar ahora'."
   },
   {
    "fieldname": "cron_scrape",

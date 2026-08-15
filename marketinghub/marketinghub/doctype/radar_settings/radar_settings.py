@@ -6,6 +6,10 @@ from frappe.model.document import Document
 
 SCHEDULER_METHOD = "marketinghub.api.radar_scraper.correr_scrape"
 
+# Con este preset el Scheduled Job Type queda detenido: el scrapeo solo corre
+# cuando alguien pulsa "Ejecutar ahora" en /radar/settings.
+PRESET_MANUAL = "Manual (solo con el botón)"
+
 PRESETS = {
 	"Diario a las 6 AM": "0 6 * * *",
 	"Diario a las 8 PM": "0 20 * * *",
@@ -32,6 +36,9 @@ class RadarSettings(Document):
 			self.cron_scrape = PRESETS[self.preset_frecuencia]
 
 	def _validar_cron(self):
+		if self.preset_frecuencia == PRESET_MANUAL:
+			# el cron queda guardado pero el job va detenido; no estorba si está vacío
+			return
 		if not self.cron_scrape:
 			frappe.throw("La expresión cron no puede estar vacía.")
 		try:
@@ -54,9 +61,13 @@ class RadarSettings(Document):
 		if not name:
 			return
 		job = frappe.get_doc("Scheduled Job Type", name)
+		manual = self.preset_frecuencia == PRESET_MANUAL
 		cambios = False
-		if job.cron_format != self.cron_scrape:
-			job.cron_format = self.cron_scrape.strip()
+		if int(job.stopped or 0) != int(manual):
+			job.stopped = int(manual)
+			cambios = True
+		if not manual and job.cron_format != self.cron_scrape:
+			job.cron_format = (self.cron_scrape or "").strip()
 			cambios = True
 		if job.frequency != "Cron":
 			job.frequency = "Cron"

@@ -19,6 +19,39 @@ from marketinghub.api import apify_actor
 # Roles permitidos para hacer ingest
 INGEST_ROLES = ("Marketinghub-Radar-Administrar", "System Manager")
 
+# Clave en redis donde el job publica su avance para que la UI lo lea por polling.
+# No se usa publish_realtime porque /radar/settings es una página standalone sin
+# el bundle de socket.io de Frappe.
+PROGRESO_KEY = "radar_scrape_progreso"
+PROGRESO_TTL = 3600
+
+
+def _set_progreso(pct, paso, estado="corriendo", **extra):
+	"""Publica el avance de la corrida. pct 0-100, estado corriendo|ok|error."""
+	datos = {"pct": max(0, min(100, int(pct))), "paso": paso, "estado": estado,
+	         "ts": time.time()}
+	datos.update(extra)
+	try:
+		frappe.cache().set_value(PROGRESO_KEY, json.dumps(datos), expires_in_sec=PROGRESO_TTL)
+	except Exception:
+		pass  # el progreso es cosmético: nunca debe tumbar la corrida
+	return datos
+
+
+@frappe.whitelist()
+def progreso_scrape():
+	"""Estado de la corrida en curso, para la barra de progreso de /radar/settings."""
+	roles = set(frappe.get_roles(frappe.session.user))
+	if not (roles & set(INGEST_ROLES)):
+		frappe.throw("Permiso denegado", frappe.PermissionError)
+	raw = frappe.cache().get_value(PROGRESO_KEY)
+	if not raw:
+		return {"pct": 0, "paso": "", "estado": "idle"}
+	try:
+		return json.loads(raw)
+	except Exception:
+		return {"pct": 0, "paso": "", "estado": "idle"}
+
 
 def _require_ingest_perm():
 	roles = set(frappe.get_roles(frappe.session.user))
@@ -198,29 +231,54 @@ def _map_tiktok(item):
 	}
 
 
+def limites_por_marca():
+	"""{competidor: limite_posts} para las marcas que tienen un límite propio."""
+	filas = frappe.db.get_all(
+		"Competidor",
+		filters={"limite_posts": [">", 0]},
+		fields=["name", "limite_posts"],
+	)
+	return {f["name"]: int(f["limite_posts"]) for f in filas}
+
+
+def _limite_de(cuenta, limites, limit_ig, limit_tt):
+	"""El límite de la marca manda; si no tiene, el default global de su red."""
+	propio = limites.get(cuenta.get("competidor")) or 0
+	if propio > 0:
+		return propio
+	return limit_ig if cuenta["plataforma"] == "Instagram" else limit_tt
+
+
 def correr_scrape(limit_per_profile=None):
 	"""Se invoca desde el scheduled job o manualmente. NO usa HTTP — corre in-process.
 
-	limit_per_profile: si se pasa, se usa como FALLBACK global. Por default se leen
-	los valores separados de Radar Settings (posts_por_perfil_ig/tiktok)."""
+	El límite de posts se resuelve por cuenta: `Competidor.limite_posts` si la marca
+	tiene uno propio, si no el default global de Radar Settings según la red. Las
+	cuentas se agrupan por (plataforma, límite) para hacer una sola llamada a Apify
+	por grupo en vez de una por perfil.
+
+	limit_per_profile: fallback global si Radar Settings no tiene nada configurado."""
 	from frappe.utils.password import get_decrypted_password
 
 	inicio = time.time()
 	stats = {"insert": 0, "update": 0, "skip": 0, "error": 0}
 	log_lines = []
+	_set_progreso(2, "Leyendo configuración…")
 
 	settings = frappe.get_cached_doc("Radar Settings")
 	token = get_decrypted_password("Radar Settings", "Radar Settings", "apify_token")
 	if not token:
 		msg = "apify_token no configurado en Radar Settings"
 		_registrar_corrida(0, stats, "error", msg)
+		_set_progreso(100, msg, estado="error")
 		frappe.log_error(msg, "Radar Scraper")
 		return {"ok": False, "error": msg}
 
-	# Limites por red social (con fallback al valor global legacy)
+	# Defaults por red social (con fallback al valor global legacy)
 	fallback = int(limit_per_profile or settings.posts_por_perfil or 20)
 	limit_ig = int(settings.posts_por_perfil_ig or fallback)
 	limit_tt = int(settings.posts_por_perfil_tiktok or fallback)
+	limites = limites_por_marca()
 
 	cuentas = frappe.db.get_all(
 		"Cuenta Social",
@@ -229,75 +287,102 @@ def correr_scrape(limit_per_profile=None):
 	)
 	if not cuentas:
 		_registrar_corrida(0, stats, "ok", "sin cuentas activas")
+		_set_progreso(100, "No hay cuentas activas que scrapear.", estado="ok")
 		return {"ok": True, "mensaje": "sin cuentas activas"}
 
-	por_plataforma = defaultdict(list)
+	# Agrupar por (plataforma, límite): un grupo = una llamada a Apify
+	grupos = defaultdict(list)
 	for c in cuentas:
-		por_plataforma[c["plataforma"]].append(c)
+		if c["plataforma"] not in ("Instagram", "TikTok"):
+			continue
+		grupos[(c["plataforma"], _limite_de(c, limites, limit_ig, limit_tt))].append(c)
 
-	# --- Instagram ---
-	if por_plataforma["Instagram"]:
+	if not grupos:
+		_registrar_corrida(0, stats, "ok", "sin cuentas de Instagram/TikTok activas")
+		_set_progreso(100, "No hay cuentas de Instagram/TikTok activas.", estado="ok")
+		return {"ok": True, "mensaje": "sin cuentas activas"}
+
+	# El tramo 5→95 se reparte entre los grupos; dentro de cada uno, la llamada a
+	# Apify consume el 60% del tramo y los upserts el 40% restante.
+	claves = sorted(grupos.keys())
+	ancho = 90.0 / len(claves)
+
+	for i, (plataforma, limite) in enumerate(claves):
+		base = 5 + ancho * i
+		delcaso = grupos[(plataforma, limite)]
+		marcas = ", ".join(sorted({c.get("competidor") or "?" for c in delcaso}))
+		_set_progreso(base, f"{plataforma} · {marcas} · pidiendo {limite} por perfil…")
 		try:
-			cuentas_ig = por_plataforma["Instagram"]
-			urls = [c["url_perfil"] for c in cuentas_ig if c.get("url_perfil")]
-			items = apify_actor.scrape_instagram(token, urls, limit_ig)
-			url_to_cuenta = {c["url_perfil"].rstrip("/"): c for c in cuentas_ig}
-			handle_to_cuenta = {c["handle"].lower(): c for c in cuentas_ig if c.get("handle")}
-			pinned_skip = 0
-			for item in items:
-				# Los posts anclados (pinned) son viejos con metricas acumuladas
-				# y distorsionan el baseline. Se descartan.
-				if item.get("isPinned"):
-					pinned_skip += 1
-					continue
-				payload = _map_instagram(item)
-				owner = payload.pop("_owner_username")
-				input_url = payload.pop("_input_url")
-				cuenta = url_to_cuenta.get(input_url) or handle_to_cuenta.get(owner)
-				if not cuenta or not payload["url_publicacion"]:
-					stats["skip"] += 1
-					continue
-				payload["cuenta_social"] = cuenta["name"]
-				_ejecutar_upsert(payload, stats)
-			log_lines.append(f"IG · {len(items)} items ({pinned_skip} anclados descartados)")
+			items = _scrape_grupo(token, plataforma, delcaso, limite)
+			_set_progreso(base + ancho * 0.6,
+			              f"{plataforma} · {marcas} · procesando {len(items)} items…")
+			pinned_skip = _procesar_items(
+				plataforma, items, delcaso, stats,
+				lambda hechos, total: _set_progreso(
+					base + ancho * (0.6 + 0.4 * (hechos / total if total else 1)),
+					f"{plataforma} · {marcas} · {hechos}/{total} guardados",
+				),
+			)
+			log_lines.append(
+				f"{plataforma} · {marcas} · límite {limite} · {len(items)} items "
+				f"({pinned_skip} anclados descartados)"
+			)
 		except Exception as e:
 			stats["error"] += 1
-			log_lines.append(f"IG · ERROR: {e}")
-			frappe.log_error(traceback.format_exc(), "Radar Scraper · IG")
-
-	# --- TikTok ---
-	if por_plataforma["TikTok"]:
-		try:
-			cuentas_tt = por_plataforma["TikTok"]
-			handles = [c["handle"] for c in cuentas_tt if c.get("handle")]
-			items = apify_actor.scrape_tiktok(token, handles, limit_tt)
-			handle_to_cuenta = {c["handle"].lower(): c for c in cuentas_tt if c.get("handle")}
-			pinned_skip = 0
-			for item in items:
-				if item.get("isPinned"):
-					pinned_skip += 1
-					continue
-				payload = _map_tiktok(item)
-				owner_h = payload.pop("_owner_username", "")
-				payload.pop("_seguidores", None)
-				cuenta = handle_to_cuenta.get(owner_h)
-				if not cuenta or not payload["url_publicacion"]:
-					stats["skip"] += 1
-					continue
-				payload["cuenta_social"] = cuenta["name"]
-				_ejecutar_upsert(payload, stats)
-			log_lines.append(f"TikTok · {len(items)} items ({pinned_skip} anclados descartados)")
-		except Exception as e:
-			stats["error"] += 1
-			log_lines.append(f"TikTok · ERROR: {e}")
-			frappe.log_error(traceback.format_exc(), "Radar Scraper · TikTok")
+			log_lines.append(f"{plataforma} · {marcas} · ERROR: {e}")
+			frappe.log_error(traceback.format_exc(), f"Radar Scraper · {plataforma}")
 
 	duracion = round(time.time() - inicio, 1)
 	resumen = f"insert={stats['insert']} update={stats['update']} skip={stats['skip']} error={stats['error']}"
-	_registrar_corrida(duracion, stats, "ok" if stats["error"] == 0 else "warn",
-	                   " · ".join(log_lines) + " · " + resumen)
+	estado = "ok" if stats["error"] == 0 else "warn"
+	_registrar_corrida(duracion, stats, estado, " · ".join(log_lines) + " · " + resumen)
 	frappe.db.commit()
+	_set_progreso(
+		100,
+		f"Listo · {stats['insert']} nuevas, {stats['update']} actualizadas"
+		+ (f", {stats['error']} errores" if stats["error"] else ""),
+		estado=estado, stats=stats, duracion=duracion,
+	)
 	return {"ok": True, "stats": stats, "duracion_s": duracion}
+
+
+def _scrape_grupo(token, plataforma, cuentas, limite):
+	if plataforma == "Instagram":
+		urls = [c["url_perfil"] for c in cuentas if c.get("url_perfil")]
+		return apify_actor.scrape_instagram(token, urls, limite) if urls else []
+	handles = [c["handle"] for c in cuentas if c.get("handle")]
+	return apify_actor.scrape_tiktok(token, handles, limite) if handles else []
+
+
+def _procesar_items(plataforma, items, cuentas, stats, avisar):
+	"""Mapea y guarda los items de un grupo. Devuelve cuántos pinned se descartaron."""
+	url_to_cuenta = {c["url_perfil"].rstrip("/"): c for c in cuentas if c.get("url_perfil")}
+	handle_to_cuenta = {c["handle"].lower(): c for c in cuentas if c.get("handle")}
+	pinned_skip = 0
+	total = len(items)
+	for n, item in enumerate(items, 1):
+		# Los posts anclados (pinned) son viejos con metricas acumuladas
+		# y distorsionan el baseline. Se descartan.
+		if item.get("isPinned"):
+			pinned_skip += 1
+			continue
+		if plataforma == "Instagram":
+			payload = _map_instagram(item)
+			owner = payload.pop("_owner_username")
+			input_url = payload.pop("_input_url")
+			cuenta = url_to_cuenta.get(input_url) or handle_to_cuenta.get(owner)
+		else:
+			payload = _map_tiktok(item)
+			payload.pop("_seguidores", None)
+			cuenta = handle_to_cuenta.get(payload.pop("_owner_username", ""))
+		if not cuenta or not payload["url_publicacion"]:
+			stats["skip"] += 1
+			continue
+		payload["cuenta_social"] = cuenta["name"]
+		_ejecutar_upsert(payload, stats)
+		if n % 5 == 0 or n == total:
+			avisar(n, total)
+	return pinned_skip
 
 
 def _ejecutar_upsert(payload, stats):
@@ -370,13 +455,23 @@ def ejecutar_scrape_ahora():
 	roles = set(frappe.get_roles(frappe.session.user))
 	if not (roles & set(INGEST_ROLES)):
 		frappe.throw("Permiso denegado", frappe.PermissionError)
-	# Encolar en background — usa los limites de Radar Settings
+
+	actual = progreso_scrape()
+	# si el worker murió a medias, el progreso se queda "corriendo" para siempre:
+	# a los 15 min sin avanzar lo damos por muerto y dejamos relanzar
+	fresco = (time.time() - float(actual.get("ts") or 0)) < 900
+	if actual.get("estado") == "corriendo" and fresco:
+		frappe.throw(f"Ya hay una corrida en curso ({actual.get('pct', 0)}%).")
+
+	# 1% de arranque: la UI necesita ver la barra antes de que el worker despierte
+	_set_progreso(1, "Encolando la corrida…")
+	# Encolar en background — usa los limites de Radar Settings y de cada marca
 	frappe.enqueue(
 		"marketinghub.api.radar_scraper.correr_scrape",
 		queue="long",
-		timeout=600,
+		timeout=1800,
 	)
-	return {"ok": True, "mensaje": "Scrape encolado. Verifica 'Última corrida' en unos minutos."}
+	return {"ok": True, "mensaje": "Corrida encolada."}
 
 
 @frappe.whitelist()

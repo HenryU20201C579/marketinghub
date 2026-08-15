@@ -10,6 +10,8 @@ from datetime import date, timedelta
 
 import frappe
 
+from marketinghub.marketinghub.doctype.radar_settings.radar_settings import PRESET_MANUAL
+
 no_cache = 1
 
 CANALES = (
@@ -19,8 +21,8 @@ CANALES = (
 	("Telegram", "Telegram", "chat"),
 	("WhatsApp", "WhatsApp", "chat"),
 )
-# Precio aproximado por item scrapeado en Apify, el mismo que asume el diseño
-COSTE_POR_ITEM = 0.001
+# Precio aproximado por item scrapeado en Apify, según el actor de cada red
+COSTE_ITEM = {"Instagram": 0.002, "TikTok": 0.0003}
 
 ADMIN_ROLES = ("Marketinghub-Radar-Administrar", "System Manager")
 VIEW_ROLES = (
@@ -74,12 +76,19 @@ def get_context(context):
 		for v, etiqueta, icono in CANALES
 	]
 
-	context.proxima = _proxima_corrida(datos["cron_scrape"])
+	context.es_manual = datos["preset_frecuencia"] == PRESET_MANUAL
+	context.proxima = (
+		"Solo manual" if context.es_manual else _proxima_corrida(datos["cron_scrape"])
+	)
 	corte = date.today() - timedelta(days=int(datos["dias_retencion_snapshots"] or 90))
 	context.corte_retencion = corte.strftime("%d/%m/%y")
-	context.coste_ig = f"{(datos['posts_por_perfil_ig'] or 0) * COSTE_POR_ITEM:.3f}"
-	context.coste_tt = f"{(datos['posts_por_perfil_tiktok'] or 0) * COSTE_POR_ITEM:.3f}"
-	context.coste_total = f"{((datos['posts_por_perfil_ig'] or 0) + (datos['posts_por_perfil_tiktok'] or 0)) * COSTE_POR_ITEM:.3f}"
+
+	# Límite por marca: una fila por competidor con cuentas activas
+	context.marcas = datos["marcas"]
+	context.marcas_json = frappe.as_json(datos["marcas"]).replace("</", "<\\/")
+	context.coste_ig = f"{COSTE_ITEM['Instagram']:.4f}"
+	context.coste_tt = f"{COSTE_ITEM['TikTok']:.4f}"
+	context.coste_total = f"{_coste_corrida(datos):.3f}"
 
 	stats = {}
 	if s.ultima_corrida_stats:
@@ -132,6 +141,58 @@ def _opciones(fieldname):
 	return [o for o in (campo.options or "").split("\n") if o.strip()]
 
 
+def _marcas_con_cuentas():
+	"""Competidores que tienen al menos una cuenta activa, con su límite propio."""
+	cuentas = frappe.db.get_all(
+		"Cuenta Social",
+		filters={"activo": 1, "plataforma": ["in", ("Instagram", "TikTok")]},
+		fields=["competidor", "plataforma"],
+	)
+	if not cuentas:
+		return []
+	por_marca = {}
+	for c in cuentas:
+		m = por_marca.setdefault(c["competidor"], {"ig": 0, "tt": 0})
+		m["ig" if c["plataforma"] == "Instagram" else "tt"] += 1
+
+	limites = dict(frappe.db.get_all(
+		"Competidor",
+		filters={"name": ["in", list(por_marca)]},
+		fields=["name", "limite_posts"],
+		as_list=True,
+	))
+	marcas = []
+	for nombre, redes in por_marca.items():
+		redes_txt = " · ".join(
+			t for t in (
+				f"{redes['ig']} IG" if redes["ig"] else "",
+				f"{redes['tt']} TikTok" if redes["tt"] else "",
+			) if t
+		)
+		marcas.append({
+			"nombre": nombre,
+			"ini": _iniciales(nombre),
+			"limite": int(limites.get(nombre) or 0),
+			"ig": redes["ig"],
+			"tt": redes["tt"],
+			"redes": redes_txt,
+		})
+	marcas.sort(key=lambda m: m["nombre"].lower())
+	return marcas
+
+
+def _coste_corrida(datos):
+	"""Coste estimado en Apify: suma perfil por perfil, con el límite que le toca."""
+	total = 0.0
+	for m in datos["marcas"]:
+		lim = m["limite"] or 0
+		lim_ig = lim or (datos["posts_por_perfil_ig"] or 0)
+		lim_tt = lim or (datos["posts_por_perfil_tiktok"] or 0)
+		total += m["ig"] * lim_ig * COSTE_ITEM["Instagram"]
+		total += m["tt"] * lim_tt * COSTE_ITEM["TikTok"]
+	return total
+
+
 def _proxima_corrida(cron):
 	try:
 		from croniter import croniter
@@ -172,6 +233,7 @@ def obtener_settings():
 		"posts_por_perfil_ig": s.posts_por_perfil_ig or 20,
 		"posts_por_perfil_tiktok": s.posts_por_perfil_tiktok or 20,
 		"tiers": tiers,
+		"marcas": _marcas_con_cuentas(),
 	}
 
 
@@ -184,8 +246,12 @@ def guardar_settings(
 	posts_por_perfil_ig=None,
 	posts_por_perfil_tiktok=None,
 	tiers=None,
+	limites_marca=None,
 ):
-	"""Guarda los valores de Radar Settings. tiers = JSON string con la tabla."""
+	"""Guarda los valores de Radar Settings. tiers = JSON string con la tabla.
+
+	limites_marca = JSON string {competidor: posts_por_corrida}; 0 = usar el default
+	global. Se guarda en Competidor.limite_posts, no en Radar Settings."""
 	import json as _json
 	if not _has_role(ADMIN_ROLES):
 		frappe.throw(
@@ -218,5 +284,21 @@ def guardar_settings(
 			})
 
 	s.save(ignore_permissions=True)
+
+	if limites_marca is not None:
+		try:
+			mapa = _json.loads(limites_marca) if isinstance(limites_marca, str) else limites_marca
+		except Exception:
+			frappe.throw("Los límites por marca deben ser un JSON válido.")
+		for marca, limite in (mapa or {}).items():
+			try:
+				valor = max(0, int(limite or 0))
+			except (TypeError, ValueError):
+				frappe.throw(f"El límite de «{marca}» debe ser un número entero.")
+			if not frappe.db.exists("Competidor", marca):
+				continue
+			if frappe.db.get_value("Competidor", marca, "limite_posts") != valor:
+				frappe.db.set_value("Competidor", marca, "limite_posts", valor)
+
 	frappe.db.commit()
 	return {"ok": True}
