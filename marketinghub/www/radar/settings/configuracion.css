@@ -318,7 +318,7 @@
   font-size:11px; font-weight:600; letter-spacing:0.07em;
   text-transform:uppercase; color:var(--muted);
 }
-.cfg-gasto-list { max-height:184px; overflow:auto; }
+.cfg-gasto-list { max-height:172px; overflow:auto; }  /* 4 filas justas */
 .cfg-gasto { padding:7px 18px; border-bottom:1px solid var(--hair); }
 .cfg-gasto:last-child { border-bottom:none; }
 .cfg-gasto:hover { background:var(--raise); }

@@ -99,18 +99,19 @@ def get_context(context):
 		"total_corridas": gasto["total_corridas"],
 		"promedio": f"{(gasto['total_usd'] / gasto['total_corridas']):.3f}" if gasto["total_corridas"] else "0.000",
 	}
-	context.corridas = [
-		{
+	context.corridas = []
+	for c in gasto["ultimas"]:
+		# las corridas reconstruidas desde Apify no tienen conteo de items
+		historica = not c["items_total"] and not c["insertados"]
+		context.corridas.append({
 			"cuando": frappe.utils.format_datetime(c["fecha_inicio"], "dd/MM HH:mm"),
 			"coste": f"{float(c['coste_usd'] or 0):.3f}",
 			"real": int(c["coste_real"] or 0),
-			"items": c["items_total"] or 0,
-			"nuevas": c["insertados"] or 0,
-			"origen": c["origen"] or "",
+			"items": "—" if historica else c["items_total"],
+			"meta": "histórico Apify" if historica
+			        else f"{c['origen']} · {c['insertados']} nuevas",
 			"estado": c["estado"] or "",
-		}
-		for c in gasto["ultimas"]
-	]
+		})
 
 	stats = {}
 	if s.ultima_corrida_stats:

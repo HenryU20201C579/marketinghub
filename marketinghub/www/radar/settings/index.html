@@ -222,7 +222,7 @@
             <div class="cfg-gasto{% if c.estado == 'error' %} is-error{% endif %}">
               <div class="cfg-gasto__txt">
                 <span class="cfg-gasto__cuando">{{ c.cuando }}</span>
-                <span class="cfg-gasto__meta">{{ c.origen }} · {{ c.nuevas }} nuevas</span>
+                <span class="cfg-gasto__meta">{{ c.meta }}</span>
               </div>
               <div class="cfg-gasto__items">{{ c.items }}</div>
               <div class="cfg-gasto__coste">${{ c.coste }}{% if not c.real %}<span class="cfg-gasto__est" title="Apify no confirmó el coste: es el estimado">≈</span>{% endif %}</div>
