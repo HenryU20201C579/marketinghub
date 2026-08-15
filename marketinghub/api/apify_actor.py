@@ -36,6 +36,69 @@ def _post_run_sync(actor_id: str, token: str, payload: dict, timeout_s: int = 30
 		raise ApifyError(f"Respuesta no JSON: {body[:200]}") from e
 
 
+def resolver_act_id(token: str, slug: str):
+	"""ID interno del actor a partir de su slug (apify~instagram-scraper -> shu8hv…)."""
+	url = f"https://api.apify.com/v2/acts/{slug}?token={token}"
+	try:
+		with urllib.request.urlopen(url, timeout=30) as resp:
+			return json.loads(resp.read().decode("utf-8"))["data"]["id"]
+	except Exception:
+		return None
+
+
+def listar_runs(token: str, limite: int = 100, act_ids=None):
+	"""Runs recientes de la cuenta: [{act_id, inicio_epoch, fin_epoch, usd, estado}].
+
+	Apify no devuelve el coste en `run-sync-get-dataset-items`, así que el gasto real
+	se obtiene después del histórico de runs. `act_ids` filtra por actor (para no
+	sumar, p.ej., los runs del scraper de anuncios). Devuelve None si falla."""
+	from datetime import datetime, timezone
+
+	def _epoch(valor):
+		if not valor:
+			return None
+		for fmt in ("%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%dT%H:%M:%SZ"):
+			try:
+				return datetime.strptime(valor, fmt).replace(tzinfo=timezone.utc).timestamp()
+			except ValueError:
+				continue
+		return None
+
+	url = f"https://api.apify.com/v2/actor-runs?token={token}&desc=1&limit={int(limite)}"
+	try:
+		with urllib.request.urlopen(url, timeout=45) as resp:
+			data = json.loads(resp.read().decode("utf-8"))["data"]
+	except Exception:
+		return None
+
+	runs = []
+	for run in data.get("items") or []:
+		if act_ids and run.get("actId") not in act_ids:
+			continue
+		inicio = _epoch(run.get("startedAt"))
+		if inicio is None:
+			continue
+		runs.append({
+			"act_id": run.get("actId"),
+			"inicio_epoch": inicio,
+			"fin_epoch": _epoch(run.get("finishedAt")) or inicio,
+			"usd": float(run.get("usageTotalUsd") or 0),
+			"estado": run.get("status"),
+		})
+	return runs
+
+
+def coste_desde(token: str, desde_epoch: float, limite: int = 100, act_ids=None):
+	"""Suma el coste de los runs arrancados desde `desde_epoch`.
+
+	Devuelve (usd, n_runs); (None, 0) si no se pudo consultar."""
+	runs = listar_runs(token, limite, act_ids)
+	if runs is None:
+		return None, 0
+	elegidos = [r for r in runs if r["inicio_epoch"] >= desde_epoch]
+	return round(sum(r["usd"] for r in elegidos), 4), len(elegidos)
+
+
 def scrape_instagram(token: str, urls: list, results_per_profile: int = 20):
 	payload = {
 		"directUrls": urls,

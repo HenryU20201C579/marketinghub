@@ -1,0 +1,194 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:RC-{YYYY}{MM}{DD}-{#####}",
+ "creation": "2026-08-15 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "description": "Bitácora de cada corrida del scraper del Radar, con su coste real en Apify.",
+ "field_order": [
+  "fecha_inicio",
+  "estado",
+  "origen",
+  "cb_1",
+  "duracion_segundos",
+  "disparada_por",
+  "sb_coste",
+  "coste_usd",
+  "coste_estimado_usd",
+  "cb_2",
+  "runs_apify",
+  "coste_real",
+  "sb_items",
+  "items_total",
+  "insertados",
+  "actualizados",
+  "cb_3",
+  "saltados",
+  "errores",
+  "sb_detalle",
+  "detalle"
+ ],
+ "fields": [
+  {
+   "fieldname": "fecha_inicio",
+   "fieldtype": "Datetime",
+   "label": "Inicio",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "label": "Estado",
+   "options": "\nok\nwarn\nerror",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "origen",
+   "fieldtype": "Select",
+   "label": "Origen",
+   "options": "\nManual\nProgramada",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {"fieldname": "cb_1", "fieldtype": "Column Break"},
+  {
+   "fieldname": "duracion_segundos",
+   "fieldtype": "Float",
+   "label": "Duración (seg)",
+   "precision": "1",
+   "read_only": 1
+  },
+  {
+   "fieldname": "disparada_por",
+   "fieldtype": "Data",
+   "label": "Disparada por",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_coste",
+   "fieldtype": "Section Break",
+   "label": "Coste en Apify"
+  },
+  {
+   "fieldname": "coste_usd",
+   "fieldtype": "Currency",
+   "label": "Coste (USD)",
+   "options": "USD",
+   "precision": "4",
+   "read_only": 1,
+   "in_list_view": 1,
+   "description": "Real cobrado por Apify si se pudo consultar; si no, el estimado."
+  },
+  {
+   "fieldname": "coste_estimado_usd",
+   "fieldtype": "Currency",
+   "label": "Coste estimado (USD)",
+   "options": "USD",
+   "precision": "4",
+   "read_only": 1
+  },
+  {"fieldname": "cb_2", "fieldtype": "Column Break"},
+  {
+   "fieldname": "runs_apify",
+   "fieldtype": "Int",
+   "label": "Runs de Apify",
+   "read_only": 1
+  },
+  {
+   "fieldname": "coste_real",
+   "fieldtype": "Check",
+   "label": "Coste confirmado por Apify",
+   "read_only": 1,
+   "default": "0"
+  },
+  {
+   "fieldname": "sb_items",
+   "fieldtype": "Section Break",
+   "label": "Resultado"
+  },
+  {
+   "fieldname": "items_total",
+   "fieldtype": "Int",
+   "label": "Items traídos",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "insertados",
+   "fieldtype": "Int",
+   "label": "Insertados",
+   "read_only": 1
+  },
+  {
+   "fieldname": "actualizados",
+   "fieldtype": "Int",
+   "label": "Actualizados",
+   "read_only": 1
+  },
+  {"fieldname": "cb_3", "fieldtype": "Column Break"},
+  {
+   "fieldname": "saltados",
+   "fieldtype": "Int",
+   "label": "Saltados",
+   "read_only": 1
+  },
+  {
+   "fieldname": "errores",
+   "fieldtype": "Int",
+   "label": "Errores",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_detalle",
+   "fieldtype": "Section Break",
+   "label": "Detalle"
+  },
+  {
+   "fieldname": "detalle",
+   "fieldtype": "Small Text",
+   "label": "Detalle",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-08-15 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "MarketingHub",
+ "name": "Radar Corrida",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "Marketinghub-Radar-Administrar",
+   "read": 1,
+   "delete": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {
+   "role": "System Manager",
+   "create": 1,
+   "read": 1,
+   "write": 1,
+   "delete": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "share": 1
+  },
+  {"role": "Marketinghub-Radar-Analista", "read": 1, "report": 1},
+  {"role": "Marketinghub-Radar-Ver", "read": 1}
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "fecha_inicio",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}

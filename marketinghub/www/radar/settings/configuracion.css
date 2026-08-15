@@ -308,6 +308,33 @@
 .cfg-progress.is-error .cfg-progress__pct { color:var(--top); }
 .cfg-progress.is-error .cfg-progress__bar { background:var(--top); }
 
+/* ---------- 9d. Gasto en Apify ---------- */
+.cfg-gasto-head, .cfg-gasto {
+  display:grid; grid-template-columns:1fr 54px 74px; gap:8px; align-items:center;
+}
+.cfg-gasto-head {
+  padding:8px 18px; background:var(--raise); border-top:1px solid var(--hair);
+  border-bottom:1px solid var(--hair);
+  font-size:11px; font-weight:600; letter-spacing:0.07em;
+  text-transform:uppercase; color:var(--muted);
+}
+.cfg-gasto-list { max-height:184px; overflow:auto; }
+.cfg-gasto { padding:7px 18px; border-bottom:1px solid var(--hair); }
+.cfg-gasto:last-child { border-bottom:none; }
+.cfg-gasto:hover { background:var(--raise); }
+.cfg-gasto__txt { display:flex; flex-direction:column; gap:1px; min-width:0; }
+.cfg-gasto__cuando { font-size:12px; font-weight:600; color:var(--text); }
+.cfg-gasto__meta { font-size:11px; color:var(--faint); }
+.cfg-gasto__items {
+  font-size:12px; text-align:center; color:var(--muted); font-variant-numeric:tabular-nums;
+}
+.cfg-gasto__coste {
+  font-size:13px; font-weight:700; text-align:right; color:var(--text);
+  font-variant-numeric:tabular-nums;
+}
+.cfg-gasto__est { color:var(--faint); font-weight:600; margin-left:2px; }
+.cfg-gasto.is-error .cfg-gasto__coste { color:var(--top); }
+
 /* ---------- 10. Toast ---------- */
 .cfg-toast {
   position:fixed; left:50%; bottom:22px; transform:translateX(-50%);

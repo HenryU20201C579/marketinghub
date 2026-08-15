@@ -10,6 +10,7 @@ import json
 import time
 import traceback
 from collections import defaultdict
+from datetime import datetime
 
 import frappe
 from frappe.utils import getdate, get_datetime, cint, now_datetime
@@ -18,6 +19,12 @@ from marketinghub.api import apify_actor
 
 # Roles permitidos para hacer ingest
 INGEST_ROLES = ("Marketinghub-Radar-Administrar", "System Manager")
+VIEW_ROLES = INGEST_ROLES + ("Marketinghub-Radar-Analista", "Marketinghub-Radar-Ver")
+
+# Precio por item scrapeado, calibrado con el coste real de runs de Apify
+# (15/08/26: IG 30 posts = $0.081 y 50 = $0.135; TikTok 20 = $0.075, 50 = $0.186).
+# Solo se usa para estimar de antemano: lo que se registra es el coste real.
+COSTE_ITEM = {"Instagram": 0.0027, "TikTok": 0.0037}
 
 # Clave en redis donde el job publica su avance para que la UI lo lea por polling.
 # No se usa publish_realtime porque /radar/settings es una página standalone sin
@@ -249,7 +256,7 @@ def _limite_de(cuenta, limites, limit_ig, limit_tt):
 	return limit_ig if cuenta["plataforma"] == "Instagram" else limit_tt
 
 
-def correr_scrape(limit_per_profile=None):
+def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=None):
 	"""Se invoca desde el scheduled job o manualmente. NO usa HTTP — corre in-process.
 
 	El límite de posts se resuelve por cuenta: `Competidor.limite_posts` si la marca
@@ -263,6 +270,7 @@ def correr_scrape(limit_per_profile=None):
 	inicio = time.time()
 	stats = {"insert": 0, "update": 0, "skip": 0, "error": 0}
 	log_lines = []
+	items_por_red = {"Instagram": 0, "TikTok": 0}
 	_set_progreso(2, "Leyendo configuración…")
 
 	settings = frappe.get_cached_doc("Radar Settings")
@@ -314,6 +322,7 @@ def correr_scrape(limit_per_profile=None):
 		_set_progreso(base, f"{plataforma} · {marcas} · pidiendo {limite} por perfil…")
 		try:
 			items = _scrape_grupo(token, plataforma, delcaso, limite)
+			items_por_red[plataforma] += len(items)
 			_set_progreso(base + ancho * 0.6,
 			              f"{plataforma} · {marcas} · procesando {len(items)} items…")
 			pinned_skip = _procesar_items(
@@ -335,15 +344,172 @@ def correr_scrape(limit_per_profile=None):
 	duracion = round(time.time() - inicio, 1)
 	resumen = f"insert={stats['insert']} update={stats['update']} skip={stats['skip']} error={stats['error']}"
 	estado = "ok" if stats["error"] == 0 else "warn"
-	_registrar_corrida(duracion, stats, estado, " · ".join(log_lines) + " · " + resumen)
+	detalle = " · ".join(log_lines) + " · " + resumen
+	_registrar_corrida(duracion, stats, estado, detalle)
+
+	_set_progreso(97, "Consultando el coste en Apify…")
+	coste = _registrar_gasto(
+		token, inicio, duracion, stats, estado, detalle, items_por_red,
+		origen, disparada_por,
+	)
+
 	frappe.db.commit()
 	_set_progreso(
 		100,
 		f"Listo · {stats['insert']} nuevas, {stats['update']} actualizadas"
-		+ (f", {stats['error']} errores" if stats["error"] else ""),
-		estado=estado, stats=stats, duracion=duracion,
+		+ (f", {stats['error']} errores" if stats["error"] else "")
+		+ f" · ${coste['coste_usd']:.3f}",
+		estado=estado, stats=stats, duracion=duracion, coste=coste,
 	)
-	return {"ok": True, "stats": stats, "duracion_s": duracion}
+	return {"ok": True, "stats": stats, "duracion_s": duracion, "coste": coste}
+
+
+def _act_ids_radar(token):
+	"""IDs de los actores que usa el Radar (IG y TikTok), para no contar los de Ads."""
+	clave = "radar_apify_act_ids"
+	cacheado = frappe.cache().get_value(clave)
+	if cacheado:
+		try:
+			return set(json.loads(cacheado))
+		except Exception:
+			pass
+	ids = set()
+	for slug in (apify_actor.INSTAGRAM_ACTOR, apify_actor.TIKTOK_ACTOR):
+		act_id = apify_actor.resolver_act_id(token, slug)
+		if act_id:
+			ids.add(act_id)
+	if ids:
+		frappe.cache().set_value(clave, json.dumps(sorted(ids)), expires_in_sec=86400)
+	return ids
+
+
+def _registrar_gasto(token, inicio, duracion, stats, estado, detalle, items_por_red,
+                     origen, disparada_por):
+	"""Crea el Radar Corrida con el coste real de Apify (o el estimado si falla)."""
+	estimado = round(
+		items_por_red["Instagram"] * COSTE_ITEM["Instagram"]
+		+ items_por_red["TikTok"] * COSTE_ITEM["TikTok"], 4
+	)
+	# margen de 60 s hacia atrás: el run arranca en Apify antes de que volvamos aquí
+	real, n_runs = apify_actor.coste_desde(token, inicio - 60, act_ids=_act_ids_radar(token))
+	confirmado = real is not None and n_runs > 0
+
+	doc = frappe.new_doc("Radar Corrida")
+	doc.fecha_inicio = frappe.utils.add_to_date(now_datetime(), seconds=-int(duracion))
+	doc.estado = estado
+	doc.origen = origen if origen in ("Manual", "Programada") else "Programada"
+	doc.disparada_por = disparada_por or "Scheduler"
+	doc.duracion_segundos = duracion
+	doc.coste_usd = real if confirmado else estimado
+	doc.coste_estimado_usd = estimado
+	doc.coste_real = int(confirmado)
+	doc.runs_apify = n_runs
+	doc.items_total = items_por_red["Instagram"] + items_por_red["TikTok"]
+	doc.insertados = stats["insert"]
+	doc.actualizados = stats["update"]
+	doc.saltados = stats["skip"]
+	doc.errores = stats["error"]
+	doc.detalle = (detalle or "")[:1000]
+	doc.insert(ignore_permissions=True)
+	return {"coste_usd": float(doc.coste_usd), "estimado": estimado,
+	        "real": confirmado, "runs": n_runs}
+
+
+@frappe.whitelist()
+def importar_gasto_historico(limite=200, hueco_min=15):
+	"""Reconstruye las corridas pasadas desde el histórico de runs de Apify.
+
+	Los runs de una misma corrida van seguidos: se agrupan cortando cuando entre uno
+	y el siguiente pasan más de `hueco_min` minutos. Solo crea las corridas que aún
+	no estén registradas, así que se puede repetir sin duplicar."""
+	from frappe.utils.password import get_decrypted_password
+
+	_require_ingest_perm()
+	token = get_decrypted_password("Radar Settings", "Radar Settings", "apify_token")
+	if not token:
+		frappe.throw("apify_token no configurado en Radar Settings.")
+
+	runs = apify_actor.listar_runs(token, int(limite), act_ids=_act_ids_radar(token))
+	if not runs:
+		return {"ok": False, "creadas": 0, "mensaje": "Apify no devolvió runs."}
+
+	runs.sort(key=lambda r: r["inicio_epoch"])
+	grupos, actual = [], []
+	for run in runs:
+		if actual and (run["inicio_epoch"] - actual[-1]["fin_epoch"]) > hueco_min * 60:
+			grupos.append(actual)
+			actual = []
+		actual.append(run)
+	if actual:
+		grupos.append(actual)
+
+	creadas = 0
+	for grupo in grupos:
+		arranque = frappe.utils.convert_utc_to_system_timezone(
+			datetime.utcfromtimestamp(grupo[0]["inicio_epoch"])
+		).replace(tzinfo=None)
+		# ¿ya hay una corrida registrada en esa ventana?
+		ya = frappe.db.get_all("Radar Corrida", limit=1, filters={
+			"fecha_inicio": ["between", [
+				frappe.utils.add_to_date(arranque, seconds=-600),
+				frappe.utils.add_to_date(arranque, seconds=600),
+			]],
+		})
+		if ya:
+			continue
+		fallidos = sum(1 for r in grupo if r["estado"] != "SUCCEEDED")
+		doc = frappe.new_doc("Radar Corrida")
+		doc.fecha_inicio = arranque
+		doc.estado = "warn" if fallidos else "ok"
+		doc.origen = "Programada"
+		doc.disparada_por = "Importado de Apify"
+		doc.duracion_segundos = round(grupo[-1]["fin_epoch"] - grupo[0]["inicio_epoch"], 1)
+		doc.coste_usd = round(sum(r["usd"] for r in grupo), 4)
+		doc.coste_estimado_usd = 0
+		doc.coste_real = 1
+		doc.runs_apify = len(grupo)
+		doc.detalle = (
+			f"Reconstruida desde el histórico de Apify: {len(grupo)} runs"
+			+ (f", {fallidos} no exitosos" if fallidos else "")
+			+ ". Sin conteo de items (no quedó registro en el ERP)."
+		)
+		doc.insert(ignore_permissions=True)
+		creadas += 1
+
+	frappe.db.commit()
+	return {"ok": True, "creadas": creadas, "grupos": len(grupos)}
+
+
+@frappe.whitelist()
+def resumen_gasto(limite=8):
+	"""Gasto en Apify: última corrida, mes en curso, total y las últimas corridas."""
+	roles = set(frappe.get_roles(frappe.session.user))
+	if not (roles & set(VIEW_ROLES)):
+		frappe.throw("Acceso denegado", frappe.PermissionError)
+
+	ultimas = frappe.db.get_all(
+		"Radar Corrida",
+		fields=["name", "fecha_inicio", "estado", "origen", "coste_usd", "coste_real",
+		        "items_total", "insertados", "actualizados", "duracion_segundos"],
+		order_by="fecha_inicio desc",
+		limit=int(limite),
+	)
+	total = frappe.db.sql("""
+		SELECT COALESCE(SUM(coste_usd), 0), COUNT(*) FROM `tabRadar Corrida`
+	""")[0]
+	mes = frappe.db.sql("""
+		SELECT COALESCE(SUM(coste_usd), 0), COUNT(*) FROM `tabRadar Corrida`
+		WHERE fecha_inicio >= %s
+	""", (frappe.utils.get_first_day(frappe.utils.nowdate()),))[0]
+
+	return {
+		"ultimas": ultimas,
+		"total_usd": float(total[0] or 0),
+		"total_corridas": int(total[1] or 0),
+		"mes_usd": float(mes[0] or 0),
+		"mes_corridas": int(mes[1] or 0),
+		"ultima_usd": float(ultimas[0]["coste_usd"]) if ultimas else 0.0,
+	}
 
 
 def _scrape_grupo(token, plataforma, cuentas, limite):
@@ -470,6 +636,8 @@ def ejecutar_scrape_ahora():
 		"marketinghub.api.radar_scraper.correr_scrape",
 		queue="long",
 		timeout=1800,
+		origen="Manual",
+		disparada_por=frappe.session.user,
 	)
 	return {"ok": True, "mensaje": "Corrida encolada."}
 

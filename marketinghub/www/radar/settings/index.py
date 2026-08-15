@@ -10,6 +10,8 @@ from datetime import date, timedelta
 
 import frappe
 
+# el precio por item está calibrado con runs reales; vive en el scraper para no duplicarlo
+from marketinghub.api.radar_scraper import COSTE_ITEM, resumen_gasto
 from marketinghub.marketinghub.doctype.radar_settings.radar_settings import PRESET_MANUAL
 
 no_cache = 1
@@ -21,9 +23,6 @@ CANALES = (
 	("Telegram", "Telegram", "chat"),
 	("WhatsApp", "WhatsApp", "chat"),
 )
-# Precio aproximado por item scrapeado en Apify, según el actor de cada red
-COSTE_ITEM = {"Instagram": 0.002, "TikTok": 0.0003}
-
 ADMIN_ROLES = ("Marketinghub-Radar-Administrar", "System Manager")
 VIEW_ROLES = (
 	"Marketinghub-Radar-Ver",
@@ -89,6 +88,29 @@ def get_context(context):
 	context.coste_ig = f"{COSTE_ITEM['Instagram']:.4f}"
 	context.coste_tt = f"{COSTE_ITEM['TikTok']:.4f}"
 	context.coste_total = f"{_coste_corrida(datos):.3f}"
+
+	# Control de gasto: cada corrida y el acumulado
+	gasto = resumen_gasto()
+	context.gasto = {
+		"ultima": f"{gasto['ultima_usd']:.3f}",
+		"mes": f"{gasto['mes_usd']:.2f}",
+		"mes_corridas": gasto["mes_corridas"],
+		"total": f"{gasto['total_usd']:.2f}",
+		"total_corridas": gasto["total_corridas"],
+		"promedio": f"{(gasto['total_usd'] / gasto['total_corridas']):.3f}" if gasto["total_corridas"] else "0.000",
+	}
+	context.corridas = [
+		{
+			"cuando": frappe.utils.format_datetime(c["fecha_inicio"], "dd/MM HH:mm"),
+			"coste": f"{float(c['coste_usd'] or 0):.3f}",
+			"real": int(c["coste_real"] or 0),
+			"items": c["items_total"] or 0,
+			"nuevas": c["insertados"] or 0,
+			"origen": c["origen"] or "",
+			"estado": c["estado"] or "",
+		}
+		for c in gasto["ultimas"]
+	]
 
 	stats = {}
 	if s.ultima_corrida_stats:
