@@ -11,7 +11,16 @@ def execute():
 	if not frappe.db.exists("DocType", "Radar Settings"):
 		return
 
-	techo = int(frappe.db.get_single_value("Radar Settings", "max_posts_marca") or 0)
+	# el default del doctype solo aplica a documentos nuevos y Radar Settings es un
+	# Single que ya existe: si nunca se fijó (None), se inicializa aquí. Un 0
+	# explícito sí se respeta, que significa "sin techo".
+	actual = frappe.db.get_single_value("Radar Settings", "max_posts_marca")
+	if actual is None or actual == "":
+		frappe.db.set_value("Radar Settings", "Radar Settings", "max_posts_marca", 3)
+		actual = 3
+		print("[radar] max_posts_marca inicializado en 3")
+
+	techo = int(actual or 0)
 	if not techo:
 		return
 
