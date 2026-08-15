@@ -107,7 +107,9 @@ def get_context(context):
 			"cuando": frappe.utils.format_datetime(c["fecha_inicio"], "dd/MM HH:mm"),
 			"coste": f"{float(c['coste_usd'] or 0):.3f}",
 			"real": int(c["coste_real"] or 0),
-			"items": "—" if historica else c["items_total"],
+			# ojo: la clave NO puede llamarse "items" — en Jinja `c.items` resuelve
+			# el método del dict, no el valor (mismo caso que `corrida.update`)
+			"n_items": "—" if historica else c["items_total"],
 			"meta": "histórico Apify" if historica
 			        else f"{c['origen']} · {c['insertados']} nuevas",
 			"estado": c["estado"] or "",
