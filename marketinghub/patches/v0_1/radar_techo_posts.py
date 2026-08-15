@@ -16,7 +16,11 @@ def execute():
 	# explícito sí se respeta, que significa "sin techo".
 	actual = frappe.db.get_single_value("Radar Settings", "max_posts_marca")
 	if actual is None or actual == "":
-		frappe.db.set_value("Radar Settings", "Radar Settings", "max_posts_marca", 3)
+		# ojo: db.set_value sobre un Single hace UPDATE, y para un campo recién
+		# añadido no hay fila en tabSingles que actualizar: no escribiría nada
+		doc = frappe.get_single("Radar Settings")
+		doc.max_posts_marca = 3
+		doc.save(ignore_permissions=True)
 		actual = 3
 		print("[radar] max_posts_marca inicializado en 3")
 
