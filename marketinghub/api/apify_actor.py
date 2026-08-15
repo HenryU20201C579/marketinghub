@@ -36,6 +36,28 @@ def _post_run_sync(actor_id: str, token: str, payload: dict, timeout_s: int = 30
 		raise ApifyError(f"Respuesta no JSON: {body[:200]}") from e
 
 
+def credito(token: str):
+	"""Consumo del ciclo de facturación: {usado, limite, restante, renueva}.
+
+	Cuando `usado` alcanza `limite`, Apify rechaza los runs con HTTP 402 y el
+	scraper no puede traer nada. Devuelve None si no se pudo consultar."""
+	url = f"https://api.apify.com/v2/users/me/limits?token={token}"
+	try:
+		with urllib.request.urlopen(url, timeout=30) as resp:
+			data = json.loads(resp.read().decode("utf-8"))["data"]
+	except Exception:
+		return None
+
+	usado = float((data.get("current") or {}).get("monthlyUsageUsd") or 0)
+	limite = float((data.get("limits") or {}).get("maxMonthlyUsageUsd") or 0)
+	return {
+		"usado": round(usado, 4),
+		"limite": round(limite, 2),
+		"restante": round(max(limite - usado, 0), 4),
+		"renueva": (data.get("monthlyUsageCycle") or {}).get("endAt") or "",
+	}
+
+
 def resolver_act_id(token: str, slug: str):
 	"""ID interno del actor a partir de su slug (apify~instagram-scraper -> shu8hv…)."""
 	url = f"https://api.apify.com/v2/acts/{slug}?token={token}"

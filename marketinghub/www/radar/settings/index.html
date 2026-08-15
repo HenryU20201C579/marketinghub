@@ -215,6 +215,19 @@
             <span class="cfg-card__title"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v17 M15.5 7.5a3.5 3.5 0 0 0-3.5-2c-2 0-3.5 1-3.5 2.7 0 3.8 7 2.3 7 6.1 0 1.8-1.5 2.9-3.5 2.9a3.8 3.8 0 0 1-3.7-2.3"/></svg>Gasto en Apify</span>
             <span class="cfg-card__meta">{{ gasto.total_corridas }} corridas registradas</span>
           </div>
+          {% if credito %}
+          <div class="cfg-credito{% if credito.agotado %} is-agotado{% endif %}">
+            <div class="cfg-credito__top">
+              <span class="cfg-credito__lbl">{% if credito.agotado %}Sin crédito en Apify{% else %}Crédito del ciclo{% endif %}</span>
+              <span class="cfg-credito__val">${{ credito.restante }} de ${{ credito.limite }}</span>
+            </div>
+            <div class="cfg-progress__track"><div class="cfg-credito__bar" style="width:{{ credito.pct }}%"></div></div>
+            <span class="cfg-credito__hint">
+              {% if credito.agotado %}Las corridas fallan hasta que recargues el plan{% if credito.renueva %} o se renueve el {{ credito.renueva }}{% endif %}.
+              {% else %}Llevas ${{ credito.usado }} usados{% if credito.renueva %}; renueva el {{ credito.renueva }}{% endif %}.{% endif %}
+            </span>
+          </div>
+          {% endif %}
           <div class="cfg-stats">
             <div class="cfg-stat"><span class="cfg-stat__k">Última corrida</span><span class="cfg-stat__v cfg-stat__v--ok">${{ gasto.ultima }}</span></div>
             <div class="cfg-stat"><span class="cfg-stat__k">Este mes</span><span class="cfg-stat__v">${{ gasto.mes }}</span></div>

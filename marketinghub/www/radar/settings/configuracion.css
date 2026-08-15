@@ -328,7 +328,22 @@
 .cfg-progress.is-error .cfg-progress__pct { color:var(--top); }
 .cfg-progress.is-error .cfg-progress__bar { background:var(--top); }
 
-/* ---------- 9d. Gasto en Apify ---------- */
+/* ---------- 9d. Crédito de Apify ---------- */
+.cfg-credito { padding:11px 18px 12px; border-bottom:1px solid var(--hair); }
+.cfg-credito__top {
+  display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:7px;
+}
+.cfg-credito__lbl { font-size:12px; font-weight:600; color:var(--text); }
+.cfg-credito__val {
+  font-size:12px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums;
+}
+.cfg-credito__bar { height:100%; border-radius:999px; background:var(--accent); }
+.cfg-credito__hint { display:block; margin-top:6px; font-size:11px; color:var(--faint); }
+.cfg-credito.is-agotado .cfg-credito__lbl,
+.cfg-credito.is-agotado .cfg-credito__val { color:var(--top); }
+.cfg-credito.is-agotado .cfg-credito__bar { background:var(--top); }
+
+/* ---------- 9e. Gasto en Apify ---------- */
 .cfg-gasto-head, .cfg-gasto {
   display:grid; grid-template-columns:1fr 54px 74px; gap:8px; align-items:center;
 }

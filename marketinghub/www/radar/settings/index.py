@@ -99,6 +99,21 @@ def get_context(context):
 		"total_corridas": gasto["total_corridas"],
 		"promedio": f"{(gasto['total_usd'] / gasto['total_corridas']):.3f}" if gasto["total_corridas"] else "0.000",
 	}
+	# crédito del ciclo de Apify: si llega a 0, el scraper no puede traer nada
+	cred = gasto.get("credito")
+	if cred and cred["limite"]:
+		usado_pct = min(100, round(cred["usado"] / cred["limite"] * 100))
+		context.credito = {
+			"restante": f"{cred['restante']:.2f}",
+			"usado": f"{cred['usado']:.2f}",
+			"limite": f"{cred['limite']:.0f}",
+			"pct": usado_pct,
+			"agotado": cred["restante"] < 0.05,
+			"renueva": _fecha_corta(cred.get("renueva")),
+		}
+	else:
+		context.credito = None
+
 	context.corridas = []
 	for c in gasto["ultimas"]:
 		# las corridas reconstruidas desde Apify no tienen conteo de items
@@ -164,6 +179,13 @@ def _num(valor):
 def _opciones(fieldname):
 	campo = frappe.get_meta("Radar Settings").get_field(fieldname)
 	return [o for o in (campo.options or "").split("\n") if o.strip()]
+
+
+def _fecha_corta(iso):
+	"""'2026-09-01T00:00:00.000Z' -> '01/09'."""
+	if not iso or len(iso) < 10:
+		return ""
+	return f"{iso[8:10]}/{iso[5:7]}"
 
 
 def _marcas_con_cuentas():

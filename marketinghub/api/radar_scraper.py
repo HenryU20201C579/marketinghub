@@ -322,6 +322,7 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 	claves = sorted(grupos.keys())
 	ancho = 90.0 / len(claves)
 	por_marca = []
+	sin_credito = False
 
 	for i, (marca, plataforma) in enumerate(claves):
 		base = 5 + ancho * i
@@ -352,9 +353,14 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 		except Exception as e:
 			stats["error"] += 1
 			fila["fin_epoch"] = time.time()
-			fila["error"] = str(e)[:140]
-			log_lines.append(f"{marca} · {plataforma} · ERROR: {e}")
-			frappe.log_error(traceback.format_exc(), f"Radar Scraper · {marca} · {plataforma}")
+			if _es_sin_credito(e):
+				sin_credito = True
+				fila["error"] = "Sin crédito en Apify"
+				log_lines.append(f"{marca} · {plataforma} · SIN CRÉDITO en Apify")
+			else:
+				fila["error"] = str(e)[:140]
+				log_lines.append(f"{marca} · {plataforma} · ERROR: {e}")
+				frappe.log_error(traceback.format_exc(), f"Radar Scraper · {marca} · {plataforma}")
 		fila["insertados"] = stats["insert"] - antes["insert"]
 		fila["actualizados"] = stats["update"] - antes["update"]
 		fila["saltados"] = stats["skip"] - antes["skip"]
@@ -374,14 +380,27 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 	)
 
 	frappe.db.commit()
-	_set_progreso(
-		100,
-		f"Listo · {stats['insert']} nuevas, {stats['update']} actualizadas"
-		+ (f", {stats['error']} errores" if stats["error"] else "")
-		+ f" · ${coste['coste_usd']:.3f}",
-		estado=estado, stats=stats, duracion=duracion, coste=coste,
-	)
+	if sin_credito:
+		credito_apify(forzar=True)  # refrescar el saldo que pinta la página
+		_set_progreso(
+			100,
+			"Se agotó el crédito de Apify: recarga el plan para volver a scrapear.",
+			estado="error", stats=stats, duracion=duracion, coste=coste,
+		)
+	else:
+		_set_progreso(
+			100,
+			f"Listo · {stats['insert']} nuevas, {stats['update']} actualizadas"
+			+ (f", {stats['error']} errores" if stats["error"] else "")
+			+ f" · ${coste['coste_usd']:.3f}",
+			estado=estado, stats=stats, duracion=duracion, coste=coste,
+		)
 	return {"ok": True, "stats": stats, "duracion_s": duracion, "coste": coste}
+
+
+def _es_sin_credito(e):
+	"""Apify devuelve 402 not-enough-usage cuando se agotó el crédito del ciclo."""
+	return "not-enough-usage" in str(e) or "HTTP 402" in str(e)
 
 
 def _act_ids_radar(token):
@@ -558,6 +577,28 @@ def importar_gasto_historico(limite=200, hueco_min=15):
 	return {"ok": True, "creadas": creadas, "grupos": len(grupos)}
 
 
+def credito_apify(forzar=False):
+	"""Crédito restante del ciclo de Apify. Se cachea 10 min: la página lo pinta
+	en cada carga y no hace falta preguntar a Apify cada vez."""
+	from frappe.utils.password import get_decrypted_password
+
+	clave = "radar_apify_credito"
+	if not forzar:
+		cacheado = frappe.cache().get_value(clave)
+		if cacheado:
+			try:
+				return json.loads(cacheado)
+			except Exception:
+				pass
+	token = get_decrypted_password("Radar Settings", "Radar Settings", "apify_token")
+	if not token:
+		return None
+	datos = apify_actor.credito(token)
+	if datos:
+		frappe.cache().set_value(clave, json.dumps(datos), expires_in_sec=600)
+	return datos
+
+
 @frappe.whitelist()
 def resumen_gasto(limite=8):
 	"""Gasto en Apify: última corrida, mes en curso, total y las últimas corridas."""
@@ -614,6 +655,7 @@ def resumen_gasto(limite=8):
 		"ultima_usd": float(ultimas[0]["coste_usd"]) if ultimas else 0.0,
 		"por_marca": por_marca,
 		"ultima_por_marca": ultima_por_marca,
+		"credito": credito_apify(),
 	}
 
 
