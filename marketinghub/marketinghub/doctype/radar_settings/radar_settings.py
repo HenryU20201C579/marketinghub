@@ -6,76 +6,50 @@ from frappe.model.document import Document
 
 SCHEDULER_METHOD = "marketinghub.api.radar_scraper.correr_scrape"
 
-# Con este preset el Scheduled Job Type queda detenido: el scrapeo solo corre
-# cuando alguien pulsa "Ejecutar ahora" en /radar/settings.
+# El Radar es 100% manual: la única forma de gastar en Apify es pulsando ▶ en
+# /radar/settings. Ya no hay presets de cron ni Scheduled Job Type (se quitó de
+# hooks.py); esta constante sobrevive porque el resto del código la referencia.
 PRESET_MANUAL = "Manual"
-# valor que usó la primera versión del campo; se normaliza en el patch
+# valores que usaron versiones anteriores del campo; se normalizan al guardar
 PRESET_MANUAL_LEGACY = "Manual (solo con el botón)"
-
-PRESETS = {
-	"Diario a las 6 AM": "0 6 * * *",
-	"Diario a las 8 PM": "0 20 * * *",
-	"Cada 12 horas":     "0 */12 * * *",
-	"Cada 6 horas":      "0 */6 * * *",
-	"Cada hora":         "0 * * * *",
-}
 
 
 class RadarSettings(Document):
 	def validate(self):
-		self._resolver_cron_desde_preset()
-		self._validar_cron()
+		# no hay más modo que manual: cualquier valor heredado se normaliza
+		self.preset_frecuencia = PRESET_MANUAL
+		self._validar_topes()
 		self._validar_tiers()
 
 	def on_update(self):
-		if self.flags.get("ignore_scheduler_sync"):
-			return
-		self._sincronizar_scheduled_job()
+		# el job programado ya no existe; si quedó uno de una versión anterior,
+		# nos aseguramos de que siga detenido
+		self._detener_scheduled_job()
 
-	# ------------------- Cron -------------------
-	def _resolver_cron_desde_preset(self):
-		if self.preset_frecuencia and self.preset_frecuencia in PRESETS:
-			self.cron_scrape = PRESETS[self.preset_frecuencia]
-
-	def _validar_cron(self):
-		if self.preset_frecuencia == PRESET_MANUAL:
-			# el cron queda guardado pero el job va detenido; no estorba si está vacío
-			return
-		if not self.cron_scrape:
-			frappe.throw("La expresión cron no puede estar vacía.")
-		try:
-			from croniter import croniter
-			croniter(self.cron_scrape.strip())
-		except ImportError:
-			parts = self.cron_scrape.strip().split()
-			if len(parts) != 5:
-				frappe.throw(
-					f"Expresión cron inválida: debe tener 5 campos "
-					f"(min hora día mes día-semana). Tienes {len(parts)}."
-				)
-		except Exception as e:
-			frappe.throw(f"Expresión cron inválida: {e}")
-
-	def _sincronizar_scheduled_job(self):
+	# ------------------- Programación -------------------
+	def _detener_scheduled_job(self):
 		name = frappe.db.get_value(
 			"Scheduled Job Type", {"method": SCHEDULER_METHOD}, "name"
 		)
-		if not name:
-			return
-		job = frappe.get_doc("Scheduled Job Type", name)
-		manual = self.preset_frecuencia == PRESET_MANUAL
-		cambios = False
-		if int(job.stopped or 0) != int(manual):
-			job.stopped = int(manual)
-			cambios = True
-		if not manual and job.cron_format != self.cron_scrape:
-			job.cron_format = (self.cron_scrape or "").strip()
-			cambios = True
-		if job.frequency != "Cron":
-			job.frequency = "Cron"
-			cambios = True
-		if cambios:
-			job.save(ignore_permissions=True)
+		if name and not frappe.db.get_value("Scheduled Job Type", name, "stopped"):
+			frappe.db.set_value("Scheduled Job Type", name, "stopped", 1)
+
+	# ------------------- Topes de gasto -------------------
+	def _validar_topes(self):
+		for campo, etiqueta in (
+			("tope_corrida_usd", "tope por corrida"),
+			("tope_mes_usd", "tope mensual"),
+		):
+			valor = float(self.get(campo) or 0)
+			if valor < 0:
+				frappe.throw(f"El {etiqueta} no puede ser negativo.")
+		corrida = float(self.tope_corrida_usd or 0)
+		mes = float(self.tope_mes_usd or 0)
+		if corrida and mes and corrida > mes:
+			frappe.throw(
+				f"El tope por corrida (${corrida:.3f}) no puede ser mayor "
+				f"que el tope mensual (${mes:.2f})."
+			)
 
 	# ------------------- Tiers -------------------
 	def _validar_tiers(self):

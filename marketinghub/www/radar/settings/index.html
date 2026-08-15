@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/radar/settings/configuracion.css?v=cfg1">
+<link rel="stylesheet" href="/radar/settings/configuracion.css?v=cfg2">
 <link rel="stylesheet" href="/radar/radar-sidebar.css?v=1">
 </head>
 <body class="cfg">
@@ -49,135 +49,18 @@
   <div class="cfg-body">
     <div class="cfg-grid">
 
-      <!-- ---- Columna izquierda: tiers + límite por marca ---- -->
+      <!-- ---- Columna izquierda: cuánto se pide ---- -->
       <div class="cfg-col-left">
-      <section class="cfg-card cfg-card--fill">
-        <div class="cfg-card__head">
-          <span class="cfg-card__title"><svg class="is-top" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 14.6 9l6 .9-4.3 4.2 1 6-5.3-2.8-5.3 2.8 1-6L3.4 9.9l6-.9z"/></svg>Tiers de viralidad</span>
-          <span class="cfg-card__meta" id="n-virales">{{ n_virales }} marcados como viral</span>
-        </div>
 
-        <p class="cfg-card__note">Cada post se clasifica en el tier <strong>más alto</strong> cuyos dos umbrales cumple. Los tiers marcados como viral activan la fila roja en la tabla.</p>
-
-        <div class="cfg-tier-head">
-          <div>#</div>
-          <div>Nombre</div>
-          <div class="cfg-tier-head__end">Vistas ≥</div>
-          <div class="cfg-tier-head__end">Eng % ≥</div>
-          <div class="cfg-tier-head__center">Viral</div>
-        </div>
-
-        <div class="cfg-tier-list">
-
-          {% for t in tiers %}
-          <div class="cfg-tier{% if t.es_viral %} is-viral{% endif %}" data-orden="{{ t.orden }}">
-            <div class="cfg-tier__n">{{ t.orden }}</div>
-            <div class="cfg-tier__name">
-              <span class="cfg-tier__ini">{{ t.ini|e }}</span>
-              <input class="cfg-input" type="text" value="{{ t.nombre|e }}" data-campo="nombre"{% if not can_edit %} disabled{% endif %}>
-            </div>
-            <input class="cfg-input cfg-input--num" type="text" value="{{ t.vistas }}" data-campo="vistas_min"{% if not can_edit %} disabled{% endif %}>
-            <input class="cfg-input cfg-input--num" type="text" value="{{ t.eng }}" data-campo="engagement_min"{% if not can_edit %} disabled{% endif %}>
-            <div class="cfg-tier__check">
-              <span class="cfg-check{% if t.es_viral %} is-on{% endif %}"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span>
-            </div>
-          </div>
-          {% endfor %}
-
-        </div>
-      </section>
-
-      <!-- Posts por marca -->
-      <section class="cfg-card">
-        <div class="cfg-card__head">
-          <span class="cfg-card__title"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16 M4 12h16 M4 17.5h10"/></svg>Posts por marca</span>
-          <span class="cfg-card__meta">{{ marcas|length }} marcas activas</span>
-        </div>
-        <p class="cfg-card__note">Cada marca se scrapea por separado: su propio límite, su propio coste. <strong>0</strong> = usar el default de arriba (IG {{ ig }} · TikTok {{ tt }}).</p>
-        <div class="cfg-marca-head">
-          <div>Marca</div>
-          <div class="cfg-tier-head__end">Traídos</div>
-          <div class="cfg-tier-head__end">Coste</div>
-          <div class="cfg-tier-head__end">Posts</div>
-          <div></div>
-        </div>
-        <div class="cfg-marca-list">
-          {% for m in marcas %}
-          <div class="cfg-marca{% if m.pausada %} is-pausada{% endif %}" data-marca="{{ m.nombre|e }}">
-            <span class="cfg-tier__ini">{{ m.ini|e }}</span>
-            <div class="cfg-marca__txt">
-              <span class="cfg-marca__nom">{{ m.nombre|e }}
-                {%- if m.pausada %}<span class="cfg-marca__tag">en pausa</span>{% endif %}</span>
-              <span class="cfg-marca__redes">{{ m.redes|e }}</span>
-            </div>
-            <div class="cfg-marca__conteo">
-              <span class="cfg-marca__ult">{% if m.scrapeada %}{% if m.ig %}IG {{ m.ult_ig }}{% endif %}{% if m.ig and m.tt %} · {% endif %}{% if m.tt %}TT {{ m.ult_tt }}{% endif %}{% else %}—{% endif %}</span>
-              <span class="cfg-marca__acum">{{ m.tot_ig + m.tot_tt }} en total</span>
-            </div>
-            <div class="cfg-marca__gasto">
-              <span class="cfg-marca__ult">{% if m.scrapeada %}${{ m.gasto_ultima }}{% else %}—{% endif %}</span>
-              <span class="cfg-marca__acum">${{ m.gasto_total }} total</span>
-            </div>
-            <input class="cfg-input cfg-input--num" type="text" value="{{ m.limite }}" data-campo="limite"{% if not can_edit %} disabled{% endif %}>
-            {% if can_edit %}
-            <div class="cfg-marca__acciones">
-              <button class="cfg-marca__pausa{% if m.pausada %} is-on{% endif %}" type="button" data-pausa="{{ m.nombre|e }}" title="{% if m.pausada %}Reanudar{% else %}Pausar{% endif %} el scrapeo de {{ m.nombre|e }}">
-                {% if m.pausada %}<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5v13l10-6.5z"/></svg>
-                {% else %}<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 5v14M14.5 5v14"/></svg>{% endif %}
-              </button>
-              <button class="cfg-marca__run" type="button" data-run="{{ m.nombre|e }}" title="Scrapear solo {{ m.nombre|e }}"{% if m.pausada %} disabled{% endif %}><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5v13l10-6.5z"/></svg></button>
-            </div>
-            {% else %}<span></span>{% endif %}
-          </div>
-          {% else %}
-          <div class="cfg-marca cfg-marca--vacia">No hay cuentas sociales activas. Agrégalas en <a href="/radar/cuentas">Radar · Cuentas</a>.</div>
-          {% endfor %}
-        </div>
-
-        <!-- barra de progreso de la corrida en curso -->
-        <div class="cfg-progress" id="progreso" style="display:none">
-          <div class="cfg-progress__top">
-            <span class="cfg-progress__paso" id="progreso-paso">Encolando…</span>
-            <span class="cfg-progress__pct" id="progreso-pct">0%</span>
-            <button class="cfg-progress__stop" type="button" id="detener" title="Detener la corrida y abortar el run en Apify"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5h11v11h-11z"/></svg>Detener</button>
-          </div>
-          <div class="cfg-progress__track"><div class="cfg-progress__bar" id="progreso-bar" style="width:0%"></div></div>
-        </div>
-      </section>
-      </div>
-
-      <!-- ---- Columna derecha ---- -->
-      <div class="cfg-col-right">
-
-        <!-- Scrapeo y retención -->
+        <!-- Cuántos posts pedir -->
         <section class="cfg-card">
           <div class="cfg-card__head">
-            <span class="cfg-card__title"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z M12 7.5V12l3 2"/></svg>Scrapeo y retención</span>
-            <span class="cfg-card__meta">{{ proxima }}</span>
+            <span class="cfg-card__title"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V9 M9.5 19.5V4.5 M15 19.5v-8 M20.5 19.5v-12"/></svg>Cuántos posts pedir</span>
+            <span class="cfg-card__meta">Solo manual</span>
           </div>
+          <p class="cfg-card__note">El Radar no corre solo: cada corrida se dispara con el ▶ de una marca. Lo que pagas es <strong>perfiles × posts pedidos</strong>, traiga o no algo nuevo.</p>
 
           <div class="cfg-fields">
-            <div class="cfg-field">
-              <span class="cfg-field__label">Frecuencia</span>
-              <div class="cfg-select">
-                <select name="preset_frecuencia"{% if not can_edit %} disabled{% endif %}>
-                  {% for p in presets %}<option value="{{ p|e }}"{% if preset == p %} selected{% endif %}>{{ p|e }}</option>
-                  {% endfor %}
-                </select>
-                <span class="cfg-select__caret"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5 5 5-5"/></svg></span>
-              </div>
-              <span class="cfg-field__hint">{% if es_manual %}Solo corre con «Ejecutar ahora».{% else %}Cron: {{ cron|e }}{% endif %}</span>
-            </div>
-
-            <div class="cfg-field">
-              <span class="cfg-field__label">Retención</span>
-              <div class="cfg-field__box">
-                <input type="text" name="dias_retencion_snapshots" value="{{ retencion }}"{% if not can_edit %} disabled{% endif %}>
-                <span class="cfg-field__unit">días</span>
-              </div>
-              <span class="cfg-field__hint">Ej.: hoy se borran las métricas anteriores al {{ corte_retencion }}.</span>
-            </div>
-
             <div class="cfg-field">
               <span class="cfg-field__label">Posts · Instagram</span>
               <div class="cfg-field__box">
@@ -198,28 +81,106 @@
           </div>
 
           <div class="cfg-card__foot">
-            <span>Coste estimado si corres todas: <strong id="coste">${{ coste_total }}</strong></span>
+            <span>Coste estimado de todas las marcas activas: <strong id="coste">${{ coste_total }}</strong></span>
           </div>
+          {% if calibrado %}
+          <div class="cfg-card__log">Precio calibrado con {{ calibracion.corridas }} corridas reales de Apify: ×{{ calibracion.factor }} sobre la tarifa de lista ({{ 'cobra más' if calibracion.sube else 'cobra menos' }} de lo que decía la constante).</div>
+          {% endif %}
         </section>
 
-        <!-- Alertas -->
+        <!-- Posts por marca -->
+        <section class="cfg-card cfg-card--fill">
+          <div class="cfg-card__head">
+            <span class="cfg-card__title"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16 M4 12h16 M4 17.5h10"/></svg>Posts por marca</span>
+            <span class="cfg-card__meta">{{ marcas|length }} marcas activas</span>
+          </div>
+          <p class="cfg-card__note">Cada marca se scrapea por separado. <strong>0</strong> = usar el default de arriba (IG {{ ig }} · TikTok {{ tt }}). Las marcas en pausa no se scrapean ni cuentan para el estimado.</p>
+          <div class="cfg-marca-head">
+            <div>Marca</div>
+            <div class="cfg-tier-head__end">Posts</div>
+            <div></div>
+          </div>
+          <div class="cfg-marca-list">
+            {% for m in marcas %}
+            <div class="cfg-marca{% if m.pausada %} is-pausada{% endif %}" data-marca="{{ m.nombre|e }}" data-ig="{{ m.ig }}" data-tt="{{ m.tt }}">
+              <span class="cfg-tier__ini">{{ m.ini|e }}</span>
+              <div class="cfg-marca__txt">
+                <span class="cfg-marca__nom">{{ m.nombre|e }}
+                  {%- if m.pausada %}<span class="cfg-marca__tag">en pausa</span>{% endif %}</span>
+                <span class="cfg-marca__redes">{{ m.redes|e }}</span>
+              </div>
+              <input class="cfg-input cfg-input--num" type="text" value="{{ m.limite }}" data-campo="limite"{% if not can_edit %} disabled{% endif %}>
+              {% if can_edit %}
+              <div class="cfg-marca__acciones">
+                <button class="cfg-marca__pausa{% if m.pausada %} is-on{% endif %}" type="button" data-pausa="{{ m.nombre|e }}" title="{% if m.pausada %}Reanudar{% else %}Pausar{% endif %} el scrapeo de {{ m.nombre|e }}">
+                  {% if m.pausada %}<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5v13l10-6.5z"/></svg>
+                  {% else %}<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 5v14M14.5 5v14"/></svg>{% endif %}
+                </button>
+                <button class="cfg-marca__run" type="button" data-run="{{ m.nombre|e }}" title="Scrapear solo {{ m.nombre|e }}"{% if m.pausada %} disabled{% endif %}><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5v13l10-6.5z"/></svg></button>
+              </div>
+              {% else %}<span></span>{% endif %}
+            </div>
+            {% else %}
+            <div class="cfg-marca cfg-marca--vacia">No hay cuentas sociales activas. Agrégalas en <a href="/radar/cuentas">Radar · Cuentas</a>.</div>
+            {% endfor %}
+          </div>
+
+          <!-- barra de progreso de la corrida en curso -->
+          <div class="cfg-progress" id="progreso" style="display:none">
+            <div class="cfg-progress__top">
+              <span class="cfg-progress__paso" id="progreso-paso">Encolando…</span>
+              <span class="cfg-progress__pct" id="progreso-pct">0%</span>
+              <button class="cfg-progress__stop" type="button" id="detener" title="Detener la corrida y abortar el run en Apify"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5h11v11h-11z"/></svg>Detener</button>
+            </div>
+            <div class="cfg-progress__track"><div class="cfg-progress__bar" id="progreso-bar" style="width:0%"></div></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ---- Columna derecha: lo que cuesta ---- -->
+      <div class="cfg-col-right">
+
+        <!-- Tope de gasto -->
         <section class="cfg-card">
           <div class="cfg-card__head">
-            <span class="cfg-card__title"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5a5.5 5.5 0 0 0-5.5 5.5c0 4-2 5.5-2 5.5h15s-2-1.5-2-5.5A5.5 5.5 0 0 0 12 3.5z M10.3 18a2 2 0 0 0 3.4 0"/></svg>Alertas</span>
+            <span class="cfg-card__title"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z M12 7.5V12 M12 15.6v.1"/></svg>Tope de gasto</span>
+            <span class="cfg-card__meta">{% if topes.hay_mes %}${{ topes.mes }}/mes{% else %}Sin tope{% endif %}</span>
           </div>
-          <div class="cfg-alerts">
-            <span class="cfg-field__label">¿Dónde avisamos cuando algo se vuelve viral?</span>
-            <div class="cfg-channels">
-              {% for c in canales %}
-              <button class="cfg-channel{% if c.on %} is-on{% endif %}" type="button" data-canal="{{ c.valor|e }}"{% if not can_edit %} disabled{% endif %}>
-                {% if c.icono == "campana" %}<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5a5.5 5.5 0 0 0-5.5 5.5c0 4-2 5.5-2 5.5h15s-2-1.5-2-5.5A5.5 5.5 0 0 0 12 3.5z M10.3 18a2 2 0 0 0 3.4 0"/></svg>
-                {% elif c.icono == "correo" %}<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5.5h17v13h-17z M3.5 6.5 12 13l8.5-6.5"/></svg>
-                {% else %}<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16v11H9l-5 4z"/></svg>
-                {% endif %}{{ c.label|e }}</button>
-              {% endfor %}
+          <p class="cfg-card__note">Si una corrida se pasa del tope, el ▶ la rechaza antes de llamar a Apify. <strong>0</strong> = sin tope.</p>
+
+          <div class="cfg-fields">
+            <div class="cfg-field">
+              <span class="cfg-field__label">Por corrida</span>
+              <div class="cfg-field__box">
+                <span class="cfg-field__unit">$</span>
+                <input type="text" name="tope_corrida_usd" value="{{ topes.corrida }}"{% if not can_edit %} disabled{% endif %}>
+              </div>
+              <span class="cfg-field__hint">Estimado de todas ahora mismo: ${{ coste_total }}.</span>
             </div>
-            <span class="cfg-field__hint">Campanita del ERP: aviso inmediato dentro del panel, sin salir de la app.</span>
+
+            <div class="cfg-field">
+              <span class="cfg-field__label">Al mes</span>
+              <div class="cfg-field__box">
+                <span class="cfg-field__unit">$</span>
+                <input type="text" name="tope_mes_usd" value="{{ topes.mes }}"{% if not can_edit %} disabled{% endif %}>
+              </div>
+              <span class="cfg-field__hint">Llevas ${{ gasto.mes }} este mes.</span>
+            </div>
           </div>
+
+          {% if topes.hay_mes %}
+          <div class="cfg-credito{% if topes.agotado %} is-agotado{% endif %}">
+            <div class="cfg-credito__top">
+              <span class="cfg-credito__lbl">{% if topes.agotado %}Tope mensual agotado{% else %}Consumido del tope{% endif %}</span>
+              <span class="cfg-credito__val">${{ gasto.mes }} de ${{ topes.mes }}</span>
+            </div>
+            <div class="cfg-progress__track"><div class="cfg-credito__bar" style="width:{{ topes.pct_mes }}%"></div></div>
+            <span class="cfg-credito__hint">
+              {% if topes.agotado %}Las corridas quedan bloqueadas hasta el mes que viene o hasta que subas el tope.
+              {% else %}Quedan ${{ topes.restante }}{% if topes.caben %} ≈ {{ topes.caben }} corridas completas{% endif %}.{% endif %}
+            </span>
+          </div>
+          {% endif %}
         </section>
 
         <!-- Gasto en Apify -->
@@ -308,7 +269,6 @@
     var API = '/api/method/marketinghub.www.radar.settings.index.';
     var API_SCRAPER = '/api/method/marketinghub.api.radar_scraper.';
     var CSRF = '{{ csrf_token }}';
-    var TIERS = {{ tiers_json }};
     var MARCAS = {{ marcas_json }};
     var COSTE_ITEM = { ig: {{ coste_ig }}, tt: {{ coste_tt }} };
     var PUEDE_EDITAR = {{ 'true' if can_edit else 'false' }};
@@ -343,27 +303,10 @@
     function toast(msg) {
       var t = document.getElementById('toast');
       t.textContent = msg; t.style.display = '';
-      setTimeout(function () { t.style.display = 'none'; }, 3200);
+      setTimeout(function () { t.style.display = 'none'; }, 5000);
     }
 
     // ---- estado del formulario ----
-    function leerTiers() {
-      return Array.prototype.map.call(document.querySelectorAll('.cfg-tier'), function (fila) {
-        var orden = parseInt(fila.dataset.orden, 10);
-        var previo = TIERS.filter(function (t) { return t.orden === orden; })[0] || {};
-        return {
-          orden: orden,
-          nombre: fila.querySelector('[data-campo=nombre]').value.trim(),
-          vistas_min: fila.querySelector('[data-campo=vistas_min]').value.trim(),
-          engagement_min: fila.querySelector('[data-campo=engagement_min]').value.trim(),
-          es_viral: fila.classList.contains('is-viral') ? 1 : 0,
-          // se conservan tal cual: el diseño no los expone
-          imagen_url: previo.imagen_url || '',
-          color_hex: previo.color_hex || ''
-        };
-      });
-    }
-
     function leerLimites() {
       var mapa = {};
       document.querySelectorAll('.cfg-marca[data-marca]').forEach(function (fila) {
@@ -380,15 +323,17 @@
       return mapa;
     }
 
+    function valor(nombre) {
+      var el = document.querySelector('[name=' + nombre + ']');
+      return el ? el.value.trim() : '';
+    }
+
     function leerTodo() {
-      var canal = document.querySelector('.cfg-channel.is-on');
       return {
-        dias_retencion_snapshots: document.querySelector('[name=dias_retencion_snapshots]').value.trim(),
-        posts_por_perfil_ig: document.querySelector('[name=posts_por_perfil_ig]').value.trim(),
-        posts_por_perfil_tiktok: document.querySelector('[name=posts_por_perfil_tiktok]').value.trim(),
-        preset_frecuencia: document.querySelector('[name=preset_frecuencia]').value,
-        canal_alerta: canal ? canal.dataset.canal : '',
-        tiers: leerTiers(),
+        posts_por_perfil_ig: valor('posts_por_perfil_ig'),
+        posts_por_perfil_tiktok: valor('posts_por_perfil_tiktok'),
+        tope_corrida_usd: valor('tope_corrida_usd'),
+        tope_mes_usd: valor('tope_mes_usd'),
         limites_marca: leerLimites(),
         pausas_marca: leerPausas()
       };
@@ -397,12 +342,10 @@
     function payloadGuardar() {
       var datos = leerTodo();
       return {
-        dias_retencion_snapshots: datos.dias_retencion_snapshots,
         posts_por_perfil_ig: datos.posts_por_perfil_ig,
         posts_por_perfil_tiktok: datos.posts_por_perfil_tiktok,
-        preset_frecuencia: datos.preset_frecuencia,
-        canal_alerta: datos.canal_alerta,
-        tiers: JSON.stringify(datos.tiers),
+        tope_corrida_usd: datos.tope_corrida_usd,
+        tope_mes_usd: datos.tope_mes_usd,
         limites_marca: JSON.stringify(datos.limites_marca),
         pausas_marca: JSON.stringify(datos.pausas_marca)
       };
@@ -416,14 +359,14 @@
       var cambiado = JSON.stringify(leerTodo()) !== INICIAL;
       if (dirty) dirty.style.display = cambiado ? '' : 'none';
       if (btnGuardar) btnGuardar.classList.toggle('is-idle', !cambiado);
-      // contador de virales y coste, en vivo
-      document.getElementById('n-virales').textContent =
-        document.querySelectorAll('.cfg-tier.is-viral').length + ' marcados como viral';
-      var ig = parseInt(document.querySelector('[name=posts_por_perfil_ig]').value, 10) || 0;
-      var tt = parseInt(document.querySelector('[name=posts_por_perfil_tiktok]').value, 10) || 0;
+      // coste estimado en vivo; las marcas en pausa no suman, igual que en el server
+      var ig = parseInt(valor('posts_por_perfil_ig'), 10) || 0;
+      var tt = parseInt(valor('posts_por_perfil_tiktok'), 10) || 0;
       var limites = leerLimites();
+      var pausas = leerPausas();
       var total = 0;
       MARCAS.forEach(function (m) {
+        if (pausas[m.nombre]) return;
         var lim = limites[m.nombre] || 0;
         total += m.ig * (lim || ig) * COSTE_ITEM.ig;
         total += m.tt * (lim || tt) * COSTE_ITEM.tt;
@@ -431,29 +374,9 @@
       document.getElementById('coste').textContent = '$' + total.toFixed(3);
     }
 
-    document.querySelectorAll('.cfg-input, .cfg-field__box input, .cfg-select select').forEach(function (el) {
+    document.querySelectorAll('.cfg-input, .cfg-field__box input').forEach(function (el) {
       el.addEventListener('input', revisar);
       el.addEventListener('change', revisar);
-    });
-
-    // casillas de tier
-    document.querySelectorAll('.cfg-tier__check').forEach(function (cell) {
-      cell.addEventListener('click', function () {
-        if (!PUEDE_EDITAR) return;
-        cell.querySelector('.cfg-check').classList.toggle('is-on');
-        cell.closest('.cfg-tier').classList.toggle('is-viral');
-        revisar();
-      });
-    });
-
-    // canales de alerta
-    document.querySelectorAll('.cfg-channel').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        if (!PUEDE_EDITAR) return;
-        document.querySelectorAll('.cfg-channel').forEach(function (b) { b.classList.remove('is-on'); });
-        btn.classList.add('is-on');
-        revisar();
-      });
     });
 
     var reset = document.getElementById('reset');
@@ -482,7 +405,9 @@
     }
 
     function bloquear(si) {
-      botonesRun().forEach(function (b) { b.disabled = si; });
+      botonesRun().forEach(function (b) {
+        b.disabled = si || b.closest('.cfg-marca').classList.contains('is-pausada');
+      });
     }
 
     function terminar(p) {
@@ -512,8 +437,8 @@
     function lanzar(marca) {
       bloquear(true);
       pintar({ pct: 1, paso: 'Encolando la corrida de ' + marca + '…', estado: 'corriendo' });
-      // el scraper lee el límite de la base, no de la pantalla: si hay cambios sin
-      // guardar se guardan antes, para que la corrida use lo que se ve
+      // el scraper lee el límite y el tope de la base, no de la pantalla: si hay
+      // cambios sin guardar se guardan antes, para que la corrida use lo que se ve
       var previo = JSON.stringify(leerTodo()) !== INICIAL
         ? post(API + 'guardar_settings', payloadGuardar()).then(function () { INICIAL = JSON.stringify(leerTodo()); revisar(); })
         : Promise.resolve();
@@ -521,6 +446,7 @@
         .then(function () { return post(API_SCRAPER + 'ejecutar_scrape_ahora', { marca: marca }); })
         .then(function () { seguir(); })
         .catch(function (e) {
+          // aquí caen también los topes: el server rechaza antes de llamar a Apify
           bloquear(false);
           caja.style.display = 'none';
           toast(e.message);

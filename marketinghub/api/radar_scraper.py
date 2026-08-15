@@ -21,10 +21,19 @@ from marketinghub.api import apify_actor
 INGEST_ROLES = ("Marketinghub-Radar-Administrar", "System Manager")
 VIEW_ROLES = INGEST_ROLES + ("Marketinghub-Radar-Analista", "Marketinghub-Radar-Ver")
 
-# Precio por item scrapeado, calibrado con el coste real de runs de Apify
-# (15/08/26: IG 30 posts = $0.081 y 50 = $0.135; TikTok 20 = $0.075, 50 = $0.186).
-# Solo se usa para estimar de antemano: lo que se registra es el coste real.
+# Precio base por item scrapeado. Es solo el punto de partida: `coste_item()`
+# lo re-escala con lo que Apify cobró de verdad, porque estas constantes se
+# quedaron cortas (TikTok real ≈ $0.00375/item con la constante en 0.0037).
+# Lo que se registra en cada corrida sigue siendo el coste real, no el estimado.
 COSTE_ITEM = {"Instagram": 0.0027, "TikTok": 0.0037}
+
+# Calibración: factor que corrige COSTE_ITEM con el histórico real.
+CALIBRACION_KEY = "radar_coste_calibracion"
+CALIBRACION_TTL = 600
+# hacen falta unas cuantas corridas para que el factor no baile con el ruido
+CALIBRACION_MIN_CORRIDAS = 3
+# un factor absurdo casi siempre es un dato sucio, no un cambio de precio real
+CALIBRACION_MIN, CALIBRACION_MAX = 0.5, 3.0
 
 # Clave en redis donde el job publica su avance para que la UI lo lea por polling.
 # No se usa publish_realtime porque /radar/settings es una página standalone sin
@@ -543,9 +552,10 @@ def _registrar_gasto(token, inicio, duracion, stats, estado, detalle, items_por_
                      origen, disparada_por, por_marca=None, alcance=None):
 	"""Crea el Radar Corrida con el coste real de Apify (o el estimado si falla)."""
 	por_marca = por_marca or []
+	precio = coste_item()
 	estimado = round(
-		items_por_red["Instagram"] * COSTE_ITEM["Instagram"]
-		+ items_por_red["TikTok"] * COSTE_ITEM["TikTok"], 4
+		items_por_red["Instagram"] * precio["Instagram"]
+		+ items_por_red["TikTok"] * precio["TikTok"], 4
 	)
 	# margen de 60 s hacia atrás: el run arranca en Apify antes de que volvamos aquí
 	runs = apify_actor.listar_runs(token, 100, act_ids=_act_ids_radar(token))
@@ -561,7 +571,7 @@ def _registrar_gasto(token, inicio, duracion, stats, estado, detalle, items_por_
 	if not confirmado:
 		# sin confirmación de Apify, cada marca se queda con su parte estimada
 		for fila in por_marca:
-			fila["coste_usd"] = round(fila["items"] * COSTE_ITEM[fila["plataforma"]], 4)
+			fila["coste_usd"] = round(fila["items"] * precio[fila["plataforma"]], 4)
 			fila["coste_real"] = 0
 	else:
 		# las filas a las que no se pudo emparejar un run se reparten el sobrante
@@ -703,6 +713,136 @@ def credito_apify(forzar=False):
 	return datos
 
 
+def calibracion_coste(forzar=False):
+	"""Cuánto se desvía COSTE_ITEM del precio que Apify cobra de verdad.
+
+	Devuelve {"factor": k, "corridas": n}, con k = real / estimado sobre las
+	corridas que Apify confirmó. Apify factura el run completo (items + compute),
+	así que no hay forma de separar el precio de IG del de TikTok: se escalan los
+	dos por el mismo factor y se conserva la proporción entre ellos."""
+	if not forzar:
+		guardado = frappe.cache().get_value(CALIBRACION_KEY)
+		if guardado:
+			try:
+				return json.loads(guardado)
+			except Exception:
+				pass
+
+	filas = frappe.db.sql("""
+		SELECT c.name AS corrida, c.coste_usd AS real_usd,
+		       SUM(CASE WHEN m.plataforma = 'Instagram' THEN m.items ELSE 0 END) AS ig,
+		       SUM(CASE WHEN m.plataforma = 'TikTok'    THEN m.items ELSE 0 END) AS tt
+		FROM `tabRadar Corrida` c
+		JOIN `tabRadar Corrida Marca` m ON m.parent = c.name
+		WHERE c.coste_real = 1 AND c.coste_usd > 0
+		GROUP BY c.name, c.coste_usd
+		HAVING ig + tt > 0
+		ORDER BY MAX(c.fecha_inicio) DESC
+		LIMIT 30
+	""", as_dict=True)
+
+	real = sum(float(f["real_usd"] or 0) for f in filas)
+	estimado = sum(
+		int(f["ig"] or 0) * COSTE_ITEM["Instagram"]
+		+ int(f["tt"] or 0) * COSTE_ITEM["TikTok"]
+		for f in filas
+	)
+	datos = {"factor": 1.0, "corridas": len(filas)}
+	if len(filas) >= CALIBRACION_MIN_CORRIDAS and estimado > 0:
+		datos["factor"] = round(
+			min(max(real / estimado, CALIBRACION_MIN), CALIBRACION_MAX), 4
+		)
+	try:
+		frappe.cache().set_value(CALIBRACION_KEY, json.dumps(datos),
+		                         expires_in_sec=CALIBRACION_TTL)
+	except Exception:
+		pass
+	return datos
+
+
+def coste_item(forzar=False):
+	"""Precio por item ya calibrado. Mismas claves que COSTE_ITEM, más el factor."""
+	cal = calibracion_coste(forzar)
+	k = cal["factor"]
+	return {
+		"Instagram": COSTE_ITEM["Instagram"] * k,
+		"TikTok": COSTE_ITEM["TikTok"] * k,
+		"factor": k,
+		"corridas": cal["corridas"],
+	}
+
+
+def estimar_corrida(solo_marca=None):
+	"""Coste estimado de una corrida: perfiles activos × su límite × precio.
+
+	Las marcas en pausa NO suman: no se scrapean, así que meterlas en el total
+	solo inflaba la cifra que se le enseña al usuario."""
+	s = frappe.get_cached_doc("Radar Settings")
+	lim_ig = int(s.posts_por_perfil_ig or 20)
+	lim_tt = int(s.posts_por_perfil_tiktok or 20)
+	precio = coste_item()
+
+	filtros = {"activo": 1, "plataforma": ["in", ("Instagram", "TikTok")]}
+	if solo_marca:
+		filtros["competidor"] = solo_marca
+	cuentas = frappe.db.get_all("Cuenta Social", filters=filtros,
+	                            fields=["competidor", "plataforma"])
+	if not cuentas:
+		return {"total": 0.0, "por_marca": {}, "precio": precio}
+
+	marcas = sorted({c["competidor"] for c in cuentas})
+	ajustes = {
+		a["name"]: a for a in frappe.db.get_all(
+			"Competidor", filters={"name": ["in", marcas]},
+			fields=["name", "limite_posts", "pausar_radar"],
+		)
+	}
+
+	por_marca, total = {}, 0.0
+	for c in cuentas:
+		ajuste = ajustes.get(c["competidor"]) or {}
+		if int(ajuste.get("pausar_radar") or 0):
+			continue
+		propio = int(ajuste.get("limite_posts") or 0)
+		es_ig = c["plataforma"] == "Instagram"
+		limite = propio or (lim_ig if es_ig else lim_tt)
+		coste = limite * precio["Instagram" if es_ig else "TikTok"]
+		por_marca[c["competidor"]] = round(por_marca.get(c["competidor"], 0) + coste, 4)
+		total += coste
+
+	return {"total": round(total, 4), "por_marca": por_marca, "precio": precio}
+
+
+def _validar_topes(solo_marca=None):
+	"""Bloquea la corrida si su estimado se pasa del tope por corrida o del mes.
+
+	Se valida con el estimado porque el coste real solo se sabe cuando Apify ya
+	cobró: para entonces frenar no sirve de nada."""
+	s = frappe.get_cached_doc("Radar Settings")
+	tope_corrida = float(s.get("tope_corrida_usd") or 0)
+	tope_mes = float(s.get("tope_mes_usd") or 0)
+	if not tope_corrida and not tope_mes:
+		return
+
+	estimado = estimar_corrida(solo_marca)["total"]
+	if tope_corrida and estimado > tope_corrida:
+		frappe.throw(
+			f"La corrida costaría ≈${estimado:.3f} y el tope por corrida es "
+			f"${tope_corrida:.3f}. Baja el límite de posts, pausa marcas o sube el tope."
+		)
+
+	if tope_mes:
+		gastado = float(frappe.db.sql("""
+			SELECT COALESCE(SUM(coste_usd), 0) FROM `tabRadar Corrida`
+			WHERE fecha_inicio >= %s
+		""", (frappe.utils.get_first_day(frappe.utils.nowdate()),))[0][0] or 0)
+		if gastado + estimado > tope_mes:
+			frappe.throw(
+				f"Este mes llevas ${gastado:.2f} y la corrida sumaría ≈${estimado:.3f}: "
+				f"se pasa del tope mensual de ${tope_mes:.2f}."
+			)
+
+
 @frappe.whitelist()
 def resumen_gasto(limite=8):
 	"""Gasto en Apify: última corrida, mes en curso, total y las últimas corridas."""
@@ -788,6 +928,23 @@ def resumen_gasto(limite=8):
 		"por_red": por_red,
 		"ultima_por_marca": ultima_por_marca,
 		"credito": credito_apify(),
+		"topes": _estado_topes(float(mes[0] or 0)),
+		"precio": coste_item(),
+	}
+
+
+def _estado_topes(gastado_mes):
+	"""Topes configurados y cuánto margen queda este mes."""
+	s = frappe.get_cached_doc("Radar Settings")
+	tope_corrida = float(s.get("tope_corrida_usd") or 0)
+	tope_mes = float(s.get("tope_mes_usd") or 0)
+	return {
+		"corrida": tope_corrida,
+		"mes": tope_mes,
+		"gastado_mes": round(gastado_mes, 4),
+		"restante_mes": round(max(tope_mes - gastado_mes, 0), 4) if tope_mes else None,
+		"pct_mes": min(100, round(gastado_mes / tope_mes * 100)) if tope_mes else 0,
+		"agotado": bool(tope_mes and gastado_mes >= tope_mes),
 	}
 
 
@@ -905,6 +1062,9 @@ def ejecutar_scrape_ahora(marca=None):
 
 	if marca and not frappe.db.exists("Competidor", marca):
 		frappe.throw(f"La marca «{marca}» no existe.")
+
+	# el tope se valida antes de encolar: una vez que Apify corre, ya cobró
+	_validar_topes(marca)
 
 	actual = progreso_scrape()
 	# si el worker murió a medias, el progreso se queda "corriendo" para siempre:

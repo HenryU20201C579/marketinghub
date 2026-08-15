@@ -2,6 +2,7 @@
  "actions": [],
  "allow_rename": 0,
  "creation": "2026-08-09 00:00:00.000000",
+ "description": "Configuraci\u00f3n del Radar de Competencia.",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -16,6 +17,9 @@
   "posts_por_perfil_ig",
   "posts_por_perfil_tiktok",
   "posts_por_perfil",
+  "sb_topes",
+  "tope_corrida_usd",
+  "tope_mes_usd",
   "sb_scheduler",
   "preset_frecuencia",
   "cron_scrape",
@@ -31,26 +35,26 @@
   {
    "fieldname": "sb_tiers",
    "fieldtype": "Section Break",
-   "label": "🏆 Tiers de Viralidad"
+   "label": "\ud83c\udfc6 Tiers de Viralidad"
   },
   {
+   "description": "Se ordenan por 'Orden' (1 = m\u00e1s alto). A cada publicaci\u00f3n se le asigna el tier m\u00e1s alto cuyos 2 umbrales (vistas y engagement) cumple.",
    "fieldname": "tiers_viralidad",
    "fieldtype": "Table",
    "label": "Tiers",
-   "options": "Tier Viralidad",
-   "description": "Se ordenan por 'Orden' (1 = más alto). A cada publicación se le asigna el tier más alto cuyos 2 umbrales (vistas y engagement) cumple."
+   "options": "Tier Viralidad"
   },
   {
    "fieldname": "sb_retencion",
    "fieldtype": "Section Break",
-   "label": "Retención de datos"
+   "label": "Retenci\u00f3n de datos"
   },
   {
+   "default": "90",
+   "description": "Snapshots de m\u00e9tricas m\u00e1s viejos que este l\u00edmite se borran.",
    "fieldname": "dias_retencion_snapshots",
    "fieldtype": "Int",
-   "label": "Días de retención de snapshots",
-   "default": "90",
-   "description": "Snapshots de métricas más viejos que este límite se borran."
+   "label": "D\u00edas de retenci\u00f3n de snapshots"
   },
   {
    "fieldname": "sb_alertas",
@@ -58,11 +62,11 @@
    "label": "Alertas"
   },
   {
+   "default": "In-app ERP",
    "fieldname": "canal_alerta",
    "fieldtype": "Select",
    "label": "Canal de Alerta Virales",
-   "options": "\nIn-app ERP\nEmail\nTelegram\nWhatsApp",
-   "default": "In-app ERP"
+   "options": "\nIn-app ERP\nEmail\nTelegram\nWhatsApp"
   },
   {
    "fieldname": "sb_scraper",
@@ -70,57 +74,60 @@
    "label": "Integraciones del scraper"
   },
   {
+   "description": "Token de https://console.apify.com. Se guarda encriptado.",
    "fieldname": "apify_token",
    "fieldtype": "Password",
-   "label": "Apify API Token",
-   "description": "Token de https://console.apify.com. Se guarda encriptado."
+   "label": "Apify API Token"
   },
   {
+   "default": "20",
+   "description": "Cu\u00e1ntos posts m\u00e1s recientes leer de cada cuenta IG activa. Cada post cuesta ~$0.002 en Apify.",
    "fieldname": "posts_por_perfil_ig",
    "fieldtype": "Int",
-   "label": "Posts por perfil de Instagram",
-   "default": "20",
-   "description": "Cuántos posts más recientes leer de cada cuenta IG activa. Cada post cuesta ~$0.002 en Apify."
+   "label": "Posts por perfil de Instagram"
   },
   {
+   "default": "20",
+   "description": "Cu\u00e1ntos videos m\u00e1s recientes leer de cada cuenta TikTok activa. Cada video cuesta ~$0.0003 en Apify.",
    "fieldname": "posts_por_perfil_tiktok",
    "fieldtype": "Int",
-   "label": "Videos por perfil de TikTok",
-   "default": "20",
-   "description": "Cuántos videos más recientes leer de cada cuenta TikTok activa. Cada video cuesta ~$0.0003 en Apify."
+   "label": "Videos por perfil de TikTok"
   },
   {
+   "default": "20",
+   "description": "Fallback si posts_por_perfil_ig/_tiktok est\u00e1n vac\u00edos. Deprecado \u2014 no usar.",
    "fieldname": "posts_por_perfil",
    "fieldtype": "Int",
-   "label": "(legacy) Posts por perfil global",
-   "default": "20",
    "hidden": 1,
-   "description": "Fallback si posts_por_perfil_ig/_tiktok están vacíos. Deprecado — no usar."
+   "label": "(legacy) Posts por perfil global"
   },
   {
    "fieldname": "sb_scheduler",
    "fieldtype": "Section Break",
-   "label": "Programación del scrapeo"
+   "label": "Modo de ejecucion"
   },
   {
+   "default": "Manual",
+   "description": "El Radar es solo manual: la corrida se dispara unicamente desde /radar/settings. No hay scrapeo automatico.",
    "fieldname": "preset_frecuencia",
    "fieldtype": "Select",
    "label": "Frecuencia",
-   "options": "Manual\nDiario a las 6 AM\nDiario a las 8 PM\nCada 12 horas\nCada 6 horas\nCada hora\nPersonalizado",
-   "default": "Manual",
-   "description": "En 'Manual' el scrapeo NO corre solo: se dispara únicamente desde el botón 'Ejecutar ahora'."
+   "options": "Manual",
+   "read_only": 1
   },
   {
+   "default": "0 6 * * *",
+   "description": "Sin uso: quedo de la version con scrapeo programado.",
    "fieldname": "cron_scrape",
    "fieldtype": "Data",
-   "label": "Expresión Cron (5 campos)",
-   "default": "0 6 * * *",
-   "description": "min hora día mes día-semana. Solo editable si 'Frecuencia' = 'Personalizado'."
+   "hidden": 1,
+   "label": "Expresi\u00f3n Cron (5 campos)",
+   "read_only": 1
   },
   {
    "fieldname": "sb_ultima",
    "fieldtype": "Section Break",
-   "label": "Última corrida"
+   "label": "\u00daltima corrida"
   },
   {
    "fieldname": "ultima_corrida",
@@ -135,13 +142,16 @@
    "options": "\nok\nwarn\nerror\ncancelada",
    "read_only": 1
   },
-  {"fieldname": "cb_ult1", "fieldtype": "Column Break"},
+  {
+   "fieldname": "cb_ult1",
+   "fieldtype": "Column Break"
+  },
   {
    "fieldname": "ultima_corrida_duracion",
    "fieldtype": "Float",
-   "label": "Duración (seg)",
-   "read_only": 1,
-   "precision": "1"
+   "label": "Duraci\u00f3n (seg)",
+   "precision": "1",
+   "read_only": 1
   },
   {
    "fieldname": "ultima_corrida_mensaje",
@@ -153,35 +163,73 @@
    "fieldname": "ultima_corrida_stats",
    "fieldtype": "Code",
    "label": "Stats (JSON)",
-   "read_only": 1,
-   "options": "JSON"
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sb_topes",
+   "fieldtype": "Section Break",
+   "label": "Tope de gasto en Apify"
+  },
+  {
+   "default": "0",
+   "description": "Coste maximo estimado de una sola corrida. 0 = sin tope. Si el estimado lo supera, el boton de ejecutar se bloquea.",
+   "fieldname": "tope_corrida_usd",
+   "fieldtype": "Float",
+   "label": "Tope por corrida (USD)",
+   "precision": "3"
+  },
+  {
+   "default": "0",
+   "description": "Gasto maximo acumulado en el mes en curso. 0 = sin tope. Se compara contra lo ya gastado mas el estimado de la corrida.",
+   "fieldname": "tope_mes_usd",
+   "fieldtype": "Float",
+   "label": "Tope mensual (USD)",
+   "precision": "2"
   }
  ],
  "index_web_pages_for_search": 1,
+ "issingle": 1,
  "links": [],
- "modified": "2026-08-10 00:00:00.000000",
+ "modified": "2026-08-15 13:00:00.000000",
  "modified_by": "Administrator",
  "module": "MarketingHub",
  "name": "Radar Settings",
  "owner": "Administrator",
  "permissions": [
   {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
    "role": "Marketinghub-Radar-Administrar",
-   "create": 1, "read": 1, "write": 1,
-   "email": 1, "export": 1, "print": 1, "report": 1, "share": 1
+   "share": 1,
+   "write": 1
   },
   {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
    "role": "System Manager",
-   "create": 1, "read": 1, "write": 1,
-   "email": 1, "export": 1, "print": 1, "report": 1, "share": 1
+   "share": 1,
+   "write": 1
   },
-  {"role": "Marketinghub-Radar-Analista", "read": 1},
-  {"role": "Marketinghub-Radar-Ver", "read": 1}
+  {
+   "read": 1,
+   "role": "Marketinghub-Radar-Analista"
+  },
+  {
+   "read": 1,
+   "role": "Marketinghub-Radar-Ver"
+  }
  ],
  "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": [],
- "issingle": 1,
- "description": "Configuración del Radar de Competencia."
+ "states": []
 }

@@ -104,15 +104,10 @@ fixtures = [
 
 
 # ------------------------------------------------------------
-# Radar de Competencia - scheduler default (editable via UI)
+# Radar de Competencia - sin scrapeo automatico
 # ------------------------------------------------------------
-scheduler_events = {
-	"cron": {
-		# Default inicial: 6 AM diario. El usuario puede cambiarlo desde
-		# /radar/settings — el hook on_update de Radar Settings actualiza
-		# el Scheduled Job Type en la DB.
-		"0 6 * * *": [
-			"marketinghub.api.radar_scraper.correr_scrape",
-		],
-	},
-}
+# A proposito NO hay scheduler_events: el scrapeo cuesta dinero real en Apify y
+# la unica forma de dispararlo es el boton ▶ de /radar/settings, que ademas
+# valida los topes de gasto. El cron diario de 6 AM se llevaba el 80% de la
+# factura corriendo solo. Si algun dia vuelve a programarse, tiene que pasar
+# por _validar_topes primero.
