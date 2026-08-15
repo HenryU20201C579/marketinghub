@@ -121,6 +121,15 @@
           <div class="cfg-marca cfg-marca--vacia">No hay cuentas sociales activas. Agrégalas en <a href="/radar/cuentas">Radar · Cuentas</a>.</div>
           {% endfor %}
         </div>
+
+        <!-- barra de progreso de la corrida en curso -->
+        <div class="cfg-progress" id="progreso" style="display:none">
+          <div class="cfg-progress__top">
+            <span class="cfg-progress__paso" id="progreso-paso">Encolando…</span>
+            <span class="cfg-progress__pct" id="progreso-pct">0%</span>
+          </div>
+          <div class="cfg-progress__track"><div class="cfg-progress__bar" id="progreso-bar" style="width:0%"></div></div>
+        </div>
       </section>
       </div>
 
@@ -176,19 +185,7 @@
           </div>
 
           <div class="cfg-card__foot">
-            <span>Coste estimado por corrida: <strong id="coste">${{ coste_total }}</strong></span>
-            {% if can_edit %}
-            <button class="cfg-btn" type="button" id="ejecutar"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5v13l10-6.5z"/></svg>Ejecutar ahora</button>
-            {% endif %}
-          </div>
-
-          <!-- barra de progreso de la corrida manual -->
-          <div class="cfg-progress" id="progreso" style="display:none">
-            <div class="cfg-progress__top">
-              <span class="cfg-progress__paso" id="progreso-paso">Encolando…</span>
-              <span class="cfg-progress__pct" id="progreso-pct">0%</span>
-            </div>
-            <div class="cfg-progress__track"><div class="cfg-progress__bar" id="progreso-bar" style="width:0%"></div></div>
+            <span>Coste estimado si corres todas: <strong id="coste">${{ coste_total }}</strong></span>
           </div>
         </section>
 
@@ -402,8 +399,7 @@
     var reset = document.getElementById('reset');
     if (reset) reset.addEventListener('click', function () { window.location.reload(); });
 
-    // ---- corrida manual + barra de progreso ----
-    var ejecutar = document.getElementById('ejecutar');
+    // ---- corrida manual por marca + barra de progreso ----
     var caja = document.getElementById('progreso');
     var barra = document.getElementById('progreso-bar');
     var pctTxt = document.getElementById('progreso-pct');
@@ -423,7 +419,6 @@
     }
 
     function bloquear(si) {
-      if (ejecutar) ejecutar.disabled = si;
       botonesRun().forEach(function (b) { b.disabled = si; });
     }
 
@@ -450,11 +445,8 @@
 
     function lanzar(marca) {
       bloquear(true);
-      pintar({
-        pct: 1, estado: 'corriendo',
-        paso: marca ? ('Encolando la corrida de ' + marca + '…') : 'Encolando la corrida…'
-      });
-      post(API_SCRAPER + 'ejecutar_scrape_ahora', marca ? { marca: marca } : {})
+      pintar({ pct: 1, paso: 'Encolando la corrida de ' + marca + '…', estado: 'corriendo' });
+      post(API_SCRAPER + 'ejecutar_scrape_ahora', { marca: marca })
         .then(function () { seguir(); })
         .catch(function (e) {
           bloquear(false);
@@ -463,7 +455,6 @@
         });
     }
 
-    if (ejecutar) ejecutar.addEventListener('click', function () { lanzar(null); });
     botonesRun().forEach(function (btn) {
       btn.addEventListener('click', function () { lanzar(btn.dataset.run); });
     });

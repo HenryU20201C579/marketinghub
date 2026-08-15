@@ -143,9 +143,12 @@
         </div>
 
         <div style="display:flex;flex-direction:column;gap:6px">
-          <span class="rail-lbl">Competidores</span>
+          <div class="rail-head">
+            <span class="rail-lbl">Competidores</span>
+            <button class="rail-all" type="button" id="comp-todas" title="Ver todas las marcas">Todas</button>
+          </div>
           {% for c in competidores %}
-          <button class="comp" data-comp="{{ c.nombre|e }}"><span class="sw" style="background:{{ c.color }}"></span><span class="nm">{{ c.nombre|e }}</span><span class="qt tnum" data-qt></span></button>
+          <button class="comp" data-comp="{{ c.nombre|e }}"><span class="sw" style="background:{{ c.color }}"></span><span class="nm">{{ c.nombre|e }}</span><span class="qt tnum" data-qt></span><span class="solo" data-solo="{{ c.nombre|e }}" title="Ver solo {{ c.nombre|e }}">solo</span></button>
           {% endfor %}
         </div>
 
@@ -267,9 +270,15 @@
     document.getElementById('grid').innerHTML = grid;
     document.getElementById('mini').innerHTML = mini;
 
+    var ocultas = Object.keys(off).filter(function(k){ return off[k]; }).length;
+    var todas = document.getElementById('comp-todas');
+    if(todas) todas.classList.toggle('is-on', ocultas === 0);
     document.querySelectorAll('[data-comp]').forEach(function(b){
       var c = b.dataset.comp;
       b.classList.toggle('off', !!off[c]);
+      // "solo" queda marcado cuando esta marca es la única visible
+      var s = b.querySelector('[data-solo]');
+      if(s) s.classList.toggle('is-on', !off[c] && ocultas === b.parentNode.querySelectorAll('[data-comp]').length - 1);
       b.querySelector('[data-qt]').textContent = EVENTOS.filter(function(e){
         return e.comp === c && e.mes === mes && e.anio === anio;
       }).length;
@@ -318,9 +327,26 @@
     var ev = e.target.closest('[data-url]');
     if(ev){ window.open(ev.dataset.url, '_blank', 'noopener'); return; }
   });
-  document.querySelectorAll('[data-comp]').forEach(function(b){
-    b.addEventListener('click', function(){ off[b.dataset.comp] = !off[b.dataset.comp]; render(); });
+  /* marcas: clic = mostrar/ocultar · "solo" = aislar esa marca · Todas = reset */
+  var MARCAS = Array.prototype.map.call(document.querySelectorAll('[data-comp]'), function(b){
+    return b.dataset.comp;
   });
+  document.querySelectorAll('[data-comp]').forEach(function(b){
+    b.addEventListener('click', function(e){
+      var solo = e.target.closest('[data-solo]');
+      if(solo){
+        var unica = solo.dataset.solo;
+        // si ya estaba aislada, volver a mostrarlas todas
+        var yaSola = !off[unica] && MARCAS.every(function(m){ return m === unica || off[m]; });
+        off = {};
+        if(!yaSola) MARCAS.forEach(function(m){ if(m !== unica) off[m] = true; });
+      } else {
+        off[b.dataset.comp] = !off[b.dataset.comp];
+      }
+      render();
+    });
+  });
+  document.getElementById('comp-todas').addEventListener('click', function(){ off = {}; render(); });
   document.querySelectorAll('.rail select').forEach(function(s){ s.addEventListener('change', render); });
   document.addEventListener('keydown', function(e){
     if(e.target.matches('input,select,textarea')) return;

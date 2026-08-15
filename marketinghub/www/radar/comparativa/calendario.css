@@ -111,6 +111,18 @@ a{color:var(--accent);text-decoration:none} a:hover{color:var(--accent-2);text-d
 .comp .nm{flex:1;min-width:0;text-align:left;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .comp .qt{font-size:11px;font-weight:600;color:var(--faint)}
 .comp.off{border-color:var(--hair)} .comp.off .sw{opacity:.3} .comp.off .nm{color:var(--faint)}
+/* cabecera de la lista de marcas + "Todas" */
+.rail-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.rail-all{padding:2px 8px;border-radius:999px;border:1px solid var(--line);background:var(--bg);
+  font-family:inherit;font-size:10.5px;font-weight:700;letter-spacing:.04em;color:var(--muted);cursor:pointer}
+.rail-all:hover{border-color:var(--accent);color:var(--accent)}
+.rail-all.is-on{border-color:transparent;background:var(--accent-soft);color:var(--accent)}
+/* "solo": aísla esa marca */
+.comp .solo{flex:none;padding:2px 7px;border-radius:999px;border:1px solid transparent;
+  font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--faint);background:var(--raise)}
+.comp .solo:hover{color:var(--accent);border-color:var(--accent)}
+.comp .solo.is-on{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+.comp.off .solo{opacity:.45}
 .tips{margin-top:auto;padding:10px 11px;border-radius:9px;border:1px solid var(--hair);background:var(--raise);font-size:11.5px;line-height:1.6;color:var(--muted)}
 .tips b{color:var(--text);font-weight:600}
 .tips .t{display:flex;align-items:center;gap:7px;font-weight:700;color:var(--text);padding-bottom:4px}
