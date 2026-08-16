@@ -203,6 +203,40 @@
 }
 .cfg-marca-head__max { font-weight:500; text-transform:none; letter-spacing:0; color:var(--faint); }
 
+/* interruptor de «solo posts nuevos» */
+.cfg-toggle {
+  display:flex; gap:11px; align-items:flex-start;
+  padding:0 18px 14px; border-bottom:1px solid var(--hair);
+}
+.cfg-toggle__txt { display:flex; flex-direction:column; gap:3px; min-width:0; }
+.cfg-toggle__lbl { font-size:12px; font-weight:600; color:var(--text); }
+.cfg-switch {
+  flex:none; width:34px; height:20px; margin-top:1px; padding:0; cursor:pointer;
+  border-radius:999px; border:1px solid var(--line); background:var(--raise);
+  display:flex; align-items:center; transition:background .15s, border-color .15s;
+}
+.cfg-switch span {
+  width:14px; height:14px; margin-left:2px; border-radius:999px;
+  background:var(--faint); transition:margin-left .15s, background .15s;
+}
+.cfg-switch.is-on { background:var(--accent-soft); border-color:var(--accent); }
+.cfg-switch.is-on span { margin-left:16px; background:var(--accent); }
+.cfg-switch:disabled { opacity:.5; cursor:default; }
+
+/* ventana de fechas para traer histórico */
+.cfg-ventana {
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  padding:11px 18px 0;
+}
+.cfg-ventana__lbl { font-size:12px; font-weight:600; color:var(--text); }
+.cfg-ventana .cfg-input { width:auto; flex:1 1 130px; min-width:120px; }
+.cfg-ventana__sep { color:var(--faint); }
+.cfg-ventana__nota {
+  padding:7px 18px 12px; margin:0; font-size:11px; line-height:1.5; color:var(--faint);
+  border-bottom:1px solid var(--hair);
+}
+.cfg-ventana__nota.is-on { color:var(--top); }
+
 .cfg-field { display:flex; flex-direction:column; gap:6px; min-width:0; }
 .cfg-field__label { font-size:12px; font-weight:600; color:var(--text); }
 .cfg-field__hint { font-size:11px; color:var(--faint); }

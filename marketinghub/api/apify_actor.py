@@ -151,17 +151,30 @@ def coste_desde(token: str, desde_epoch: float, limite: int = 100, act_ids=None)
 	return round(sum(r["usd"] for r in elegidos), 4), len(elegidos)
 
 
-def scrape_instagram(token: str, urls: list, results_per_profile: int = 20):
+def scrape_instagram(token: str, urls: list, results_per_profile: int = 20, desde=None):
+	"""`desde` (YYYY-MM-DD) descarta lo publicado antes de esa fecha.
+
+	El actor recorre del post más nuevo hacia atrás y corta al llegar al filtro,
+	así que esto sí ahorra: no se paga por lo que no devuelve. Instagram no tiene
+	el equivalente «hasta»: solo se puede acotar por abajo."""
 	payload = {
 		"directUrls": urls,
 		"resultsType": "posts",
 		"resultsLimit": results_per_profile,
 		"addParentData": False,
 	}
+	if desde:
+		payload["onlyPostsNewerThan"] = str(desde)
 	return _post_run_sync(INSTAGRAM_ACTOR, token, payload)
 
 
-def scrape_tiktok(token: str, handles: list, results_per_profile: int = 20):
+def scrape_tiktok(token: str, handles: list, results_per_profile: int = 20,
+                  desde=None, hasta=None):
+	"""`desde`/`hasta` (YYYY-MM-DD) acotan la ventana de publicación.
+
+	Ojo con `hasta`: el actor empieza por el vídeo más nuevo, así que para llegar
+	a una ventana antigua tiene que atravesar todo lo posterior. Acota lo que se
+	guarda, no lo que se recorre."""
 	payload = {
 		"profiles": [h.lstrip("@") for h in handles],
 		"resultsPerPage": results_per_profile,
@@ -169,6 +182,10 @@ def scrape_tiktok(token: str, handles: list, results_per_profile: int = 20):
 		"shouldDownloadCovers": False,
 		"shouldDownloadSubtitles": False,
 	}
+	if desde:
+		payload["oldestPostDateUnified"] = str(desde)
+	if hasta:
+		payload["newestPostDate"] = str(hasta)
 	return _post_run_sync(TIKTOK_ACTOR, token, payload, timeout_s=360)
 
 

@@ -87,6 +87,24 @@
               </div>
               <span class="cfg-field__hint">Ninguna marca puede pedir más. <strong>0</strong> = sin techo.</span>
             </div>
+
+            <div class="cfg-field">
+              <span class="cfg-field__label">Mínimo entre corridas</span>
+              <div class="cfg-field__box">
+                <input type="text" name="horas_entre_corridas" value="{{ horas }}"{% if not can_edit %} disabled{% endif %}>
+                <span class="cfg-field__unit">horas</span>
+              </div>
+              <span class="cfg-field__hint">Repetir una marca antes se bloquea. <strong>0</strong> = sin bloqueo.</span>
+            </div>
+          </div>
+
+          <div class="cfg-toggle">
+            <button class="cfg-switch{% if incremental %} is-on{% endif %}" type="button" id="incremental"
+                    data-on="{{ incremental }}"{% if not can_edit %} disabled{% endif %}><span></span></button>
+            <div class="cfg-toggle__txt">
+              <span class="cfg-toggle__lbl">Solo traer posts nuevos</span>
+              <span class="cfg-field__hint">Le pide al actor solo lo publicado después del último post que ya tienes. Si no hay nada nuevo, devuelve vacío y no se paga. Apágalo solo para refrescar métricas de posts viejos.</span>
+            </div>
           </div>
 
           {% if techo_justo %}
@@ -111,6 +129,16 @@
             <span class="cfg-card__meta">{{ marcas|length }} marcas activas</span>
           </div>
           <p class="cfg-card__note">Cada marca se scrapea por separado. <strong>0</strong> = usar el default de arriba (IG {{ ig }} · TikTok {{ tt }}). Las marcas en pausa no se scrapean ni cuentan para el estimado.</p>
+          {% if can_edit %}
+          <div class="cfg-ventana">
+            <label class="cfg-ventana__lbl" for="v-desde">Traer histórico</label>
+            <input class="cfg-input" type="date" id="v-desde" name="v_desde">
+            <span class="cfg-ventana__sep">→</span>
+            <input class="cfg-input" type="date" id="v-hasta" name="v_hasta">
+            <button class="cfg-btn cfg-btn--quiet" type="button" id="v-limpiar" title="Volver al modo normal">Limpiar</button>
+          </div>
+          <p class="cfg-ventana__nota" id="v-nota">Vacío = solo posts nuevos. Con fechas, el ▶ trae ese rango aunque ya lo tengas.</p>
+          {% endif %}
           <div class="cfg-marca-head">
             <div>Marca</div>
             <div class="cfg-tier-head__end">Posts{% if techo %} <span class="cfg-marca-head__max">máx {{ techo }}</span>{% endif %}</div>
@@ -344,10 +372,13 @@
     }
 
     function leerTodo() {
+      var inc = document.getElementById('incremental');
       return {
         posts_por_perfil_ig: valor('posts_por_perfil_ig'),
         posts_por_perfil_tiktok: valor('posts_por_perfil_tiktok'),
         max_posts_marca: valor('max_posts_marca'),
+        horas_entre_corridas: valor('horas_entre_corridas'),
+        modo_incremental: inc && inc.classList.contains('is-on') ? 1 : 0,
         tope_ciclo_usd: valor('tope_ciclo_usd'),
         limites_marca: leerLimites(),
         pausas_marca: leerPausas()
@@ -360,6 +391,8 @@
         posts_por_perfil_ig: datos.posts_por_perfil_ig,
         posts_por_perfil_tiktok: datos.posts_por_perfil_tiktok,
         max_posts_marca: datos.max_posts_marca,
+        horas_entre_corridas: datos.horas_entre_corridas,
+        modo_incremental: datos.modo_incremental,
         tope_ciclo_usd: datos.tope_ciclo_usd,
         limites_marca: JSON.stringify(datos.limites_marca),
         pausas_marca: JSON.stringify(datos.pausas_marca)
@@ -418,6 +451,49 @@
 
     var reset = document.getElementById('reset');
     if (reset) reset.addEventListener('click', function () { window.location.reload(); });
+
+    // toggle de «solo posts nuevos»
+    var toggleInc = document.getElementById('incremental');
+    if (toggleInc) toggleInc.addEventListener('click', function () {
+      if (!PUEDE_EDITAR) return;
+      toggleInc.classList.toggle('is-on');
+      revisar();
+    });
+
+    // ---- ventana de fechas (histórico) ----
+    var vDesde = document.getElementById('v-desde');
+    var vHasta = document.getElementById('v-hasta');
+    var vNota = document.getElementById('v-nota');
+
+    function ventana() {
+      return { desde: vDesde ? vDesde.value : '', hasta: vHasta ? vHasta.value : '' };
+    }
+
+    function pintarNota() {
+      if (!vNota) return;
+      var v = ventana();
+      var hayVentana = !!(v.desde || v.hasta);
+      vNota.classList.toggle('is-on', hayVentana);
+      if (!hayVentana) {
+        vNota.textContent = 'Vacío = solo posts nuevos. Con fechas, el ▶ trae ese rango aunque ya lo tengas.';
+        return;
+      }
+      // el actor va del post más nuevo hacia atrás: acotar por arriba no evita recorrer
+      var aviso = 'El ▶ traerá ' + (v.desde || 'desde el principio') + ' → ' + (v.hasta || 'hoy') +
+                  '. No es más barato que traer hasta hoy: el actor recorre desde el post más nuevo.';
+      if (v.hasta) aviso += ' Instagram además ignora el «hasta».';
+      vNota.textContent = aviso;
+    }
+
+    [vDesde, vHasta].forEach(function (el) {
+      if (el) el.addEventListener('change', pintarNota);
+    });
+    var vLimpiar = document.getElementById('v-limpiar');
+    if (vLimpiar) vLimpiar.addEventListener('click', function () {
+      if (vDesde) vDesde.value = '';
+      if (vHasta) vHasta.value = '';
+      pintarNota();
+    });
 
     // ---- corrida manual por marca + barra de progreso ----
     var caja = document.getElementById('progreso');
@@ -479,8 +555,12 @@
       var previo = JSON.stringify(leerTodo()) !== INICIAL
         ? post(API + 'guardar_settings', payloadGuardar()).then(function () { INICIAL = JSON.stringify(leerTodo()); revisar(); })
         : Promise.resolve();
+      var v = ventana();
       previo
-        .then(function () { return post(API_SCRAPER + 'ejecutar_scrape_ahora', { marca: marca }); })
+        .then(function () {
+          return post(API_SCRAPER + 'ejecutar_scrape_ahora',
+                      { marca: marca, desde: v.desde || '', hasta: v.hasta || '' });
+        })
         .then(function () { seguir(); })
         .catch(function (e) {
           // aquí caen también los topes: el server rechaza antes de llamar a Apify
@@ -494,18 +574,33 @@
     function confirmar(fila, marca) {
       // se recalcula: si hay cambios sin guardar, se cobrarán esos, no los del server
       var est = estimadoDe(marca);
-      var lineas = ['Scrapear ' + marca + ': gastarás ≈$' + est.toFixed(3) + ' de crédito.'];
+      var v = ventana();
+      var hayVentana = !!(v.desde || v.hasta);
+      var lineas = ['Scrapear ' + marca + ': gastarás como mucho ≈$' + est.toFixed(3) + ' de crédito.'];
       if (RESTANTE) {
         lineas.push('Te quedarán ≈$' + Math.max(RESTANTE - est, 0).toFixed(2) + ' de $' + TECHO + '.');
       }
-      if (fila.dataset.reciente === '1') {
+      lineas.push('');
+      if (hayVentana) {
+        lineas.push('Histórico: ' + (v.desde || 'todo') + ' → ' + (v.hasta || 'hoy') + '.');
+        lineas.push('Traerá posts que quizá ya tengas: es una corrida de relleno, no de ahorro.');
+      } else if (INCREMENTAL()) {
+        lineas.push('Modo «solo posts nuevos»: si no hay nada publicado desde la última');
+        lineas.push('corrida, Apify devuelve vacío y no se paga casi nada.');
+      } else {
+        lineas.push('Modo completo: re-pedirá los posts que ya tienes para refrescar métricas.');
+      }
+      if (fila.dataset.reciente === '1' && !hayVentana) {
         lineas.push('');
-        lineas.push('Ojo: ya se scrapeó el ' + fila.dataset.ultima + ' (hace menos de 24 h). ' +
-                    'Volverás a pagar por los mismos posts.');
+        lineas.push('Ojo: ya se scrapeó el ' + fila.dataset.ultima + ' (hace menos de 24 h).');
       }
       lineas.push('');
       lineas.push('¿Correr igual?');
       return window.confirm(lineas.join('\n'));
+    }
+
+    function INCREMENTAL() {
+      return !!(toggleInc && toggleInc.classList.contains('is-on'));
     }
 
     botonesRun().forEach(function (btn) {

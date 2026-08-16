@@ -17,6 +17,8 @@
   "posts_por_perfil_ig",
   "posts_por_perfil_tiktok",
   "max_posts_marca",
+  "modo_incremental",
+  "horas_entre_corridas",
   "posts_por_perfil",
   "sb_topes",
   "tope_ciclo_usd",
@@ -185,12 +187,26 @@
    "fieldname": "max_posts_marca",
    "fieldtype": "Int",
    "label": "Maximo de posts por marca"
+  },
+  {
+   "default": "1",
+   "description": "Le pide al actor solo lo publicado despues del post mas reciente que ya tienes. Si no hay nada nuevo devuelve vacio y no se paga. Desactivalo solo para refrescar metricas de posts ya guardados.",
+   "fieldname": "modo_incremental",
+   "fieldtype": "Check",
+   "label": "Solo traer posts nuevos"
+  },
+  {
+   "default": "24",
+   "description": "Bloquea repetir la misma marca antes de ese plazo. 0 = sin bloqueo.",
+   "fieldname": "horas_entre_corridas",
+   "fieldtype": "Int",
+   "label": "Horas minimas entre corridas de una marca"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-08-15 20:00:00.000000",
+ "modified": "2026-08-15 21:00:00.000000",
  "modified_by": "Administrator",
  "module": "MarketingHub",
  "name": "Radar Settings",

@@ -334,7 +334,7 @@ def techo_posts():
 
 
 def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=None,
-                  solo_marca=None):
+                  solo_marca=None, desde=None, hasta=None, completa=False):
 	"""Se invoca desde el scheduled job o manualmente. NO usa HTTP — corre in-process.
 
 	El scrapeo va marca por marca: cada marca en cada red es una llamada
@@ -407,6 +407,8 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 	claves = sorted(grupos.keys())
 	ancho = 90.0 / len(claves)
 	techo = techo_posts()
+	# `completa` es la vía de escape para refrescar métricas de posts ya guardados
+	incremental = bool(int(settings.get("modo_incremental") or 0)) and not completa
 	por_marca = []
 	sin_credito = False
 	cancelada = False
@@ -421,12 +423,13 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 		base = 5 + ancho * i
 		delcaso = grupos[(marca, plataforma)]
 		limite = _limite_de(delcaso[0], limites, limit_ig, limit_tt, techo)
+		g_desde, g_hasta, modo = _ventana_de(delcaso, incremental, desde, hasta)
 		antes = dict(stats)
 		fila = {"marca": marca, "plataforma": plataforma, "limite": limite,
 		        "items": 0, "inicio_epoch": time.time(), "fin_epoch": None, "error": ""}
-		_set_progreso(base, f"{marca} · {plataforma} · pidiendo {limite}…")
+		_set_progreso(base, f"{marca} · {plataforma} · pidiendo {limite} ({modo})…")
 		try:
-			items = _scrape_grupo(token, plataforma, delcaso, limite)
+			items = _scrape_grupo(token, plataforma, delcaso, limite, g_desde, g_hasta)
 			fila["fin_epoch"] = time.time()
 			fila["items"] = len(items)
 			items_por_red[plataforma] += len(items)
@@ -440,7 +443,7 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 				),
 			)
 			log_lines.append(
-				f"{marca} · {plataforma} · límite {limite} · {len(items)} items "
+				f"{marca} · {plataforma} · límite {limite} · {modo} · {len(items)} items "
 				f"({pinned_skip} anclados descartados)"
 			)
 		except Exception as e:
@@ -1030,12 +1033,49 @@ def _presupuesto():
 	}
 
 
-def _scrape_grupo(token, plataforma, cuentas, limite):
+def _scrape_grupo(token, plataforma, cuentas, limite, desde=None, hasta=None):
 	if plataforma == "Instagram":
 		urls = [c["url_perfil"] for c in cuentas if c.get("url_perfil")]
-		return apify_actor.scrape_instagram(token, urls, limite) if urls else []
+		# el actor de Instagram no tiene «hasta»: se ignora a propósito
+		return apify_actor.scrape_instagram(token, urls, limite, desde=desde) if urls else []
 	handles = [c["handle"] for c in cuentas if c.get("handle")]
-	return apify_actor.scrape_tiktok(token, handles, limite) if handles else []
+	return apify_actor.scrape_tiktok(token, handles, limite, desde=desde, hasta=hasta) if handles else []
+
+
+def _ultimo_post_de(cuentas):
+	"""Fecha del post más reciente ya guardado del grupo. None si no hay ninguno.
+
+	Se toma el mínimo entre las cuentas del grupo: si una va más atrasada, el
+	filtro tiene que cubrirla o se perdería lo suyo."""
+	nombres = [c["name"] for c in cuentas]
+	if not nombres:
+		return None
+	filas = frappe.db.sql("""
+		SELECT cuenta_social, MAX(fecha_publicacion) AS ultima
+		FROM `tabPublicacion Competencia`
+		WHERE cuenta_social IN %(nombres)s AND fecha_publicacion IS NOT NULL
+		GROUP BY cuenta_social
+	""", {"nombres": nombres}, as_dict=True)
+	# una cuenta sin nada guardado necesita corrida completa: no se filtra
+	if len(filas) < len(nombres):
+		return None
+	fechas = [f["ultima"] for f in filas if f["ultima"]]
+	return min(fechas) if fechas else None
+
+
+def _ventana_de(cuentas, incremental, desde, hasta):
+	"""Qué ventana de fechas se le pide al actor para este grupo.
+
+	La ventana manual manda sobre el incremental: si el usuario pidió histórico,
+	es porque quiere justo lo que el incremental descartaría."""
+	if desde or hasta:
+		return desde, hasta, f"ventana {desde or '—'} → {hasta or 'hoy'}"
+	if not incremental:
+		return None, None, "completa"
+	ultimo = _ultimo_post_de(cuentas)
+	if not ultimo:
+		return None, None, "completa (sin histórico)"
+	return str(ultimo), None, f"nuevos desde {ultimo}"
 
 
 def _procesar_items(plataforma, items, cuentas, stats, avisar):
@@ -1133,11 +1173,37 @@ def _registrar_corrida(duracion_s, stats, estado, mensaje):
 	s.save(ignore_permissions=True)
 
 
-@frappe.whitelist()
-def ejecutar_scrape_ahora(marca=None):
-	"""Endpoint para el boton 'Ejecutar ahora' en /radar/settings.
+def _validar_espaciado(marca):
+	"""Bloquea repetir una marca antes del plazo mínimo.
 
-	`marca` (un Competidor) limita la corrida a esa marca; sin ella van todas."""
+	El 15/08 se corrió Ebrand tres veces en 40 minutos: 70 items, $0.24 y cero
+	posts nuevos. Repetir el mismo día casi siempre es pagar dos veces lo mismo."""
+	horas = int(frappe.get_cached_doc("Radar Settings").get("horas_entre_corridas") or 0)
+	if not horas or not marca:
+		return
+	ultima = frappe.db.sql("""
+		SELECT MAX(c.fecha_inicio) FROM `tabRadar Corrida Marca` m
+		JOIN `tabRadar Corrida` c ON c.name = m.parent
+		WHERE m.marca = %s
+	""", (marca,))[0][0]
+	if not ultima:
+		return
+	pasadas = (now_datetime() - ultima).total_seconds() / 3600
+	if pasadas < horas:
+		frappe.throw(
+			f"«{marca}» se scrapeó hace {pasadas:.1f} h y el mínimo entre corridas "
+			f"es {horas} h. Volverías a pagar por los mismos posts. "
+			f"Puedes bajar el mínimo en la configuración."
+		)
+
+
+@frappe.whitelist()
+def ejecutar_scrape_ahora(marca=None, desde=None, hasta=None, completa=0):
+	"""Endpoint para el botón ▶ de /radar/settings.
+
+	`marca` (un Competidor) limita la corrida a esa marca; sin ella van todas.
+	`desde`/`hasta` acotan la ventana de publicación (histórico). `completa`
+	ignora el modo incremental para refrescar métricas de posts ya guardados."""
 	roles = set(frappe.get_roles(frappe.session.user))
 	if not (roles & set(INGEST_ROLES)):
 		frappe.throw("Permiso denegado", frappe.PermissionError)
@@ -1145,8 +1211,16 @@ def ejecutar_scrape_ahora(marca=None):
 	if marca and not frappe.db.exists("Competidor", marca):
 		frappe.throw(f"La marca «{marca}» no existe.")
 
+	desde = _fecha_valida(desde, "desde")
+	hasta = _fecha_valida(hasta, "hasta")
+	if desde and hasta and desde > hasta:
+		frappe.throw(f"La fecha «desde» ({desde}) es posterior a «hasta» ({hasta}).")
+
 	# el tope se valida antes de encolar: una vez que Apify corre, ya cobró
 	_validar_tope_ciclo(marca)
+	# una ventana de histórico es a propósito repetir: el espaciado no aplica
+	if not (desde or hasta):
+		_validar_espaciado(marca)
 
 	actual = progreso_scrape()
 	# si el worker murió a medias, el progreso se queda "corriendo" para siempre:
@@ -1165,8 +1239,21 @@ def ejecutar_scrape_ahora(marca=None):
 		origen="Manual",
 		disparada_por=frappe.session.user,
 		solo_marca=marca or None,
+		desde=desde,
+		hasta=hasta,
+		completa=bool(int(completa or 0)),
 	)
 	return {"ok": True, "mensaje": f"Corrida de {marca} encolada." if marca else "Corrida encolada."}
+
+
+def _fecha_valida(valor, etiqueta):
+	"""'2026-07-01' -> '2026-07-01'. Vacío -> None. Basura -> error claro."""
+	if not valor or not str(valor).strip():
+		return None
+	try:
+		return str(frappe.utils.getdate(valor))
+	except Exception:
+		frappe.throw(f"La fecha «{etiqueta}» no es válida: {valor}")
 
 
 @frappe.whitelist()
