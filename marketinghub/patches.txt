@@ -11,3 +11,4 @@ marketinghub.patches.v0_1.actualizar_colores_tiers
 marketinghub.patches.v0_1.radar_modo_manual
 marketinghub.patches.v0_1.radar_sin_cron
 marketinghub.patches.v0_1.radar_techo_posts
+marketinghub.patches.v0_1.radar_incremental_default
