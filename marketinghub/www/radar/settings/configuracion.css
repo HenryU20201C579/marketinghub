@@ -68,13 +68,17 @@
 .cfg ::-webkit-scrollbar-track { background:transparent; }
 .cfg ::-webkit-scrollbar-thumb { background:var(--line); border-radius:10px; }
 
+/* La página scrollea como cualquier otra: una sola barra, la del documento.
+   Encajarlo todo en 100vh obligaba a recortar la lista de marcas y la de
+   corridas, y las filas quedaban cortadas a media altura. */
 .cfg-app {
-  height:100vh; min-height:640px; overflow:hidden; box-sizing:border-box;
+  min-height:100vh; box-sizing:border-box;
   display:flex; flex-direction:column; background:var(--bg); color:var(--text);
 }
 
 /* ---------- 3. Cabecera ---------- */
 .cfg-header {
+  position:sticky; top:0; z-index:5;
   flex:none; display:flex; align-items:center; justify-content:space-between;
   gap:14px; padding:12px 20px; border-bottom:1px solid var(--line); background:var(--panel);
 }
@@ -126,16 +130,15 @@
 .cfg-iconbtn:hover { border-color:var(--accent); color:var(--accent); }
 
 /* ---------- 5. Layout de una sola hoja ---------- */
-.cfg-body { flex:1; min-height:0; overflow:hidden; padding:16px 20px 20px; }
+.cfg-body { flex:1; padding:16px 20px 20px; }
 .cfg-grid {
-  height:100%; display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);
-  gap:16px; align-items:stretch;
+  display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);
+  gap:16px; align-items:start;
 }
 @media (max-width:900px) {
-  .cfg-grid { grid-template-columns:minmax(0,1fr); overflow:auto; }
+  .cfg-grid { grid-template-columns:minmax(0,1fr); }
 }
 .cfg-col-right {
-  min-height:0; overflow:auto; padding-right:2px;
   display:flex; flex-direction:column; gap:16px;
 }
 
@@ -267,13 +270,10 @@
 .cfg-status::before { content:""; width:6px; height:6px; border-radius:999px; background:var(--accent); }
 
 /* ---------- 9b. Límite por marca ---------- */
-/* la columna scrollea entera (igual que la derecha): la lista de marcas no
-   tiene scroll propio, así no aparecen filas cortadas a media altura */
 .cfg-col-left {
-  min-height:0; overflow:auto; padding-right:2px;
   display:flex; flex-direction:column; gap:16px;
 }
-.cfg-col-left > .cfg-card { flex:none; }
+/* la lista se muestra entera: sin scroll propio no hay filas a medias */
 .cfg-marca-list { min-height:0; }
 .cfg-marca-head, .cfg-marca {
   display:grid; grid-template-columns:22px 1fr 60px 56px; gap:8px; align-items:center;
@@ -400,7 +400,7 @@
   font-size:11px; font-weight:600; letter-spacing:0.07em;
   text-transform:uppercase; color:var(--muted);
 }
-.cfg-gasto-list { max-height:172px; overflow:auto; }  /* 4 filas justas */
+.cfg-gasto-list { }   /* las 8 corridas enteras: scrollea la página, no la caja */
 .cfg-gasto { padding:7px 18px; border-bottom:1px solid var(--hair); }
 .cfg-gasto:last-child { border-bottom:none; }
 .cfg-gasto:hover { background:var(--raise); }
