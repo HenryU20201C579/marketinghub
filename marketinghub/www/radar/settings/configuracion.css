@@ -267,12 +267,14 @@
 .cfg-status::before { content:""; width:6px; height:6px; border-radius:999px; background:var(--accent); }
 
 /* ---------- 9b. Límite por marca ---------- */
+/* la columna scrollea entera (igual que la derecha): la lista de marcas no
+   tiene scroll propio, así no aparecen filas cortadas a media altura */
 .cfg-col-left {
-  min-height:0; display:flex; flex-direction:column; gap:16px;
+  min-height:0; overflow:auto; padding-right:2px;
+  display:flex; flex-direction:column; gap:16px;
 }
 .cfg-col-left > .cfg-card { flex:none; }
-.cfg-col-left > .cfg-card--fill { flex:1 1 auto; }
-.cfg-marca-list { flex:1; min-height:0; overflow:auto; }
+.cfg-marca-list { min-height:0; }
 .cfg-marca-head, .cfg-marca {
   display:grid; grid-template-columns:22px 1fr 60px 56px; gap:8px; align-items:center;
 }

@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/radar/settings/configuracion.css?v=cfg2">
+<link rel="stylesheet" href="/radar/settings/configuracion.css?v=cfg3">
 <link rel="stylesheet" href="/radar/radar-sidebar.css?v=1">
 </head>
 <body class="cfg">
@@ -505,7 +505,11 @@
     var btnDetener = document.getElementById('detener');
 
     function pintar(p) {
+      // la columna izquierda scrollea: si la barra queda fuera de vista al
+      // arrancar, se acerca sola (solo al aparecer, no en cada tick)
+      var asomaba = caja.style.display !== 'none';
       caja.style.display = '';
+      if (!asomaba && caja.scrollIntoView) caja.scrollIntoView({ block: 'nearest' });
       caja.classList.toggle('is-error', p.estado === 'error' || p.estado === 'cancelada');
       barra.style.width = (p.pct || 0) + '%';
       pctTxt.textContent = (p.pct || 0) + '%';
