@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/radar/settings/configuracion.css?v=cfg4">
+<link rel="stylesheet" href="/radar/settings/configuracion.css?v=cfg5">
 <link rel="stylesheet" href="/radar/radar-sidebar.css?v=1">
 </head>
 <body class="cfg">
@@ -52,6 +52,70 @@
       <!-- ---- Columna izquierda: cuánto se pide ---- -->
       <div class="cfg-col-left">
 
+        <!-- Posts por marca -->
+        <section class="cfg-card cfg-card--fill">
+          <div class="cfg-card__head">
+            <span class="cfg-card__title"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16 M4 12h16 M4 17.5h10"/></svg>Posts por marca</span>
+            <span class="cfg-card__meta">{{ marcas|length }} marcas activas</span>
+          </div>
+          <p class="cfg-card__note">Cada marca se scrapea con el ▶ de su fila. <strong>0</strong> = usar el default general (IG {{ ig }} · TikTok {{ tt }}), que se ajusta más abajo. Las marcas en pausa no se scrapean ni cuentan para el estimado.</p>
+          {% if can_edit %}
+          <!-- plegado: es una corrida de relleno puntual y si no, empuja la lista
+               de marcas fuera de la pantalla -->
+          <details class="cfg-ventana-wrap" id="v-wrap">
+            <summary class="cfg-ventana__sum">Traer histórico<span class="cfg-ventana__badge" id="v-badge" hidden></span></summary>
+            <div class="cfg-ventana">
+              <input class="cfg-input" type="date" id="v-desde" name="v_desde" aria-label="Desde">
+              <span class="cfg-ventana__sep">→</span>
+              <input class="cfg-input" type="date" id="v-hasta" name="v_hasta" aria-label="Hasta">
+              <button class="cfg-btn cfg-btn--quiet" type="button" id="v-limpiar" title="Volver al modo normal">Limpiar</button>
+            </div>
+            <p class="cfg-ventana__nota" id="v-nota">Vacío = solo posts nuevos. Con fechas, el ▶ trae ese rango aunque ya lo tengas.</p>
+          </details>
+          {% endif %}
+          <div class="cfg-marca-head">
+            <div>Marca</div>
+            <div class="cfg-tier-head__end">Posts{% if techo %} <span class="cfg-marca-head__max">máx {{ techo }}</span>{% endif %}</div>
+            <div></div>
+          </div>
+          <div class="cfg-marca-list">
+            {% for m in marcas %}
+            <div class="cfg-marca{% if m.pausada %} is-pausada{% endif %}" data-marca="{{ m.nombre|e }}"
+                 data-estimado="{{ m.estimado }}" data-ultima="{{ m.ultima }}" data-reciente="{{ 1 if m.reciente else 0 }}">
+              <span class="cfg-tier__ini">{{ m.ini|e }}</span>
+              <div class="cfg-marca__txt">
+                <span class="cfg-marca__nom">{{ m.nombre|e }}
+                  {%- if m.pausada %}<span class="cfg-marca__tag">en pausa</span>{% endif %}</span>
+                <span class="cfg-marca__redes">{{ m.redes|e }} ·
+                  {%- if m.ultima %} <span class="cfg-marca__ultima{% if m.reciente %} is-reciente{% endif %}">{{ m.ultima }}</span>
+                  {%- else %} <span class="cfg-marca__ultima is-nunca">nunca</span>{% endif %}</span>
+              </div>
+              <input class="cfg-input cfg-input--num" type="text" value="{{ m.limite }}" data-campo="limite"{% if not can_edit %} disabled{% endif %}>
+              {% if can_edit %}
+              <div class="cfg-marca__acciones">
+                <button class="cfg-marca__pausa{% if m.pausada %} is-on{% endif %}" type="button" data-pausa="{{ m.nombre|e }}" title="{% if m.pausada %}Reanudar{% else %}Pausar{% endif %} el scrapeo de {{ m.nombre|e }}">
+                  {% if m.pausada %}<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5v13l10-6.5z"/></svg>
+                  {% else %}<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 5v14M14.5 5v14"/></svg>{% endif %}
+                </button>
+                <button class="cfg-marca__run" type="button" data-run="{{ m.nombre|e }}" title="Scrapear solo {{ m.nombre|e }}"{% if m.pausada %} disabled{% endif %}><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5v13l10-6.5z"/></svg></button>
+              </div>
+              {% else %}<span></span>{% endif %}
+            </div>
+            {% else %}
+            <div class="cfg-marca cfg-marca--vacia">No hay cuentas sociales activas. Agrégalas en <a href="/radar/cuentas">Radar · Cuentas</a>.</div>
+            {% endfor %}
+          </div>
+
+          <!-- barra de progreso de la corrida en curso -->
+          <div class="cfg-progress" id="progreso" style="display:none">
+            <div class="cfg-progress__top">
+              <span class="cfg-progress__paso" id="progreso-paso">Encolando…</span>
+              <span class="cfg-progress__pct" id="progreso-pct">0%</span>
+              <button class="cfg-progress__stop" type="button" id="detener" title="Detener la corrida y abortar el run en Apify"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5h11v11h-11z"/></svg>Detener</button>
+            </div>
+            <div class="cfg-progress__track"><div class="cfg-progress__bar" id="progreso-bar" style="width:0%"></div></div>
+          </div>
+        </section>
         <!-- Cuántos posts pedir -->
         <section class="cfg-card">
           <div class="cfg-card__head">
@@ -122,66 +186,6 @@
           {% endif %}
         </section>
 
-        <!-- Posts por marca -->
-        <section class="cfg-card cfg-card--fill">
-          <div class="cfg-card__head">
-            <span class="cfg-card__title"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16 M4 12h16 M4 17.5h10"/></svg>Posts por marca</span>
-            <span class="cfg-card__meta">{{ marcas|length }} marcas activas</span>
-          </div>
-          <p class="cfg-card__note">Cada marca se scrapea por separado. <strong>0</strong> = usar el default de arriba (IG {{ ig }} · TikTok {{ tt }}). Las marcas en pausa no se scrapean ni cuentan para el estimado.</p>
-          {% if can_edit %}
-          <div class="cfg-ventana">
-            <label class="cfg-ventana__lbl" for="v-desde">Traer histórico</label>
-            <input class="cfg-input" type="date" id="v-desde" name="v_desde">
-            <span class="cfg-ventana__sep">→</span>
-            <input class="cfg-input" type="date" id="v-hasta" name="v_hasta">
-            <button class="cfg-btn cfg-btn--quiet" type="button" id="v-limpiar" title="Volver al modo normal">Limpiar</button>
-          </div>
-          <p class="cfg-ventana__nota" id="v-nota">Vacío = solo posts nuevos. Con fechas, el ▶ trae ese rango aunque ya lo tengas.</p>
-          {% endif %}
-          <div class="cfg-marca-head">
-            <div>Marca</div>
-            <div class="cfg-tier-head__end">Posts{% if techo %} <span class="cfg-marca-head__max">máx {{ techo }}</span>{% endif %}</div>
-            <div></div>
-          </div>
-          <div class="cfg-marca-list">
-            {% for m in marcas %}
-            <div class="cfg-marca{% if m.pausada %} is-pausada{% endif %}" data-marca="{{ m.nombre|e }}"
-                 data-estimado="{{ m.estimado }}" data-ultima="{{ m.ultima }}" data-reciente="{{ 1 if m.reciente else 0 }}">
-              <span class="cfg-tier__ini">{{ m.ini|e }}</span>
-              <div class="cfg-marca__txt">
-                <span class="cfg-marca__nom">{{ m.nombre|e }}
-                  {%- if m.pausada %}<span class="cfg-marca__tag">en pausa</span>{% endif %}</span>
-                <span class="cfg-marca__redes">{{ m.redes|e }} ·
-                  {%- if m.ultima %} <span class="cfg-marca__ultima{% if m.reciente %} is-reciente{% endif %}">{{ m.ultima }}</span>
-                  {%- else %} <span class="cfg-marca__ultima is-nunca">nunca</span>{% endif %}</span>
-              </div>
-              <input class="cfg-input cfg-input--num" type="text" value="{{ m.limite }}" data-campo="limite"{% if not can_edit %} disabled{% endif %}>
-              {% if can_edit %}
-              <div class="cfg-marca__acciones">
-                <button class="cfg-marca__pausa{% if m.pausada %} is-on{% endif %}" type="button" data-pausa="{{ m.nombre|e }}" title="{% if m.pausada %}Reanudar{% else %}Pausar{% endif %} el scrapeo de {{ m.nombre|e }}">
-                  {% if m.pausada %}<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5v13l10-6.5z"/></svg>
-                  {% else %}<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 5v14M14.5 5v14"/></svg>{% endif %}
-                </button>
-                <button class="cfg-marca__run" type="button" data-run="{{ m.nombre|e }}" title="Scrapear solo {{ m.nombre|e }}"{% if m.pausada %} disabled{% endif %}><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5v13l10-6.5z"/></svg></button>
-              </div>
-              {% else %}<span></span>{% endif %}
-            </div>
-            {% else %}
-            <div class="cfg-marca cfg-marca--vacia">No hay cuentas sociales activas. Agrégalas en <a href="/radar/cuentas">Radar · Cuentas</a>.</div>
-            {% endfor %}
-          </div>
-
-          <!-- barra de progreso de la corrida en curso -->
-          <div class="cfg-progress" id="progreso" style="display:none">
-            <div class="cfg-progress__top">
-              <span class="cfg-progress__paso" id="progreso-paso">Encolando…</span>
-              <span class="cfg-progress__pct" id="progreso-pct">0%</span>
-              <button class="cfg-progress__stop" type="button" id="detener" title="Detener la corrida y abortar el run en Apify"><svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5h11v11h-11z"/></svg>Detener</button>
-            </div>
-            <div class="cfg-progress__track"><div class="cfg-progress__bar" id="progreso-bar" style="width:0%"></div></div>
-          </div>
-        </section>
       </div>
 
       <!-- ---- Columna derecha: lo que cuesta ---- -->
@@ -469,11 +473,20 @@
       return { desde: vDesde ? vDesde.value : '', hasta: vHasta ? vHasta.value : '' };
     }
 
+    var vWrap = document.getElementById('v-wrap');
+    var vBadge = document.getElementById('v-badge');
+
     function pintarNota() {
       if (!vNota) return;
       var v = ventana();
       var hayVentana = !!(v.desde || v.hasta);
       vNota.classList.toggle('is-on', hayVentana);
+      // plegado no puede esconder que hay un rango puesto: se marca en el título
+      if (vBadge) {
+        vBadge.hidden = !hayVentana;
+        vBadge.textContent = (v.desde || 'todo') + ' → ' + (v.hasta || 'hoy');
+      }
+      if (hayVentana && vWrap) vWrap.open = true;
       if (!hayVentana) {
         vNota.textContent = 'Vacío = solo posts nuevos. Con fechas, el ▶ trae ese rango aunque ya lo tengas.';
         return;

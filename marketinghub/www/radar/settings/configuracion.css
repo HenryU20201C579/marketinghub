@@ -226,10 +226,27 @@
 .cfg-switch.is-on span { margin-left:16px; background:var(--accent); }
 .cfg-switch:disabled { opacity:.5; cursor:default; }
 
-/* ventana de fechas para traer histórico */
+/* ventana de fechas para traer histórico: plegada, ocupa una línea */
+.cfg-ventana-wrap { border-bottom:1px solid var(--hair); }
+.cfg-ventana__sum {
+  display:flex; align-items:center; gap:8px; cursor:pointer; list-style:none;
+  padding:9px 18px; font-size:12px; font-weight:600; color:var(--muted);
+}
+.cfg-ventana__sum::-webkit-details-marker { display:none; }
+.cfg-ventana__sum::before {
+  content:"▸"; font-size:10px; color:var(--faint); transition:transform .12s ease;
+}
+.cfg-ventana-wrap[open] .cfg-ventana__sum::before { transform:rotate(90deg); }
+.cfg-ventana__sum:hover { color:var(--text); }
+.cfg-ventana__badge[hidden] { display:none; }
+.cfg-ventana__badge {
+  font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px;
+  color:var(--top); background:var(--top-soft);
+}
+.cfg-ventana-wrap .cfg-ventana__nota { border-bottom:none; }
 .cfg-ventana {
   display:flex; align-items:center; gap:8px; flex-wrap:wrap;
-  padding:11px 18px 0;
+  padding:0 18px;
 }
 .cfg-ventana__lbl { font-size:12px; font-weight:600; color:var(--text); }
 .cfg-ventana .cfg-input { width:auto; flex:1 1 130px; min-width:120px; }
