@@ -90,6 +90,66 @@
 
     <div class="kpis" id="kpis"></div>
 
+    {# ============ AJUSTES POR MARCA (A1-A5) ============
+       Card colapsable que expone limite, query, pais y pausa por marca. Reusa
+       las clases de la lista de marcas de /radar/settings para que se sienta
+       igual. Solo aparece con permisos de analista. #}
+    {% if can_edit %}
+    <details class="ajustes-ads" id="ajustes-ads">
+      <summary class="ajustes-ads__sum">
+        <svg class="ico" viewBox="0 0 24 24" width="14" height="14"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8zM19.4 14.2a1.6 1.6 0 0 0 .3 1.8 2 2 0 1 1-2.8 2.8 1.6 1.6 0 0 0-2.7 1.1 2 2 0 1 1-4 0 1.6 1.6 0 0 0-2.8-1.1 2 2 0 1 1-2.8-2.8 1.6 1.6 0 0 0-1.1-2.7 2 2 0 1 1 0-4 1.6 1.6 0 0 0 1.1-2.8 2 2 0 1 1 2.8-2.8 1.6 1.6 0 0 0 2.7-1.1 2 2 0 1 1 4 0 1.6 1.6 0 0 0 2.7 1.1 2 2 0 1 1 2.8 2.8 1.6 1.6 0 0 0 1.1 2.7 2 2 0 1 1 0 4z"/></svg>
+        <span>Ajustes de scrapeo por marca</span>
+        <span class="ajustes-ads__meta">{{ marcas_ads|length }} marcas · estimado total <strong>${{ estimado_total_usd }}</strong> (${{ coste_por_ad_usd }}/ad)</span>
+      </summary>
+      <div class="ajustes-ads__body">
+        <div class="ajustes-ads__toolbar">
+          <button class="btn primary" type="button" id="run-all-ads" title="Scrapear todas las marcas activas no pausadas">
+            <svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="M6 5v14l12-7z"/></svg>
+            Scrapear todas las marcas
+          </button>
+          <span class="ajustes-ads__hint">La query vacía usa el nombre comercial. País es código ISO de 2 letras (PE, MX, US…). Límite 0 = default global (50).</span>
+        </div>
+        <div class="mrca-head">
+          <div>Marca</div>
+          <div>Query en Ad Library</div>
+          <div class="c">País</div>
+          <div class="c">Límite</div>
+          <div class="c">Ads activos</div>
+          <div class="c">Último scrape</div>
+          <div></div>
+        </div>
+        <div class="mrca-list" id="marcas-ads-list">
+          {% for m in marcas_ads %}
+          <div class="mrca{% if m.pausada %} is-pausada{% endif %}" data-marca="{{ m.name|e }}">
+            <div class="mrca__nom">
+              <span class="mark">{{ m.ini|e }}</span>
+              <span class="name">{{ m.nombre|e }}{% if m.pausada %}<em class="mrca__tag">pausada</em>{% endif %}</span>
+            </div>
+            <input class="mrca__inp" type="text" data-campo="query" value="{{ m.query|e }}" placeholder="{{ m.nombre|e }} (default)">
+            <input class="mrca__inp mrca__inp--sm c" type="text" data-campo="pais" value="{{ m.pais|e }}" maxlength="2">
+            <input class="mrca__inp mrca__inp--sm c tnum" type="text" data-campo="limite" value="{{ m.limite }}" title="0 = usar el default global (50)">
+            <div class="c tnum"><strong>{{ m.activos }}</strong><small style="color:var(--muted)"> / {{ m.total }}</small></div>
+            <div class="c tnum" style="color:var(--muted)">{{ m.hace }}</div>
+            <div class="mrca__acc">
+              <button class="act mrca__pausa{% if m.pausada %} on{% endif %}" type="button" data-pausa title="{% if m.pausada %}Reanudar{% else %}Pausar{% endif %} el scrapeo de ads de {{ m.nombre|e }}">
+                {% if m.pausada %}<svg class="ico" viewBox="0 0 24 24" width="11" height="11"><path d="M8 5.5v13l10-6.5z"/></svg>
+                {% else %}<svg class="ico" viewBox="0 0 24 24" width="11" height="11"><path d="M9.5 5v14M14.5 5v14"/></svg>{% endif %}
+              </button>
+              <button class="act mrca__run" type="button" data-run title="Scrapear solo {{ m.nombre|e }}"{% if m.pausada %} disabled{% endif %}>
+                <svg class="ico" viewBox="0 0 24 24" width="11" height="11"><path d="M8 5.5v13l10-6.5z"/></svg>
+              </button>
+            </div>
+          </div>
+          {% else %}
+          <div class="mrca mrca--vacia">
+            No hay competidores activos. Agrégalos en <a href="/radar/competidores">Radar · Competidores</a>.
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </details>
+    {% endif %}
+
     <div class="filters">
       <div class="searchbox">
         <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM16.2 16.2 20.5 20.5"/></svg>
@@ -128,6 +188,24 @@
       <button class="chk" id="cact" role="checkbox" aria-checked="true">
         <span class="box"><svg class="ico" viewBox="0 0 24 24" width="9" height="9"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span>Solo activos
       </button>
+      {# ============ FILTROS POR FECHA (A9) ============
+         Presets rápidos (Este mes, Últimos 7d, 30d, Todo) + rango custom.
+         El filtro se aplica en JS sobre d.iso (fecha_inicio). #}
+      <div class="rango" data-filter>
+        <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M4.5 6.5h15v13.5h-15zM8.5 3.5v4M15.5 3.5v4M4.5 11h15"/></svg>
+        <select id="f-preset" data-default="todo">
+          <option value="todo">Cualquier fecha</option>
+          <option value="mes">Este mes</option>
+          <option value="7d">Últimos 7 días</option>
+          <option value="30d">Últimos 30 días</option>
+          <option value="90d">Últimos 90 días</option>
+          <option value="custom">Rango custom…</option>
+        </select>
+        <svg class="ico caret" viewBox="0 0 24 24" width="12" height="12"><path d="M7 10l5 5 5-5"/></svg>
+      </div>
+      <div class="rango-custom" id="rango-custom" hidden>
+        <input type="date" id="f-desde" aria-label="Desde"><span class="rango-custom__sep">→</span><input type="date" id="f-hasta" aria-label="Hasta">
+      </div>
       <button class="clear" id="clear">Limpiar</button>
       <span class="hint" id="hint">Clic en el encabezado para ordenar</span>
     </div>
@@ -199,6 +277,8 @@
 
   /* datos */
   var DATA = {{ filas_json }};
+  var MARCAS_ADS = {{ marcas_ads_json }};
+  var COSTE_POR_AD = {{ coste_por_ad_usd }};
   var FMT = {
     Carrusel:"M8 6.5h8v11H8zM5 8.5v7M19 8.5v7",
     Video:"M4.5 7h11v10h-11zM15.5 11l4-2.5v7L15.5 13z",
@@ -216,9 +296,37 @@
   function v(id){ return document.getElementById(id).value; }
   function on(id){ return document.getElementById(id).getAttribute('aria-checked') === 'true'; }
 
+  /* Rango de fechas activo derivado del preset o del custom.
+     Devuelve {desde, hasta} en YYYY-MM-DD o ambos '' si no hay filtro. */
+  function rangoFecha(){
+    var preset = v('f-preset');
+    if(preset === 'todo') return { desde:'', hasta:'' };
+    if(preset === 'custom'){
+      return { desde: v('f-desde') || '', hasta: v('f-hasta') || '' };
+    }
+    var hoy = new Date();
+    var y = hoy.getFullYear(), m = hoy.getMonth(), d = hoy.getDate();
+    var pad = function(n){ return (n < 10 ? '0' : '') + n; };
+    var fmt = function(dt){ return dt.getFullYear() + '-' + pad(dt.getMonth()+1) + '-' + pad(dt.getDate()); };
+    var hastaStr = fmt(new Date(y, m, d));
+    if(preset === 'mes'){
+      return { desde: y + '-' + pad(m+1) + '-01', hasta: hastaStr };
+    }
+    var dias = preset === '7d' ? 7 : preset === '30d' ? 30 : preset === '90d' ? 90 : 0;
+    if(dias){
+      var desde = new Date(y, m, d - dias + 1);
+      return { desde: fmt(desde), hasta: hastaStr };
+    }
+    return { desde:'', hasta:'' };
+  }
+
   function filtered(){
     var q = v('q').trim().toLowerCase(), marca = v('f-marca'), fmt = v('f-formato'), et = v('f-etiqueta');
+    var rng = rangoFecha();
     return DATA.filter(function(d){
+      // Filtro por fecha: rng vacio = pasa. Comparamos strings YYYY-MM-DD.
+      if(rng.desde && (!d.iso || d.iso < rng.desde)) return false;
+      if(rng.hasta && (!d.iso || d.iso > rng.hasta)) return false;
       return (marca === 'todas' || d.marca === marca)
         && (fmt === 'todos' || d.formato === fmt)
         && (et === 'todas' || d.etiqueta === et)
@@ -324,6 +432,19 @@
   document.querySelectorAll('.filters select, #q').forEach(function(el){
     el.addEventListener('input', render); el.addEventListener('change', render);
   });
+  /* preset 'custom' abre los inputs de fecha; los demás los ocultan */
+  var elRango = document.getElementById('rango-custom');
+  document.getElementById('f-preset').addEventListener('change', function(){
+    elRango.hidden = this.value !== 'custom';
+    if(this.value !== 'custom'){
+      document.getElementById('f-desde').value = '';
+      document.getElementById('f-hasta').value = '';
+    }
+    render();
+  });
+  ['f-desde', 'f-hasta'].forEach(function(id){
+    document.getElementById(id).addEventListener('change', render);
+  });
   ['c30','cact'].forEach(function(id){
     document.getElementById(id).addEventListener('click', function(){
       this.setAttribute('aria-checked', this.getAttribute('aria-checked') !== 'true'); render();
@@ -334,6 +455,10 @@
     document.getElementById('q').value = '';
     document.getElementById('c30').setAttribute('aria-checked','false');
     document.getElementById('cact').setAttribute('aria-checked','true');
+    // limpiar filtro de fecha
+    document.getElementById('f-desde').value = '';
+    document.getElementById('f-hasta').value = '';
+    document.getElementById('rango-custom').hidden = true;
     render();
   });
   document.querySelectorAll('.th.sortable').forEach(function(th){
@@ -373,14 +498,125 @@
     URL.revokeObjectURL(a.href);
     toast('Descargadas ' + rows.length + ' ads en CSV.');
   });
-  var upd = document.getElementById('upd');
-  if(upd) upd.addEventListener('click', function(){
-    upd.disabled = true;
-    toast('Actualizando desde Meta Ads Library…');
+  /* ============ BOTÓN GLOBAL «Actualizar» — antes silencioso, ahora con
+     estimado + confirmación (A5). El botón del topbar y el «run-all-ads» de
+     la card comparten flujo. ============ */
+  function scrapearTodas(desdeBoton){
+    var activas = MARCAS_ADS.filter(function(m){ return !m.pausada; });
+    if(!activas.length){ toast('No hay marcas activas.'); return; }
+    // Estimador local: coste_por_ad × límite_efectivo por marca (no llama backend)
+    var total = 0;
+    activas.forEach(function(m){ total += (m.limite_efectivo || 0) * COSTE_POR_AD; });
+    var msg = 'Scrapear ' + activas.length + ' marca(s) de Meta Ad Library.\n'
+            + 'Coste estimado ≈ $' + total.toFixed(3) + ' de Apify.\n\n'
+            + 'Marcas: ' + activas.map(function(m){ return m.nombre; }).join(', ') + '\n\n'
+            + '¿Correr ahora?';
+    if(!window.confirm(msg)) return;
+    if(desdeBoton) desdeBoton.disabled = true;
+    toast('Scrape en curso… ' + activas.length + ' marcas.');
     llamar('api.radar_ads_scraper.ejecutar_scrape_ads_ahora')
-      .then(function(){ toast('Scrape terminado. Recargando…'); setTimeout(function(){ window.location.reload(); }, 1200); })
-      .catch(function(err){ upd.disabled = false; toast(String(err.message).replace(/<[^>]*>/g, '')); });
-  });
+      .then(function(r){
+        var s = r && r.stats || {};
+        toast('Terminado · ' + (s.insert || 0) + ' nuevos, ' + (s.update || 0) + ' actualizados. Recargando…');
+        setTimeout(function(){ window.location.reload(); }, 1500);
+      })
+      .catch(function(err){
+        if(desdeBoton) desdeBoton.disabled = false;
+        toast(String(err.message).replace(/<[^>]*>/g, ''));
+      });
+  }
+  var upd = document.getElementById('upd');
+  if(upd) upd.addEventListener('click', function(){ scrapearTodas(upd); });
+  var runAll = document.getElementById('run-all-ads');
+  if(runAll) runAll.addEventListener('click', function(){ scrapearTodas(runAll); });
+
+  /* ============ CARD «Ads por marca» (A1) ============
+     - Guarda cambios inline al perder foco (blur) o al pulsar Enter.
+     - Botón ⏸ pausa (guarda + refresca fila).
+     - Botón ▶ scrapea solo esa marca con estimado + confirmación.
+  */
+  function marcaCfg(name){ return MARCAS_ADS.filter(function(m){ return m.name === name; })[0]; }
+  function guardarAjuste(name, campo, valor){
+    var body = { competidor: name };
+    body[campo] = valor;
+    return llamar('www.radar.ads.index.guardar_ajustes_marca', body);
+  }
+  var listaMarcas = document.getElementById('marcas-ads-list');
+  if(listaMarcas){
+    // guardar cada input al blur o Enter (no en cada tecla — evita 1 request por letra)
+    listaMarcas.addEventListener('change', function(e){
+      var inp = e.target.closest('.mrca__inp'); if(!inp) return;
+      var fila = inp.closest('.mrca'); if(!fila) return;
+      var name = fila.dataset.marca, campo = inp.dataset.campo, val = inp.value;
+      guardarAjuste(name, campo, val)
+        .then(function(){
+          // reflejar en memoria para que el estimado local del ▶ use el valor nuevo
+          var m = marcaCfg(name);
+          if(m){
+            if(campo === 'limite'){
+              m.limite = parseInt(val, 10) || 0;
+              m.limite_efectivo = m.limite || 50;
+            } else {
+              m[campo] = val;
+            }
+          }
+          toast('Guardado.');
+        })
+        .catch(function(err){
+          toast(String(err.message).replace(/<[^>]*>/g, ''));
+        });
+    });
+    // Enter en un input dispara change y quita foco
+    listaMarcas.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' && e.target.classList.contains('mrca__inp')){ e.target.blur(); }
+    });
+    // pausar / reanudar
+    listaMarcas.addEventListener('click', function(e){
+      var fila = e.target.closest('.mrca'); if(!fila) return;
+      var name = fila.dataset.marca;
+      if(e.target.closest('[data-pausa]')){
+        var pausada = fila.classList.contains('is-pausada') ? 0 : 1;
+        guardarAjuste(name, 'pausada', pausada)
+          .then(function(){
+            fila.classList.toggle('is-pausada', !!pausada);
+            var m = marcaCfg(name); if(m) m.pausada = pausada;
+            // habilitar/deshabilitar el ▶ y cambiar el icono del ⏸
+            var run = fila.querySelector('[data-run]'); if(run) run.disabled = !!pausada;
+            var btn = e.target.closest('[data-pausa]');
+            btn.classList.toggle('on', !!pausada);
+            btn.innerHTML = pausada
+              ? '<svg class="ico" viewBox="0 0 24 24" width="11" height="11"><path d="M8 5.5v13l10-6.5z"/></svg>'
+              : '<svg class="ico" viewBox="0 0 24 24" width="11" height="11"><path d="M9.5 5v14M14.5 5v14"/></svg>';
+            toast(pausada ? 'Marca pausada.' : 'Marca reanudada.');
+          })
+          .catch(function(err){ toast(String(err.message).replace(/<[^>]*>/g, '')); });
+        return;
+      }
+      if(e.target.closest('[data-run]')){
+        var m = marcaCfg(name);
+        if(!m || m.pausada) return;
+        var est = (m.limite_efectivo || 0) * COSTE_POR_AD;
+        var msg = 'Scrapear ' + m.nombre + '\n'
+                + 'Query: «' + (m.query || m.nombre) + '» · País: ' + (m.pais || 'PE') + '\n'
+                + 'Trae hasta ' + (m.limite_efectivo || 50) + ' ads · coste ≈ $' + est.toFixed(3) + '\n\n'
+                + '¿Correr ahora?';
+        if(!window.confirm(msg)) return;
+        var btn = e.target.closest('[data-run]');
+        btn.disabled = true;
+        toast('Scrape en curso para ' + m.nombre + '…');
+        llamar('api.radar_ads_scraper.ejecutar_scrape_ads_competidor', { competidor: name })
+          .then(function(r){
+            var s = r && r.stats || {};
+            toast(m.nombre + ' terminado · ' + (s.insert || 0) + ' nuevos, ' + (s.update || 0) + ' actualizados. Recargando…');
+            setTimeout(function(){ window.location.reload(); }, 1500);
+          })
+          .catch(function(err){
+            btn.disabled = false;
+            toast(String(err.message).replace(/<[^>]*>/g, ''));
+          });
+      }
+    });
+  }
 
   renderKpis(); render();
 })();

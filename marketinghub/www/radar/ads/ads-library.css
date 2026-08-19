@@ -161,3 +161,58 @@ a{color:var(--accent);text-decoration:none} a:hover{color:var(--accent-2);text-d
 @media (max-width:1180px){
   :root{--cols:92px minmax(112px,1fr) minmax(88px,.85fr) 98px 90px minmax(160px,2.2fr) 98px minmax(98px,1fr) 68px}
 }
+
+/* ============ Ajustes de scrapeo por marca (A1-A5) ============
+   Card colapsable arriba de la tabla. Reusa colores/tokens del resto. */
+.ajustes-ads{margin:0 18px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);overflow:hidden}
+.ajustes-ads__sum{padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;user-select:none;font-size:13px;font-weight:600}
+.ajustes-ads__sum::-webkit-details-marker{display:none}
+.ajustes-ads__sum .ico{color:var(--muted)}
+.ajustes-ads__sum:hover{background:var(--raise)}
+.ajustes-ads[open] .ajustes-ads__sum{border-bottom:1px solid var(--hair)}
+.ajustes-ads__meta{margin-left:auto;font-size:12px;font-weight:500;color:var(--muted)}
+.ajustes-ads__meta strong{color:var(--text)}
+.ajustes-ads__body{padding:12px 14px}
+.ajustes-ads__toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.ajustes-ads__hint{font-size:11.5px;color:var(--muted)}
+
+/* Header + fila de marca (grid de 7 columnas). Ancho del grid en desktop:
+   nombre | query | pais | limite | activos | ultimo | acciones */
+.mrca-head, .mrca{
+  display:grid;
+  grid-template-columns:minmax(140px,1.4fr) minmax(160px,2fr) 62px 74px 88px 108px 76px;
+  gap:8px;align-items:center;padding:6px 4px;
+}
+.mrca-head{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;padding-top:8px;border-bottom:1px solid var(--hair);padding-bottom:8px}
+.mrca-head .c, .mrca .c{text-align:right}
+.mrca{border-bottom:1px solid var(--hair);font-size:12.5px}
+.mrca:last-child{border-bottom:0}
+.mrca.is-pausada{opacity:.55}
+.mrca--vacia{grid-template-columns:1fr;text-align:center;color:var(--muted);padding:16px}
+.mrca__nom{display:flex;align-items:center;gap:8px;min-width:0}
+.mrca__nom .mark{width:22px;height:22px;flex:none;border-radius:6px;background:var(--raise);color:var(--muted);
+                display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+.mrca__nom .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.mrca__tag{font-style:normal;font-size:10px;font-weight:500;color:var(--muted);background:var(--raise);
+          padding:1px 6px;border-radius:6px;margin-left:6px;text-transform:uppercase;letter-spacing:.04em}
+.mrca__inp{width:100%;box-sizing:border-box;height:26px;padding:0 8px;border-radius:6px;border:1px solid var(--line);
+          background:var(--bg);color:var(--text);font-size:12px;font-family:inherit;outline:none}
+.mrca__inp:focus{border-color:var(--accent)}
+.mrca__inp--sm{text-align:center}
+.mrca__acc{display:flex;justify-content:flex-end;gap:4px}
+.mrca__pausa.on{color:var(--top);border-color:var(--top);background:var(--top-soft)}
+.mrca__run:not([disabled]):hover{background:var(--accent);color:var(--onaccent);border-color:var(--accent)}
+.mrca__run[disabled]{opacity:.4;cursor:not-allowed}
+
+/* ============ Filtro de rango de fecha (A9) ============ */
+.rango{display:flex;align-items:center;gap:6px;padding:0 10px 0 10px;height:34px;
+      border:1px solid var(--line);border-radius:8px;background:var(--panel);position:relative}
+.rango .ico{color:var(--muted)}
+.rango select{appearance:none;-webkit-appearance:none;background:transparent;border:0;font-size:12.5px;color:var(--text);
+             font-family:inherit;padding-right:14px;cursor:pointer;outline:none}
+.rango .caret{position:absolute;right:8px;pointer-events:none;color:var(--muted)}
+.rango.on{border-color:var(--accent);color:var(--accent)}
+.rango-custom{display:flex;align-items:center;gap:5px;background:var(--panel);border:1px solid var(--line);border-radius:8px;
+             padding:0 8px;height:34px;font-size:12px}
+.rango-custom input[type="date"]{border:0;background:transparent;font-size:12px;color:var(--text);font-family:inherit;outline:none;width:112px}
+.rango-custom__sep{color:var(--muted);font-size:11px}

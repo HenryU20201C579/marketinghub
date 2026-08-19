@@ -42,6 +42,18 @@ def get_context(context):
 	except Exception:
 		context.contadores = {}
 	context.ultima_corrida = _ultima_corrida()
+	# Ajustes por marca para la card nueva "Ads por marca" (puntos A1-A5, A8)
+	context.marcas_ads = listar_marcas_ads()
+	context.marcas_ads_json = frappe.as_json(context.marcas_ads).replace("</", "<\\/")
+	# Estimador global para el boton "Scrapear todas"
+	try:
+		from marketinghub.api.radar_ads_scraper import estimar_scrape_ads, COSTE_POR_AD_USD
+		est = estimar_scrape_ads()
+		context.estimado_total_usd = f"{est['total']:.3f}"
+		context.coste_por_ad_usd = f"{COSTE_POR_AD_USD:.4f}"
+	except Exception:
+		context.estimado_total_usd = "0.000"
+		context.coste_por_ad_usd = "0.0070"
 	try:
 		context.csrf_token = frappe.local.session.data.csrf_token
 	except Exception:
@@ -235,6 +247,110 @@ def obtener_competidores():
 		order_by="nombre_comercial asc",
 	)
 
+
+# =============== AJUSTES DE ADS POR MARCA (A1-A5, A8) ===============
+
+@frappe.whitelist()
+def listar_marcas_ads():
+	"""Filas de la card «Ads por marca»: nombre, query, país, límite, pausada,
+	ads activos actualmente, último scrape.
+
+	Reusa el mismo formato que la tabla de marcas de /radar/settings para que
+	el usuario no tenga que aprender un layout distinto."""
+	if not _has_role(VIEW_ROLES):
+		frappe.throw("Acceso denegado", frappe.PermissionError)
+	from marketinghub.api.radar_ads_scraper import DEFAULT_ADS_POR_MARCA
+	comps = frappe.db.get_all(
+		"Competidor",
+		filters={"activo": 1},
+		fields=["name", "nombre_comercial", "query_ads_library", "pais_ads",
+		        "limite_ads", "pausar_ads"],
+		order_by="nombre_comercial asc",
+	)
+	# Ads activos + último visto por competidor en una sola query
+	stats = {r["competidor"]: r for r in frappe.db.sql("""
+		SELECT competidor,
+		       SUM(esta_activo) AS activos,
+		       COUNT(*) AS total,
+		       MAX(fecha_ultimo_visto) AS ultimo_visto
+		FROM `tabAnuncio Competencia`
+		WHERE competidor IS NOT NULL
+		GROUP BY competidor
+	""", as_dict=True)}
+	from frappe.utils import get_datetime, now_datetime
+	ahora = now_datetime()
+	filas = []
+	for c in comps:
+		st = stats.get(c["name"], {})
+		ultimo = st.get("ultimo_visto")
+		hace = ""
+		if ultimo:
+			try:
+				dt = ultimo if hasattr(ultimo, "hour") else get_datetime(ultimo)
+				delta_h = int((ahora - dt).total_seconds() / 3600)
+				if delta_h < 1:
+					hace = "hace <1 h"
+				elif delta_h < 24:
+					hace = f"hace {delta_h} h"
+				else:
+					hace = f"hace {delta_h // 24} d"
+			except Exception:
+				hace = ""
+		nombre = c.get("nombre_comercial") or c["name"]
+		filas.append({
+			"name": c["name"],
+			"nombre": nombre,
+			"ini": (nombre[:2] or "??").upper(),
+			# query editable — si esta vacia, el scraper usa nombre_comercial
+			"query": (c.get("query_ads_library") or "").strip(),
+			"query_efectiva": (c.get("query_ads_library") or "").strip() or nombre,
+			"pais": (c.get("pais_ads") or "PE").upper()[:2],
+			"limite": int(c.get("limite_ads") or 0),
+			"limite_efectivo": int(c.get("limite_ads") or 0) or DEFAULT_ADS_POR_MARCA,
+			"pausada": int(c.get("pausar_ads") or 0),
+			"activos": int(st.get("activos") or 0),
+			"total": int(st.get("total") or 0),
+			"hace": hace or "nunca",
+		})
+	return filas
+
+
+@frappe.whitelist()
+def guardar_ajustes_marca(competidor, query=None, pais=None, limite=None, pausada=None):
+	"""Actualiza los 4 campos ads de un Competidor. Solo escribe los que llegan."""
+	if not _has_role(ANALISTA_ROLES):
+		frappe.throw("Solo un analista puede editar los ajustes.", frappe.PermissionError)
+	if not frappe.db.exists("Competidor", competidor):
+		frappe.throw(f"El competidor «{competidor}» no existe.")
+	cambios = {}
+	if query is not None:
+		cambios["query_ads_library"] = (query or "").strip()
+	if pais is not None:
+		pais_limpio = (pais or "").strip().upper()[:2]
+		if pais_limpio and not pais_limpio.isalpha():
+			frappe.throw("El país debe ser un código de 2 letras (PE, MX, CO, US…).")
+		cambios["pais_ads"] = pais_limpio or "PE"
+	if limite is not None:
+		try:
+			cambios["limite_ads"] = max(0, int(limite or 0))
+		except (TypeError, ValueError):
+			frappe.throw("El límite debe ser un número entero.")
+	if pausada is not None:
+		cambios["pausar_ads"] = 1 if str(pausada) in ("1", "true", "True") else 0
+	if cambios:
+		frappe.db.set_value("Competidor", competidor, cambios)
+		frappe.db.commit()
+	return {"ok": True, "cambios": cambios}
+
+
+@frappe.whitelist()
+def estimar_ads(competidor=None):
+	"""Passthrough al estimador del scraper para poder llamarlo desde el JS."""
+	from marketinghub.api.radar_ads_scraper import estimar_scrape_ads
+	return estimar_scrape_ads(competidor=competidor)
+
+
+# =============== GUION DESDE AD (existente) ===============
 
 @frappe.whitelist()
 def crear_guion_desde_ad(ad_name):

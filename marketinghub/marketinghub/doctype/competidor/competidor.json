@@ -15,6 +15,12 @@
   "color",
   "limite_posts",
   "pausar_radar",
+  "sb_ads",
+  "query_ads_library",
+  "pais_ads",
+  "cb_ads",
+  "limite_ads",
+  "pausar_ads",
   "sb_notas",
   "notas_estrategicas"
  ],
@@ -88,6 +94,42 @@
    "label": "Pausar scrapeo",
    "default": "0",
    "description": "Si está marcado, el Radar no scrapea esta marca (ni manual ni programado). Sus datos ya guardados se conservan."
+  },
+  {
+   "fieldname": "sb_ads",
+   "fieldtype": "Section Break",
+   "label": "Meta Ad Library"
+  },
+  {
+   "fieldname": "query_ads_library",
+   "fieldtype": "Data",
+   "label": "Query en Ad Library",
+   "description": "Palabra clave con la que se busca a esta marca en Meta Ad Library. Si está vacío se usa el nombre comercial. Útil si la marca aparece con otro nombre (ej: «Apolusso Perú»)."
+  },
+  {
+   "fieldname": "pais_ads",
+   "fieldtype": "Data",
+   "label": "País (Ad Library)",
+   "default": "PE",
+   "description": "Código de país de 2 letras (PE, MX, CO, US, ES…). Ad Library segmenta por país."
+  },
+  {
+   "fieldname": "cb_ads",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "limite_ads",
+   "fieldtype": "Int",
+   "label": "Ads por corrida",
+   "default": "0",
+   "description": "Cuántos anuncios traer de esta marca cada vez. 0 = usar el default global (50)."
+  },
+  {
+   "fieldname": "pausar_ads",
+   "fieldtype": "Check",
+   "label": "Pausar scrapeo de ads",
+   "default": "0",
+   "description": "Si está marcado, no se scrapea la Ad Library de esta marca. Independiente del pausar_radar (que aplica a publicaciones)."
   },
   {
    "fieldname": "sb_notas",
