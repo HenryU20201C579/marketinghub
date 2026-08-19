@@ -111,6 +111,14 @@
         </select>
         <svg class="ico caret" viewBox="0 0 24 24" width="12" height="12"><path d="M7 10l5 5 5-5"/></svg>
       </div>
+      {% if can_edit %}
+      {# F1: boton engranaje que abre modal para crear/editar/borrar categorias.
+         Sale al lado del filtro para que se encuentre facil. #}
+      <button class="pick-mgmt" type="button" id="btn-cat-manage"
+              title="Gestionar categorías: crear nuevas, editar o eliminar. Se usan para agrupar competidores por sector.">
+        <svg class="ico" viewBox="0 0 24 24" width="14" height="14"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8zM19.4 14.2a1.6 1.6 0 0 0 .3 1.8 2 2 0 1 1-2.8 2.8 1.6 1.6 0 0 0-2.7 1.1 2 2 0 1 1-4 0 1.6 1.6 0 0 0-2.8-1.1 2 2 0 1 1-2.8-2.8 1.6 1.6 0 0 0-1.1-2.7 2 2 0 1 1 0-4 1.6 1.6 0 0 0 1.1-2.8 2 2 0 1 1 2.8-2.8 1.6 1.6 0 0 0 2.7-1.1 2 2 0 1 1 4 0 1.6 1.6 0 0 0 2.7 1.1 2 2 0 1 1 2.8 2.8 1.6 1.6 0 0 0 1.1 2.7 2 2 0 1 1 0 4z"/></svg>
+      </button>
+      {% endif %}
       <div class="pick" data-filter>
         <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M12 21s6.5-6.1 6.5-11a6.5 6.5 0 1 0-13 0C5.5 14.9 12 21 12 21z"/></svg>
         <select id="f-pais" data-default="todos">
@@ -203,6 +211,38 @@
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
       <button class="btn" data-cerrar>Cancelar</button>
       <button class="btn primary" id="bo-confirmar" style="background:var(--danger);border-color:var(--danger)">Eliminar</button>
+    </div>
+  </div>
+
+  {# F2: modal de gestion de categorias. Lista con nombre + competidores + pubs
+     30d + botones editar/borrar. Form inline abajo para crear/editar. #}
+  <div id="dlg-categorias" style="display:none;width:640px;max-width:94vw;max-height:90vh;padding:22px 22px 16px;border-radius:12px;background:var(--panel);border:1px solid var(--line);overflow:hidden;display:none;flex-direction:column">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px">
+      <div style="font-size:16px;font-weight:700">Gestionar categorías</div>
+      <button class="cat-close" data-cerrar type="button" title="Cerrar">
+        <svg class="ico" viewBox="0 0 24 24" width="14" height="14"><path d="M6 6l12 12M6 18L18 6"/></svg>
+      </button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin:0 0 14px">
+      Las categorías agrupan competidores por sector (ej: Ropa deportiva, Belleza, Tecnología).
+      Cada competidor puede tener 1 categoría.
+    </p>
+
+    <div id="cat-list" style="flex:1;min-height:80px;overflow-y:auto;border:1px solid var(--hair);border-radius:8px;background:var(--bg);margin-bottom:12px">
+      <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Cargando…</div>
+    </div>
+
+    {# Form inline para crear/editar. Se rellena con la categoria seleccionada
+       al pulsar «editar» en una fila, o vacio al pulsar «+ Nueva». #}
+    <div id="cat-form" style="border-top:1px dashed var(--hair);padding-top:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px" id="cat-form-titulo">Nueva categoría</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="cat-nombre" type="text" placeholder="Nombre (ej: Ropa deportiva)" style="flex:1;min-width:180px;height:32px;padding:0 11px;border:1px solid var(--line);border-radius:7px;font:inherit;font-size:13px;color:var(--text);background:var(--bg);outline:none">
+        <input id="cat-desc" type="text" placeholder="Descripción (opcional)" style="flex:1.5;min-width:200px;height:32px;padding:0 11px;border:1px solid var(--line);border-radius:7px;font:inherit;font-size:13px;color:var(--text);background:var(--bg);outline:none">
+        <button class="btn" type="button" id="cat-cancelar" style="height:32px;display:none">Cancelar</button>
+        <button class="btn primary" type="button" id="cat-guardar" style="height:32px">Guardar</button>
+      </div>
+      <div id="cat-error" style="color:var(--danger);font-size:12px;margin-top:8px;display:none"></div>
     </div>
   </div>
 </div>
@@ -433,12 +473,15 @@
   var overlay = document.getElementById('overlay');
   var edit = overlay && document.getElementById('dlg-editar');
   var del = overlay && document.getElementById('dlg-borrar');
+  var dlgCat = overlay && document.getElementById('dlg-categorias');
   var editando = null, borrando = null;
 
   function abrir(cual){
     overlay.style.display = 'flex';
     edit.style.display = cual === 'edit' ? '' : 'none';
     del.style.display = cual === 'del' ? '' : 'none';
+    // el modal de categorias usa flex-direction:column, no bloque plano
+    if(dlgCat) dlgCat.style.display = cual === 'cat' ? 'flex' : 'none';
   }
   function cerrar(){ overlay.style.display = 'none'; }
   if(overlay){
@@ -682,6 +725,122 @@
         .catch(function(e){ err.textContent = String(e.message).replace(/<[^>]*>/g, ''); err.style.display = ''; });
     });
   }
+
+  /* ============ F1+F2: modal de categorias ============ */
+  var CATS = [];
+  var catEditando = null;
+
+  function catAbrir(){
+    catCargar().then(function(){
+      catResetForm();
+      abrir('cat');
+    });
+  }
+
+  function catCargar(){
+    return llamar('www.radar.categorias.index.listar').then(function(r){
+      CATS = Array.isArray(r) ? r : [];
+      catPintarLista();
+    }).catch(function(err){
+      document.getElementById('cat-list').innerHTML =
+        '<div style="padding:20px;text-align:center;color:var(--danger);font-size:12px">Error cargando: ' + esc(err.message) + '</div>';
+    });
+  }
+
+  function catPintarLista(){
+    var el = document.getElementById('cat-list');
+    if(!CATS.length){
+      el.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:12px;font-style:italic">Aún no hay categorías. Crea la primera abajo.</div>';
+      return;
+    }
+    el.innerHTML = CATS.map(function(c){
+      var nombre = c.nombre_categoria || c.name;
+      var uso = (c.competidores || 0);
+      var pubs = (c.publicaciones_30d || 0);
+      var pillCls = uso ? 'cat-pill-on' : 'cat-pill-off';
+      return '<div class="cat-row" data-cat="' + esc(c.name) + '">'
+        + '<div class="cat-row-main">'
+          + '<span class="cat-name">' + esc(nombre) + '</span>'
+          + '<span class="cat-pill ' + pillCls + '" title="Competidores usando esta categoría">' + uso + ' competidor' + (uso === 1 ? '' : 'es') + '</span>'
+          + '<span class="cat-sub tnum" title="Publicaciones scrapeadas de esta categoría en los últimos 30 días">' + pubs + ' pubs 30d</span>'
+        + '</div>'
+        + '<div class="cat-row-acc">'
+          + '<button class="act" data-cat-edit type="button" title="Editar nombre y descripción"><svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="M4 20h4L19.5 8.5a2 2 0 0 0-2.8-2.8L5 17.2z"/></svg></button>'
+          + '<button class="act del" data-cat-del type="button" title="Eliminar categoría' + (uso ? ' (falla si hay competidores usándola)' : '') + '"><svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l.8 13h9.4l.8-13"/></svg></button>'
+        + '</div>'
+      + '</div>';
+    }).join('');
+  }
+
+  function catResetForm(){
+    catEditando = null;
+    document.getElementById('cat-form-titulo').textContent = 'Nueva categoría';
+    document.getElementById('cat-nombre').value = '';
+    document.getElementById('cat-desc').value = '';
+    document.getElementById('cat-cancelar').style.display = 'none';
+    document.getElementById('cat-error').style.display = 'none';
+  }
+
+  function catCargarEnForm(name){
+    var c = CATS.filter(function(x){ return x.name === name; })[0];
+    if(!c) return;
+    catEditando = name;
+    document.getElementById('cat-form-titulo').textContent = 'Editando «' + (c.nombre_categoria || name) + '»';
+    document.getElementById('cat-nombre').value = c.nombre_categoria || name;
+    document.getElementById('cat-desc').value = c.descripcion || '';
+    document.getElementById('cat-cancelar').style.display = '';
+    document.getElementById('cat-error').style.display = 'none';
+    document.getElementById('cat-nombre').focus();
+  }
+
+  // Click en el engranaje abre el modal
+  var btnCatMgmt = document.getElementById('btn-cat-manage');
+  if(btnCatMgmt) btnCatMgmt.addEventListener('click', catAbrir);
+
+  // Delegacion en la lista: editar/borrar por fila
+  document.getElementById('cat-list').addEventListener('click', function(e){
+    var row = e.target.closest('.cat-row'); if(!row) return;
+    var name = row.dataset.cat;
+    if(e.target.closest('[data-cat-edit]')){ catCargarEnForm(name); return; }
+    if(e.target.closest('[data-cat-del]')){
+      var c = CATS.filter(function(x){ return x.name === name; })[0];
+      var nombre = (c && c.nombre_categoria) || name;
+      if(!window.confirm('Eliminar la categoría «' + nombre + '»?' + (c && c.competidores ? '\n\nHay ' + c.competidores + ' competidor(es) usándola: el borrado fallará.' : ''))) return;
+      llamar('www.radar.categorias.index.borrar', { name: name })
+        .then(function(){ toast('Categoría eliminada.'); catCargar(); })
+        .catch(function(err){
+          document.getElementById('cat-error').textContent = String(err.message).replace(/<[^>]*>/g, '');
+          document.getElementById('cat-error').style.display = '';
+        });
+    }
+  });
+
+  document.getElementById('cat-cancelar').addEventListener('click', catResetForm);
+  document.getElementById('cat-guardar').addEventListener('click', function(){
+    var errEl = document.getElementById('cat-error');
+    var nombre = document.getElementById('cat-nombre').value.trim();
+    if(!nombre){ errEl.textContent = 'El nombre es obligatorio.'; errEl.style.display = ''; return; }
+    llamar('www.radar.categorias.index.guardar', {
+      name: catEditando || '',
+      nombre_categoria: nombre,
+      descripcion: document.getElementById('cat-desc').value.trim(),
+    })
+      .then(function(){
+        toast(catEditando ? 'Categoría actualizada.' : 'Categoría creada.');
+        catResetForm();
+        catCargar();
+      })
+      .catch(function(err){
+        errEl.textContent = String(err.message).replace(/<[^>]*>/g, '');
+        errEl.style.display = '';
+      });
+  });
+  // Enter en cualquier input del form guarda
+  ['cat-nombre', 'cat-desc'].forEach(function(id){
+    document.getElementById(id).addEventListener('keydown', function(e){
+      if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('cat-guardar').click(); }
+    });
+  });
 
   render();
 })();

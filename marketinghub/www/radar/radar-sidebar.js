@@ -36,10 +36,11 @@
     {
       titulo: 'Configuración',
       items: [
-        // B-Op3: «Cuentas» ya no es item aparte — vive dentro de cada Competidor
-        // como acordeon. /radar/cuentas redirige aqui.
+        // B-Op3+F3: Cuentas y Categorias ya no son items aparte — viven dentro
+        // de la pagina de Competidores (cuentas via acordeon, categorias via
+        // modal ⚙️ al lado del filtro). /radar/cuentas y /radar/categorias
+        // redirigen aqui.
         { href: '/radar/competidores', icono: 'competidores', label: 'Competidores & Cuentas', count: 'competidores' },
-        { href: '/radar/categorias', icono: 'categorias', label: 'Categorías', count: 'categorias' },
         { href: '/radar/settings', icono: 'ajustes', label: 'Ajustes' }
       ]
     }

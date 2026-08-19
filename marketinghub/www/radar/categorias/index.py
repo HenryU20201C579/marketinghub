@@ -28,6 +28,14 @@ def _has_role(roles):
 
 
 def get_context(context):
+	# F3: /radar/categorias se unifica con /radar/competidores.
+	# La gestion (crear/editar/borrar) ahora vive en un modal accesible
+	# via el boton ⚙️ al lado del filtro Categoria. Los endpoints
+	# listar/guardar/borrar se conservan — el modal los sigue llamando.
+	frappe.local.flags.redirect_location = "/radar/competidores"
+	raise frappe.Redirect
+
+	# Codigo legacy conservado abajo por si hay que revivir la vista rica.
 	if frappe.session.user == "Guest":
 		frappe.local.flags.redirect_location = "/login?redirect-to=/radar/categorias"
 		raise frappe.Redirect
@@ -166,6 +174,11 @@ def listar():
 	# contar competidores por categoria
 	for c in cats:
 		c["competidores"] = frappe.db.count("Competidor", filters={"categoria": c["name"]})
+	# publicaciones 30d por categoria — sirve al modal F2 de /radar/competidores
+	# y a la vista actual de /radar/categorias (que ya tenia su propia query).
+	pubs30 = _publicaciones_30d()
+	for c in cats:
+		c["publicaciones_30d"] = int(pubs30.get(c["name"], 0))
 	return cats
 
 
