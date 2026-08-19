@@ -134,6 +134,10 @@
           <div class="ads-progreso__track">
             <div class="ads-progreso__bar" id="ads-progreso-bar" style="width:0%"></div>
           </div>
+          {# Detalle por marca (C3): se llena via JS cuando estado=ok/error.
+             Cada linea dice pidio X / llegaron Y / N nuevos / M actualizados
+             — o «no encontro ads con esa query» si Meta devolvio vacio. #}
+          <div class="ads-progreso__detalle" id="ads-progreso-detalle" hidden></div>
         </div>
         <div class="mrca-head">
           <div title="Nombre comercial del competidor (Competidor DocType). Editable en /radar/competidores.">Marca</div>
@@ -596,7 +600,41 @@
   var progBar = document.getElementById('ads-progreso-bar');
   var progPct = document.getElementById('ads-progreso-pct');
   var progPaso = document.getElementById('ads-progreso-paso');
+  var progDetalle = document.getElementById('ads-progreso-detalle');
   var progTimer = null;
+
+  /* Formatea una fila de resultado por marca (C3):
+     - vacio     → «no encontró ads con esa query»
+     - parcial   → «pidió 50, llegaron 8 (2 nuevos, 6 actualizados)»
+     - ok        → «pidió 50, llegaron 50 (12 nuevos, 38 actualizados)»
+     - error     → «× {mensaje}»                                         */
+  function lineaResultado(r){
+    var cls = 'ads-detalle__' + (r.estado || 'ok');
+    var titulo = r.marca + ' <small>(«' + (r.query || r.marca) + '» @ ' + r.pais + ')</small>';
+    var cuerpo;
+    if(r.estado === 'error'){
+      cuerpo = '<em>× ' + esc(r.error_msg || 'error') + '</em>';
+    } else if(r.estado === 'vacio'){
+      cuerpo = '<em>no encontró ads con esa query · pidió ' + r.pedidos + '</em>';
+    } else {
+      var partes = ['pidió <strong>' + r.pedidos + '</strong>, llegaron <strong>' + r.llegaron + '</strong>'];
+      if(r.insertados || r.actualizados || r.pausados){
+        var deltas = [];
+        if(r.insertados) deltas.push(r.insertados + ' nuevos');
+        if(r.actualizados) deltas.push(r.actualizados + ' actualizados');
+        if(r.pausados) deltas.push(r.pausados + ' pausados');
+        partes.push('(' + deltas.join(', ') + ')');
+      }
+      if(r.estado === 'parcial'){
+        partes.push('<em>· Meta no tenía más ads con esta query</em>');
+      }
+      cuerpo = partes.join(' ');
+    }
+    return '<div class="ads-detalle__linea ' + cls + '">'
+         + '<span class="ads-detalle__marca">' + titulo + '</span>'
+         + '<span class="ads-detalle__resu">' + cuerpo + '</span>'
+         + '</div>';
+  }
 
   function pintarProgreso(p){
     if(!progBox) return;
@@ -605,6 +643,11 @@
     progBar.style.width = (p.pct || 0) + '%';
     progPct.textContent = (p.pct || 0) + '%';
     progPaso.textContent = p.paso || '';
+    // resultados llega parcial mientras corre y completo al terminar
+    if(p.resultados && p.resultados.length){
+      progDetalle.hidden = false;
+      progDetalle.innerHTML = p.resultados.map(lineaResultado).join('');
+    }
   }
 
   function bloquearBotones(si){
@@ -620,12 +663,30 @@
   function terminarProgreso(p){
     clearInterval(progTimer); progTimer = null;
     bloquearBotones(false);
-    if(p.estado === 'ok'){
-      toast('Scrape terminado. Recargando…');
+    /* Al terminar mostramos el detalle por 15s antes de recargar. El usuario
+       tiene tiempo de leer cuantos ads trajo cada marca. Si hay boton, click
+       en "Aceptar y recargar" avanza al toque. */
+    var hayResultados = p.resultados && p.resultados.length;
+    if(hayResultados){
+      var totalActas = p.resultados.length;
+      var vacias = p.resultados.filter(function(r){ return r.estado === 'vacio'; }).length;
+      var parciales = p.resultados.filter(function(r){ return r.estado === 'parcial'; }).length;
+      var errores = p.resultados.filter(function(r){ return r.estado === 'error'; }).length;
+      var msg = 'Terminado · ' + totalActas + ' marca(s)';
+      if(vacias) msg += ' · ' + vacias + ' sin resultados';
+      if(parciales) msg += ' · ' + parciales + ' parciales';
+      if(errores) msg += ' · ' + errores + ' con error';
+      toast(msg);
+      // botón «Aceptar y recargar» aparece al final del detalle
+      progDetalle.innerHTML += '<button type="button" class="ads-detalle__btn" id="ads-detalle-ok">'
+                             + 'Aceptar y recargar</button>';
+      var btn = document.getElementById('ads-detalle-ok');
+      if(btn) btn.addEventListener('click', function(){ window.location.reload(); });
+      setTimeout(function(){ window.location.reload(); }, 15000);
+    } else {
+      // sin detalle → recarga rapida (compatibilidad con estados legacy)
+      toast(p.estado === 'error' ? 'Scrape con errores.' : 'Scrape terminado. Recargando…');
       setTimeout(function(){ window.location.reload(); }, 1500);
-    } else if(p.estado === 'error'){
-      toast('Scrape con errores. Revisa el log en Radar Settings.');
-      setTimeout(function(){ progBox.hidden = true; }, 5000);
     }
   }
 

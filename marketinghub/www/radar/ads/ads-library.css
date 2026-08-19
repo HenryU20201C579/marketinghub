@@ -262,6 +262,28 @@ a{color:var(--accent);text-decoration:none} a:hover{color:var(--accent-2);text-d
 .ads-progreso__bar{height:100%;background:var(--accent);border-radius:3px;transition:width .35s ease}
 .ads-progreso.is-error .ads-progreso__bar{background:var(--top)}
 
+/* Panel de detalle por marca (C3): 1 fila por marca con pidio/llegaron. */
+.ads-progreso__detalle{margin-top:10px;display:flex;flex-direction:column;gap:5px;font-size:12px}
+.ads-detalle__linea{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+                    padding:6px 10px;border-radius:6px;background:var(--panel);border-left:3px solid var(--line)}
+.ads-detalle__marca{font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:none;max-width:50%}
+.ads-detalle__marca small{font-weight:400;color:var(--muted);margin-left:4px}
+.ads-detalle__resu{color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.ads-detalle__resu strong{color:var(--text)}
+.ads-detalle__resu em{font-style:italic;color:var(--muted)}
+/* estados */
+.ads-detalle__ok{border-left-color:var(--accent)}
+.ads-detalle__parcial{border-left-color:var(--top)}
+.ads-detalle__parcial .ads-detalle__resu em{color:var(--top)}
+.ads-detalle__vacio{border-left-color:var(--faint);opacity:.75}
+.ads-detalle__error{border-left-color:var(--danger);background:var(--danger-soft)}
+.ads-detalle__error .ads-detalle__resu em{color:var(--danger);font-style:normal;font-weight:600}
+/* boton de aceptar/recargar al final del detalle */
+.ads-detalle__btn{margin-top:8px;align-self:flex-end;height:28px;padding:0 14px;border-radius:7px;
+                  border:1px solid var(--accent);background:var(--accent);color:var(--onaccent);
+                  font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.ads-detalle__btn:hover{background:var(--accent-2);border-color:var(--accent-2)}
+
 /* Botón "Agregar marca" — misma altura que "Scrapear todas" pero secundario */
 .ajustes-ads__toolbar .btn:not(.primary){
   height:32px;padding:0 14px;display:inline-flex;align-items:center;gap:6px;
