@@ -17,6 +17,8 @@
   "pausar_radar",
   "sb_ads",
   "query_ads_library",
+  "fb_page_id",
+  "fb_page_id_detectado_auto",
   "pais_ads",
   "cb_ads",
   "limite_ads",
@@ -105,6 +107,19 @@
    "fieldtype": "Data",
    "label": "Query en Ad Library",
    "description": "Palabra clave con la que se busca a esta marca en Meta Ad Library. Si está vacío se usa el nombre comercial. Útil si la marca aparece con otro nombre (ej: «Apolusso Perú»)."
+  },
+  {
+   "fieldname": "fb_page_id",
+   "fieldtype": "Data",
+   "label": "Facebook Page ID",
+   "description": "ID numérico de la fan page en Meta. Si lo pones, el scraper busca ads de esa página EXACTA (100% preciso, no depende del nombre). Ideal cuando la marca tiene un nombre en tu ERP distinto al de su fan page. Cómo obtenerlo: ver un ad en Meta Ad Library, click al nombre de la página, copiar el ID de la URL."
+  },
+  {
+   "fieldname": "fb_page_id_detectado_auto",
+   "fieldtype": "Check",
+   "label": "Page ID detectado automáticamente",
+   "default": "0",
+   "description": "Si está marcado, el Page ID fue auto-guardado por el scraper tras encontrar >50% de ads de esa página. Puedes sobrescribirlo manualmente."
   },
   {
    "fieldname": "pais_ads",

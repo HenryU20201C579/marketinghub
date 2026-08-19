@@ -146,8 +146,11 @@
         </div>
         <div class="mrca-head">
           <div title="Nombre comercial del competidor (Competidor DocType). Editable en /radar/competidores.">Marca</div>
-          <div title="Palabra o frase con la que Meta Ad Library busca los ads de esta marca. Vacío usa el nombre comercial. Cambialo si Meta indexa la marca con otro nombre (ej: «Apolusso Perú», «Ebrand Store»).">
+          <div title="Palabra o frase con la que Meta Ad Library busca los ads de esta marca. Vacío usa el nombre comercial. Cambialo si Meta indexa la marca con otro nombre (ej: «Apolusso Perú», «Ebrand Store»). Si tienes Page ID, ese tiene prioridad y esto se ignora.">
             Query en Ad Library
+          </div>
+          <div class="c" title="ID numérico de la fan page en Meta (opcional). Si lo pones, el scraper busca ads de esa página EXACTA (100% preciso, ignora la Query). Ideal cuando la marca tiene un nombre distinto en su fan page. Se auto-detecta si >50% de los ads del primer scrape pertenecen a la misma página.">
+            Page ID <small style="opacity:.6">(opc)</small>
           </div>
           <div class="c" title="Código ISO de 2 letras del país. Meta Ad Library segmenta por pais: PE=Perú, MX=México, CO=Colombia, US=EE.UU., ES=España. Solo se scrapean ads que corran en ese pais.">
             País
@@ -177,7 +180,16 @@
             </div>
             <input class="mrca__inp" type="text" data-campo="query" value="{{ m.query|e }}"
                    placeholder="{{ m.nombre|e }} (default)"
-                   title="Editar la keyword que Meta busca. Deja vacío para usar «{{ m.nombre|e }}». Cambio se guarda al pulsar Tab o Enter.">
+                   title="Editar la keyword que Meta busca. Deja vacío para usar «{{ m.nombre|e }}». Cambio se guarda al pulsar Tab o Enter. Si tienes Page ID, esto se ignora."
+                   {% if m.fb_page_id %}disabled style="opacity:.5" data-disabled-por-pageid="1"{% endif %}>
+            <div class="c mrca__pageid-cell">
+              <input class="mrca__inp mrca__inp--sm tnum" type="text" data-campo="page_id" value="{{ m.fb_page_id|e }}"
+                     placeholder="—" maxlength="20"
+                     title="{% if m.fb_page_id and m.fb_page_id_auto %}Page ID DETECTADO AUTOMÁTICAMENTE tras el último scrape ({{ m.fb_page_id|e }}). Puedes sobrescribir manualmente. {% elif m.fb_page_id %}Page ID fijado manualmente. Si lo borras, vuelve a scrapear por «Query».{% else %}Opcional. Pega el ID numérico de la fan page en Meta para scrape 100% preciso. Cómo obtenerlo: click en 🔗 arriba, buscar la marca, click en el nombre de la página del ad, copiar el número de la URL.{% endif %}">
+              {% if m.fb_page_id and m.fb_page_id_auto %}
+              <span class="mrca__pageid-auto" title="Page ID detectado automáticamente en el último scrape. Editar cualquier valor lo marca como manual.">auto</span>
+              {% endif %}
+            </div>
             <input class="mrca__inp mrca__inp--sm c" type="text" data-campo="pais" value="{{ m.pais|e }}" maxlength="2"
                    title="País ISO 2 letras. Cambia si la marca tiene campañas en otro pais.">
             <div class="c mrca__limite-cell">
@@ -212,9 +224,14 @@
                  sin gastar credito Apify. Meta muestra «~X resultados» en la
                  barra superior de la web publica. #}
               <a class="act mrca__meta" target="_blank" rel="noopener"
+                 {% if m.fb_page_id %}
+                 href="https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country={{ m.pais|e }}&view_all_page_id={{ m.fb_page_id|e }}&search_type=page"
+                 title="Abrir Meta Ad Library con la fan page EXACTA (Page ID {{ m.fb_page_id|e }}) @ {{ m.pais|e }}. Meta te muestra los ads exactos que scrapearia el Radar."
+                 {% else %}
                  href="https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country={{ m.pais|e }}&q={{ (m.query_efectiva or m.nombre)|urlencode }}&search_type=keyword_unordered"
-                 aria-label="Ver ads de {{ m.nombre|e }} en Meta Ad Library"
-                 title="Abrir Meta Ad Library en el navegador con la query «{{ (m.query or m.nombre)|e }}» @ {{ m.pais|e }}. Meta te muestra el TOTAL exacto de ads (activos + pausados) sin gastar crédito Apify. Ideal antes de decidir el «Límite».">
+                 title="Abrir Meta Ad Library en el navegador con la query «{{ (m.query or m.nombre)|e }}» @ {{ m.pais|e }}. Meta te muestra el TOTAL exacto de ads (activos + pausados) sin gastar crédito Apify. Ideal antes de decidir el «Límite» o para copiar el Page ID de la fan page correcta."
+                 {% endif %}
+                 aria-label="Ver ads de {{ m.nombre|e }} en Meta Ad Library">
                 <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M14 3h7v7M10 21H3v-7M21 3l-8 8M3 21l8-8"/></svg>
               </a>
               <button class="act mrca__pausa{% if m.pausada %} on{% endif %}" type="button" data-pausa
@@ -794,6 +811,19 @@
             if(campo === 'limite'){
               m.limite = parseInt(val, 10) || 0;
               m.limite_efectivo = m.limite || 50;
+            } else if(campo === 'page_id'){
+              m.fb_page_id = (val || '').replace(/\D/g, '');
+              m.fb_page_id_auto = 0;   // edicion manual anula la marca «auto»
+              // El input Query se deshabilita/habilita segun tenga page_id o no,
+              // reflejando la logica del backend: page_id tiene prioridad sobre query
+              var inpQuery = fila.querySelector('[data-campo="query"]');
+              if(inpQuery){
+                inpQuery.disabled = !!m.fb_page_id;
+                inpQuery.style.opacity = m.fb_page_id ? '.5' : '';
+              }
+              // Quitar el badge «auto» si estaba
+              var badge = fila.querySelector('.mrca__pageid-auto');
+              if(badge) badge.remove();
             } else {
               m[campo] = val;
             }
@@ -835,7 +865,10 @@
         if(!m || m.pausada) return;
         var est = (m.limite_efectivo || 0) * COSTE_POR_AD;
         var msg = 'Scrapear ' + m.nombre + '\n'
-                + 'Query: «' + (m.query || m.nombre) + '» · País: ' + (m.pais || 'PE') + '\n'
+                + (m.fb_page_id
+                    ? 'Modo: Page ID ' + m.fb_page_id + ' (busqueda EXACTA)'
+                    : 'Modo: Query «' + (m.query || m.nombre) + '» (por texto)') + '\n'
+                + 'País: ' + (m.pais || 'PE') + '\n'
                 + 'Trae hasta ' + (m.limite_efectivo || 50) + ' ads · coste ≈ $' + est.toFixed(3) + '\n\n'
                 + '¿Correr ahora?';
         if(!window.confirm(msg)) return;

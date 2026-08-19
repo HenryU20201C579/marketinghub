@@ -180,9 +180,17 @@ a{color:var(--accent);text-decoration:none} a:hover{color:var(--accent-2);text-d
    nombre | query | pais | limite | activos | ultimo | acciones */
 .mrca-head, .mrca{
   display:grid;
-  /* nombre | query | pais | limite | activos | ultimo | gastado | acciones (3 botones) */
-  grid-template-columns:minmax(140px,1.4fr) minmax(160px,2fr) 62px 74px 88px 108px 92px 112px;
+  /* nombre | query | page_id | pais | limite | activos | ultimo | gastado | acciones (3 botones) */
+  grid-template-columns:minmax(140px,1.3fr) minmax(140px,1.7fr) 110px 56px 68px 82px 100px 88px 112px;
   gap:8px;align-items:center;padding:6px 4px;
+}
+/* Celda del Page ID con badge «auto» cuando fue detectado por el scraper */
+.mrca__pageid-cell{position:relative;display:flex;align-items:center;gap:4px}
+.mrca__pageid-cell input{font-size:11px;padding:0 6px}
+.mrca__pageid-auto{
+  position:absolute;top:-8px;right:-2px;font-size:8px;font-weight:700;
+  padding:1px 4px;border-radius:6px;background:var(--accent);color:var(--onaccent);
+  text-transform:uppercase;letter-spacing:.06em;pointer-events:none;
 }
 /* Celda de gasto D1: dorado suave cuando hay scrapes vacios (dinero quemado) */
 .mrca__gasto{white-space:nowrap}

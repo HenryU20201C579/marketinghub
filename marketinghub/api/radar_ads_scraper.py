@@ -243,14 +243,16 @@ def progreso_scrape_ads():
 
 
 def _cfg_de_marca(comp):
-	"""Extrae {query, pais, limite, pausada} para una marca competidor.
+	"""Extrae {query, page_id, pais, limite, pausada} para una marca competidor.
 
 	Cae al default (nombre_comercial / PE / 50 / no pausada) si el campo esta
-	vacío. Sirve tanto al scraper como al estimador."""
+	vacío. El page_id es opcional: si esta, el scraper busca esa fan page
+	EXACTA en vez de por keyword."""
 	nombre = comp.get("nombre_comercial") or comp.get("name")
 	return {
 		"nombre": nombre,
 		"query": (comp.get("query_ads_library") or "").strip() or nombre,
+		"page_id": (comp.get("fb_page_id") or "").strip() or None,
 		"pais": (comp.get("pais_ads") or "PE").strip().upper()[:2] or "PE",
 		"limite": int(comp.get("limite_ads") or 0) or DEFAULT_ADS_POR_MARCA,
 		"pausada": int(comp.get("pausar_ads") or 0),
@@ -264,7 +266,7 @@ def _marcas_para_scrape(solo_competidor=None):
 	if solo_competidor:
 		filtros["name"] = solo_competidor
 	campos = ["name", "nombre_comercial", "query_ads_library", "pais_ads",
-	          "limite_ads", "pausar_ads"]
+	          "limite_ads", "pausar_ads", "fb_page_id", "fb_page_id_detectado_auto"]
 	crudos = frappe.db.get_all("Competidor", filters=filtros, fields=campos)
 	# El pausado siempre se filtra: si el usuario le da ▶ a una marca pausada,
 	# el endpoint del competidor lo rechaza; aquí solo entran las que si corren.
@@ -355,6 +357,7 @@ def correr_scrape_ads(count_per_marca=None, solo_competidor=None):
 		try:
 			items = apify_actor.scrape_facebook_ads(
 				token, query=cfg["query"], country=cfg["pais"], count=limite,
+				page_id=cfg["page_id"],
 			)
 			ids_vistos = set()
 			for item in items:
@@ -363,7 +366,14 @@ def correr_scrape_ads(count_per_marca=None, solo_competidor=None):
 					ids_vistos.add(payload["ad_archive_id"])
 					_upsert_ad(payload, stats)
 			_marcar_pausados(comp["name"], ids_vistos, stats)
-			log_lines.append(f"{cfg['nombre']} · {cfg['query']!r} @ {cfg['pais']} · {len(items)} ads")
+			# E3: auto-detectar page_id si la marca aun no lo tenia y salieron ads.
+			# Buscamos el page_id dominante (>50% de los items) para no guardar
+			# uno erroneo cuando la keyword pilla ads de multiples marcas.
+			if not cfg["page_id"] and items:
+				_autodetectar_page_id(comp["name"], items)
+			# Metodo de busqueda usado — util para el log
+			metodo = f"page_id={cfg['page_id']}" if cfg["page_id"] else f"query={cfg['query']!r}"
+			log_lines.append(f"{cfg['nombre']} · {metodo} @ {cfg['pais']} · {len(items)} ads")
 			# delta despues de procesar la marca
 			resultados.append({
 				"marca": cfg["nombre"],
@@ -422,6 +432,42 @@ def correr_scrape_ads(count_per_marca=None, solo_competidor=None):
 		"log": log_lines,
 		"resultados": resultados,
 	}
+
+
+def _autodetectar_page_id(competidor, items):
+	"""Analiza los items scrapeados y guarda el page_id dominante en el Competidor.
+
+	Solo se activa cuando el usuario NO puso page_id manualmente. Si >50% de
+	los ads pertenecen a la misma pageID, la guardamos con detectado_auto=1.
+	El umbral existe porque el search por keyword puede pillar ads de
+	competidores con nombres similares — no queremos fijar el page_id
+	equivocado en la primera corrida rara. El usuario puede sobreescribirlo."""
+	from collections import Counter
+	pageids = [str(it.get("pageId") or "").strip() for it in items]
+	pageids = [p for p in pageids if p]
+	if not pageids:
+		return
+	c = Counter(pageids)
+	ganador, votos = c.most_common(1)[0]
+	if votos / len(pageids) < 0.5:
+		# No hay un ganador claro (ej: la keyword saco ads de 3 marcas distintas).
+		# Mejor no guardar nada y que el usuario decida.
+		return
+	try:
+		frappe.db.set_value("Competidor", competidor, {
+			"fb_page_id": ganador,
+			"fb_page_id_detectado_auto": 1,
+		})
+		# Nota en el log para transparencia (el user vera esto en Radar Ads Gasto)
+		frappe.log_error(
+			f"Auto-detectado page_id={ganador} para {competidor} "
+			f"({votos}/{len(pageids)} ads del mismo page)",
+			"Radar Ads · autodeteccion page_id",
+		)
+	except Exception:
+		# Un fallo aqui no debe romper el scrape entero
+		import traceback as tb
+		frappe.log_error(tb.format_exc(), "Radar Ads · autodeteccion page_id (error)")
 
 
 def _registrar_gasto_por_marca(resultados):

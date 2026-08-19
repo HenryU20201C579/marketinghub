@@ -273,7 +273,7 @@ def listar_marcas_ads():
 		"Competidor",
 		filters={"activo": 1},
 		fields=["name", "nombre_comercial", "query_ads_library", "pais_ads",
-		        "limite_ads", "pausar_ads"],
+		        "limite_ads", "pausar_ads", "fb_page_id", "fb_page_id_detectado_auto"],
 		order_by="nombre_comercial asc",
 	)
 	# Ads activos + último visto por competidor en una sola query
@@ -367,13 +367,17 @@ def listar_marcas_ads():
 			"gastado_fmt": f"${gastado_total:.3f}" if gastado_total >= 0.001 else "$0",
 			"n_scrapes": int(g.get("n_scrapes") or 0),
 			"n_vacios": int(g.get("n_vacios") or 0),
+			# E: Facebook Page ID (opcional, 100% preciso si esta lleno)
+			"fb_page_id": (c.get("fb_page_id") or "").strip(),
+			"fb_page_id_auto": int(c.get("fb_page_id_detectado_auto") or 0),
 		})
 	return filas
 
 
 @frappe.whitelist()
-def guardar_ajustes_marca(competidor, query=None, pais=None, limite=None, pausada=None):
-	"""Actualiza los 4 campos ads de un Competidor. Solo escribe los que llegan."""
+def guardar_ajustes_marca(competidor, query=None, pais=None, limite=None,
+                          pausada=None, page_id=None):
+	"""Actualiza los 5 campos ads de un Competidor. Solo escribe los que llegan."""
 	if not _has_role(ANALISTA_ROLES):
 		frappe.throw("Solo un analista puede editar los ajustes.", frappe.PermissionError)
 	if not frappe.db.exists("Competidor", competidor):
@@ -393,6 +397,12 @@ def guardar_ajustes_marca(competidor, query=None, pais=None, limite=None, pausad
 			frappe.throw("El límite debe ser un número entero.")
 	if pausada is not None:
 		cambios["pausar_ads"] = 1 if str(pausada) in ("1", "true", "True") else 0
+	if page_id is not None:
+		# Page ID: solo digitos, hasta 20 chars. Vacio permitido (borra el valor).
+		pid = "".join(ch for ch in str(page_id).strip() if ch.isdigit())[:20]
+		cambios["fb_page_id"] = pid
+		# Edicion manual → ya no es "detectado auto"
+		cambios["fb_page_id_detectado_auto"] = 0
 	if cambios:
 		frappe.db.set_value("Competidor", competidor, cambios)
 		frappe.db.commit()

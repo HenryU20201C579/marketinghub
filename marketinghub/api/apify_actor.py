@@ -189,19 +189,33 @@ def scrape_tiktok(token: str, handles: list, results_per_profile: int = 20,
 	return _post_run_sync(TIKTOK_ACTOR, token, payload, timeout_s=360)
 
 
-def scrape_facebook_ads(token: str, query: str, country: str = "PE", count: int = 50):
-	"""Trae ads de Meta Ad Library filtrando por keyword + país.
+def scrape_facebook_ads(token: str, query: str, country: str = "PE", count: int = 50,
+                        page_id: str = None):
+	"""Trae ads de Meta Ad Library. Dos modos:
 
-	`query` es el nombre de marca (ej: 'apolusso'). El actor busca coincidencias
-	en Ad Library. `count` limita cuántos ads devolver."""
-	if not query:
+	- Si `page_id` viene, busca ads de esa fan page EXACTA
+	  (search_type=page&view_all_page_id=<ID>). 100% preciso, no depende del
+	  texto — resuelve casos como «Semenderco» cuya fan page se llama
+	  «Semender Leather Goods» (keyword no matchea).
+	- Si `page_id` es vacío, cae al modo keyword (comportamiento anterior).
+
+	`country` filtra por país en cualquiera de los dos modos."""
+	if page_id:
+		# Modo page: busca ads publicados por esa página específica
+		ads_url = (
+			"https://www.facebook.com/ads/library/"
+			f"?active_status=all&ad_type=all&country={country}"
+			f"&view_all_page_id={page_id}&search_type=page"
+		)
+	elif query:
+		# Modo keyword (legacy). active_status=all trae activos + pausados.
+		ads_url = (
+			"https://www.facebook.com/ads/library/"
+			f"?active_status=all&ad_type=all&country={country}"
+			f"&q={query}&search_type=keyword_unordered"
+		)
+	else:
 		return []
-	# URL de Ad Library con search por keyword. active_status=all trae activos + pausados.
-	ads_url = (
-		"https://www.facebook.com/ads/library/"
-		f"?active_status=all&ad_type=all&country={country}"
-		f"&q={query}&search_type=keyword_unordered"
-	)
 	payload = {
 		"startUrls": [{"url": ads_url}],
 		"count": int(count),
