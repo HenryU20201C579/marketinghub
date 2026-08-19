@@ -126,6 +126,7 @@
 
     <div class="tablewrap">
       <div class="thead">
+        <div class="th chev" title="Click en el chevron de cada fila para ver sus cuentas sociales"></div>
         <div class="th chk" id="all"><span class="box"><svg class="ico" viewBox="0 0 24 24" width="9" height="9"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span></div>
         <div class="th c"><span>#</span></div>
         <button class="th sortable" data-sort="nombre"><span>Marca</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 14l6-5 6 5"/></svg></button>
@@ -232,6 +233,59 @@
   var DATA = {{ filas_json }};
   var PRI = {Directo:'dir', Indirecto:'ind', Referente:'ref'};
   var sort = {k:'virales', dir:-1}, sel = {};
+  /* B-Op2: estado del acordeon (id → true si esta expandido).
+     Persistido en sessionStorage para que sobreviva a un re-render pero no a
+     una navegacion completa. */
+  var EXPANDED = {};
+  try {
+    var raw = sessionStorage.getItem('rad-comp-expanded');
+    if(raw) EXPANDED = JSON.parse(raw) || {};
+  } catch(e) {}
+  function guardarExpanded(){
+    try { sessionStorage.setItem('rad-comp-expanded', JSON.stringify(EXPANDED)); } catch(e) {}
+  }
+  var PLAT_SIGLA = { Instagram:'IG', TikTok:'TT', Facebook:'FB', YouTube:'YT' };
+  var PLAT_CLS = { Instagram:'ig', TikTok:'tt', Facebook:'fb', YouTube:'yt' };
+
+  /* HTML del panel expandido con las cuentas sociales de una marca. */
+  function renderDetalle(d){
+    var cuentas = d.cuentas_lista || [];
+    var filasCuentas = cuentas.length
+      ? cuentas.map(function(c){
+          var plat = c.plataforma || 'Otro';
+          var sigla = PLAT_SIGLA[plat] || (plat[0] + plat[1] || '??').toUpperCase();
+          var cls = PLAT_CLS[plat] || '';
+          var actClass = c.activo ? '' : ' inactiva';
+          return '<div class="ct-row' + actClass + '" data-cs="' + esc(c.name) + '" data-plataforma="' + esc(plat) + '" data-handle="' + esc(c.handle || '') + '" data-url="' + esc(c.url_perfil || '') + '" data-activo="' + (c.activo ? 1 : 0) + '">'
+            + '<span class="ct-plat plat-' + cls + '" title="' + esc(plat) + '">' + esc(sigla) + '</span>'
+            + '<span class="ct-handle" title="Handle en la red">' + esc(c.handle_txt || '—') + '</span>'
+            + (c.url_valida
+                ? '<a class="ct-url" target="_blank" rel="noopener" href="' + esc(c.url_perfil) + '" title="Abrir perfil ' + esc(plat) + ' en el navegador">' + esc(c.url_corta) + ' ↗</a>'
+                : '<span class="ct-url" style="color:var(--muted)">' + esc(c.url_corta || '—') + '</span>')
+            + '<span class="ct-pubs tnum" title="Publicaciones scrapeadas de esta cuenta">' + (c.n_publicaciones || 0) + ' <em>pubs</em></span>'
+            + '<span class="ct-sync tnum" title="Ultima vez que se scrapeo esta cuenta" style="color:var(--muted)">' + esc(c.ultimo_scrapeo_fmt || 'nunca') + '</span>'
+            + (PUEDE_EDITAR
+                ? '<span class="ct-acc">'
+                  + '<button class="act ct-toggle' + (c.activo ? ' on' : '') + '" type="button" data-cs-toggle title="' + (c.activo ? 'Desactivar' : 'Activar') + ' esta cuenta"><svg class="ico" viewBox="0 0 24 24" width="11" height="11"><path d="' + (c.activo ? 'M9.5 5v14M14.5 5v14' : 'M8 5.5v13l10-6.5z') + '"/></svg></button>'
+                  + '<button class="act del" type="button" data-cs-del title="Eliminar esta cuenta"><svg class="ico" viewBox="0 0 24 24" width="11" height="11"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l.8 13h9.4l.8-13"/></svg></button>'
+                  + '</span>'
+                : '<span></span>')
+            + '</div>';
+        }).join('')
+      : '<div class="ct-empty">Aún no hay cuentas sociales para <strong>' + esc(d.nombre) + '</strong>. Añade su perfil de Instagram o TikTok abajo.</div>';
+    var formAdd = PUEDE_EDITAR
+      ? '<div class="ct-add">'
+        + '<input type="text" class="ct-add-url" data-add-url placeholder="Pega URL del perfil (ej: instagram.com/apolusso.pe)" title="Pega la URL completa del perfil en Instagram, TikTok, Facebook o YouTube. La plataforma y el handle se detectan solos.">'
+        + '<button class="ct-add-btn" type="button" data-add-cs title="Añadir esta cuenta a ' + esc(d.nombre) + '">+ Añadir cuenta</button>'
+        + '</div>'
+      : '';
+    return '<div class="tr-detail">'
+      + '<div class="ct-head"><span>Cuentas sociales de <strong>' + esc(d.nombre) + '</strong> · '
+        + '<em style="font-style:normal;color:var(--muted)">' + cuentas.length + ' total · ' + d.cuentas_activas + ' activas</em></span></div>'
+      + '<div class="ct-list">' + filasCuentas + '</div>'
+      + formAdd
+      + '</div>';
+  }
 
   function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function v(id){ return document.getElementById(id).value; }
@@ -266,7 +320,13 @@
       var p = PRI[d.prioridad] || 'ind';
       var vcls = d.virales === 0 ? ' zero' : (d.virales >= max * 0.6 ? ' hot' : '');
       var dot = d.dias <= 1 ? '' : (d.dias <= 4 ? ' warn' : ' bad');
-      return '<div class="tr' + (sel[d.id] ? ' sel' : '') + '" data-id="' + esc(d.id) + '">'
+      var abierta = !!EXPANDED[d.id];
+      /* B-Op2: cada competidor es ahora un «bloque» con la fila principal (.tr)
+         + un panel expandible (.tr-detail) con las cuentas sociales embebidas.
+         Chevron a la izquierda controla el toggle. */
+      return '<div class="tr-wrap' + (abierta ? ' is-open' : '') + '" data-id="' + esc(d.id) + '">'
+        + '<div class="tr' + (sel[d.id] ? ' sel' : '') + '">'
+        + '<div class="td chev" data-toggle title="Ver cuentas sociales de esta marca"><svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="M9 6l6 6-6 6"/></svg></div>'
         + '<div class="td chk" data-check><span class="box"><svg class="ico" viewBox="0 0 24 24" width="9" height="9"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span></div>'
         + '<div class="td c n tnum">' + (i + 1) + '</div>'
         + '<div class="td" style="gap:8px"><span class="av ' + p + '">' + esc((d.nombre || '?')[0]) + '</span><span class="name">' + esc(d.nombre) + '</span>'
@@ -274,7 +334,7 @@
         + '<div class="td" style="color:var(--muted)">' + esc(d.categoria) + '</div>'
         + '<div class="td c"><span class="chip ' + p + '">' + esc(d.prioridad) + '</span></div>'
         + '<div class="td"><span class="pais"><svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="M12 21s6.5-6.1 6.5-11a6.5 6.5 0 1 0-13 0C5.5 14.9 12 21 12 21z"/><circle cx="12" cy="10" r="2.2"/></svg>' + esc(d.pais) + '</span></div>'
-        + '<div class="td c tnum">' + d.cuentas + '</div>'
+        + '<div class="td c tnum" data-toggle title="Cuentas sociales — click para expandir">' + d.cuentas + '</div>'
         + '<div class="td"><span class="viral' + vcls + '"><b>' + d.virales + '</b><span class="bar"><i style="width:' + Math.round(d.virales / max * 100) + '%"></i></span></span></div>'
         + '<div class="td c tnum" style="color:var(--muted)">' + esc(d.eng) + '</div>'
         + '<div class="td"><span class="sync"><span class="dot' + dot + '"></span>' + esc(d.sync) + '</span></div>'
@@ -285,6 +345,8 @@
                 + '<button class="act del" data-del title="Eliminar"><svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l.8 13h9.4l.8-13"/></svg></button>'
               : '')
         + '</div>'
+      + '</div>'
+      + (abierta ? renderDetalle(d) : '')
       + '</div>';
     }).join('');
 
@@ -388,8 +450,57 @@
   });
 
   document.getElementById('rows').addEventListener('click', function(e){
-    var tr = e.target.closest('.tr'); if(!tr) return;
-    var id = tr.dataset.id, d = fila(id);
+    /* Buscamos el wrap (competidor) — puede ser click en .tr o en .tr-detail */
+    var wrap = e.target.closest('.tr-wrap'); if(!wrap) return;
+    var id = wrap.dataset.id, d = fila(id);
+    /* B-Op2: toggle del acordeon (chevron o celda «cuentas») */
+    if(e.target.closest('[data-toggle]')){
+      EXPANDED[id] = !EXPANDED[id];
+      guardarExpanded(); render();
+      return;
+    }
+    /* Click dentro del panel expandido — gestion de cuentas sociales */
+    var ctRow = e.target.closest('.ct-row');
+    if(ctRow && PUEDE_EDITAR){
+      var csName = ctRow.dataset.cs, csHandle = ctRow.dataset.handle || '';
+      if(e.target.closest('[data-cs-del]')){
+        if(!window.confirm('Eliminar la cuenta ' + csHandle + '? Sus publicaciones scrapeadas se conservan.')) return;
+        llamar('www.radar.cuentas.index.borrar', { name: csName })
+          .then(function(){ toast('Cuenta eliminada.'); setTimeout(function(){ window.location.reload(); }, 700); })
+          .catch(function(err){ toast(String(err.message).replace(/<[^>]*>/g, '')); });
+        return;
+      }
+      if(e.target.closest('[data-cs-toggle]')){
+        var nuevoActivo = ctRow.dataset.activo === '1' ? 0 : 1;
+        llamar('www.radar.cuentas.index.guardar', {
+          name: csName, competidor: id,
+          plataforma: ctRow.dataset.plataforma,
+          handle: csHandle,
+          url_perfil: ctRow.dataset.url,
+          activo: nuevoActivo,
+        })
+          .then(function(){ toast(nuevoActivo ? 'Cuenta activada.' : 'Cuenta desactivada.'); setTimeout(function(){ window.location.reload(); }, 700); })
+          .catch(function(err){ toast(String(err.message).replace(/<[^>]*>/g, '')); });
+        return;
+      }
+    }
+    /* Boton «+ Añadir cuenta» dentro del acordeon */
+    if(e.target.closest('[data-add-cs]') && PUEDE_EDITAR){
+      var inpAdd = wrap.querySelector('[data-add-url]');
+      var url = (inpAdd && inpAdd.value || '').trim();
+      if(!url){ toast('Pega una URL de perfil primero.'); return; }
+      var plat = detectarPlataforma(url);
+      if(!plat){ toast('URL no reconocida (usa instagram.com, tiktok.com, facebook.com o youtube.com).'); return; }
+      llamar('www.radar.cuentas.index.guardar', {
+        competidor: id, plataforma: plat, url_perfil: url, activo: 1,
+      })
+        .then(function(){ toast('Cuenta añadida.'); setTimeout(function(){ window.location.reload(); }, 700); })
+        .catch(function(err){ toast(String(err.message).replace(/<[^>]*>/g, '')); });
+      return;
+    }
+    /* Acciones sobre la fila principal (competidor) — filtrar para NO capturar
+       clicks del panel expandido */
+    var tr = e.target.closest('.tr'); if(!tr || tr.closest('.tr-detail')) return;
     if(e.target.closest('[data-check]')){ sel[id] = !sel[id]; render(); return; }
     if(e.target.closest('[data-web]')){ if(d && d.web) window.open(d.web, '_blank', 'noopener'); return; }
     if(!PUEDE_EDITAR) return;
@@ -411,6 +522,25 @@
       abrir('del');
     }
   });
+
+  /* Enter dentro del input de añadir cuenta = click en el boton */
+  document.getElementById('rows').addEventListener('keydown', function(e){
+    if(e.key === 'Enter' && e.target.matches('[data-add-url]')){
+      e.preventDefault();
+      var btn = e.target.closest('.ct-add').querySelector('[data-add-cs]');
+      if(btn) btn.click();
+    }
+  });
+
+  /* Detectar plataforma desde URL — mismo mapping que backend detectar_plataforma() */
+  function detectarPlataforma(url){
+    var u = url.toLowerCase();
+    if(u.indexOf('instagram.com') > -1) return 'Instagram';
+    if(u.indexOf('tiktok.com') > -1) return 'TikTok';
+    if(u.indexOf('facebook.com') > -1 || u.indexOf('fb.com') > -1) return 'Facebook';
+    if(u.indexOf('youtube.com') > -1 || u.indexOf('youtu.be') > -1) return 'YouTube';
+    return null;
+  }
 
   if(overlay){
     document.getElementById('ed-guardar').addEventListener('click', function(){

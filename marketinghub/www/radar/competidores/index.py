@@ -45,11 +45,15 @@ def get_context(context):
 	virales = _virales_30d()
 	engagement = _engagement_30d()
 	sync = _ultima_sync()
+	# B-Op1: cuentas sociales agrupadas por marca (para el acordeon inline).
+	# Una sola query en vez de N (una por marca).
+	cuentas_por_marca = _cuentas_por_marca()
 	filas = []
 	for c in listar():
 		nombre = c.get("nombre_comercial") or c["name"]
 		prio = c.get("prioridad") if c.get("prioridad") in PRIORIDADES else "Indirecto"
 		cuando = sync.get(c["name"])
+		cuentas_marca = cuentas_por_marca.get(c["name"], [])
 		filas.append({
 			"id": c["name"],
 			"nombre": nombre,
@@ -64,6 +68,10 @@ def get_context(context):
 			"web": c.get("website") if (c.get("website") or "").startswith(("http://", "https://")) else "",
 			"nombre_comercial": c.get("nombre_comercial") or "",
 			"website": c.get("website") or "",
+			# B-Op1: lista de cuentas sociales de esta marca
+			"cuentas_lista": cuentas_marca,
+			"cuentas_totales": len(cuentas_marca),
+			"cuentas_activas": sum(1 for x in cuentas_marca if x.get("activo")),
 		})
 
 	context.filas_json = frappe.as_json(filas).replace("</", "<\\/")
@@ -145,6 +153,47 @@ def _hace(cuando):
 	if minutos < 60 * 24:
 		return f"hace {minutos // 60} h"
 	return f"hace {minutos // (60 * 24)} d"
+
+
+def _cuentas_por_marca():
+	"""Devuelve dict {competidor: [cuenta, cuenta, ...]} con las cuentas sociales
+	de cada marca + n_publicaciones y ultimo_scrapeo agregados.
+
+	Usa 2 queries totales (una para cuentas, otra para pubs agregadas), no N.
+	Sirve al acordeon del index.html: al expandir una marca se ven sus cuentas
+	sin pedidos extra al backend."""
+	cuentas = frappe.db.get_all(
+		"Cuenta Social",
+		fields=["name", "competidor", "plataforma", "handle", "url_perfil", "activo"],
+		order_by="competidor asc, plataforma asc, handle asc",
+	)
+	if not cuentas:
+		return {}
+	# Contar pubs y ultimo scrapeo por cuenta en una sola query
+	stats = {r["cs"]: r for r in frappe.db.sql("""
+		SELECT cuenta_social AS cs, COUNT(*) AS n_pubs,
+		       MAX(fecha_ultimo_scrapeo) AS ultimo
+		FROM `tabPublicacion Competencia`
+		WHERE cuenta_social IS NOT NULL
+		GROUP BY cuenta_social
+	""", as_dict=True)}
+	# Formatear url corta y armar la lista por marca
+	agrupado = {}
+	for c in cuentas:
+		st = stats.get(c["name"]) or {}
+		c["n_publicaciones"] = int(st.get("n_pubs") or 0)
+		ultimo = st.get("ultimo")
+		c["ultimo_scrapeo_fmt"] = _hace(ultimo) if ultimo else "nunca"
+		c["handle_txt"] = "@" + (c.get("handle") or "").lstrip("@") if c.get("handle") else "—"
+		# URL corta legible: instagram.com/apolusso.pe
+		url = c.get("url_perfil") or ""
+		corta = url.split("://", 1)[-1]
+		if corta.startswith("www."):
+			corta = corta[4:]
+		c["url_corta"] = corta.rstrip("/")[:60]
+		c["url_valida"] = url.startswith(("http://", "https://"))
+		agrupado.setdefault(c["competidor"] or "", []).append(c)
+	return agrupado
 
 
 @frappe.whitelist()

@@ -36,8 +36,9 @@
     {
       titulo: 'Configuración',
       items: [
-        { href: '/radar/competidores', icono: 'competidores', label: 'Competidores', count: 'competidores' },
-        { href: '/radar/cuentas', icono: 'cuentas', label: 'Cuentas', count: 'cuentas' },
+        // B-Op3: «Cuentas» ya no es item aparte — vive dentro de cada Competidor
+        // como acordeon. /radar/cuentas redirige aqui.
+        { href: '/radar/competidores', icono: 'competidores', label: 'Competidores & Cuentas', count: 'competidores' },
         { href: '/radar/categorias', icono: 'categorias', label: 'Categorías', count: 'categorias' },
         { href: '/radar/settings', icono: 'ajustes', label: 'Ajustes' }
       ]

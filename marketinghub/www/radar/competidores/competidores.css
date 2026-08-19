@@ -7,7 +7,8 @@
   --danger:#9B2C1E; --danger-soft:rgba(155,44,30,.10);
   --zebra:rgba(0,0,0,.018); --shadow:0 1px 2px rgba(0,0,0,.06);
   --side:214px;
-  --cols:34px 34px minmax(150px,1.3fr) minmax(120px,1fr) 112px 104px 84px 116px 106px 118px 76px;
+  /* chev(26) + check(34) + n(34) + marca | categoria | prioridad | pais | cuentas | virales | eng | sync | acciones */
+  --cols:26px 34px 34px minmax(150px,1.3fr) minmax(120px,1fr) 112px 104px 84px 116px 106px 118px 76px;
 }
 [data-theme="dark"]{
   --bg:#0C0D0D; --panel:#151616; --raise:#1D1E1E; --line:#2E3030; --hair:#232424;
@@ -157,5 +158,65 @@ a{color:var(--accent);text-decoration:none} a:hover{color:var(--accent-2);text-d
 .toast.on{display:block}
 
 @media (max-width:1180px){
-  :root{--cols:34px 32px minmax(140px,1.3fr) minmax(112px,1fr) 104px 98px 80px 108px 100px 110px 74px}
+  :root{--cols:24px 32px 32px minmax(140px,1.3fr) minmax(112px,1fr) 104px 98px 80px 108px 100px 110px 74px}
 }
+
+/* ============ B-Op2: acordeon de cuentas por marca ============ */
+/* Wrap: contenedor de fila + panel expandible. Se comporta como una unidad
+   visual (misma linea de fondo, sombra al hover, etc.). */
+.tr-wrap{border-bottom:1px solid var(--hair);background:transparent}
+.tr-wrap:nth-child(even){background:var(--zebra)}
+.tr-wrap .tr{border-bottom:0;background:transparent}
+.tr-wrap.is-open{background:var(--accent-soft)}
+.tr-wrap.is-open .tr{background:transparent}
+
+/* Chevron (columna 1) rota 90° al expandir */
+.chev{display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted)}
+.chev .ico{transition:transform .18s ease}
+.tr-wrap.is-open .chev .ico{transform:rotate(90deg);color:var(--accent)}
+.chev:hover{color:var(--accent)}
+
+/* Panel expandido con las cuentas */
+.tr-detail{padding:10px 18px 14px 60px;background:var(--panel);border-top:1px solid var(--hair);
+           animation:tr-slide .18s ease}
+@keyframes tr-slide{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.ct-head{font-size:11.5px;color:var(--text);margin-bottom:8px;font-weight:600}
+.ct-head strong{font-weight:700}
+
+/* Grid interna: plat | handle | url | pubs | sync | acciones */
+.ct-list{display:flex;flex-direction:column;gap:2px}
+.ct-row{display:grid;grid-template-columns:44px 130px minmax(160px,1fr) 68px 90px 68px;
+        gap:8px;align-items:center;padding:5px 8px;border-radius:6px;font-size:12px}
+.ct-row:hover{background:var(--raise)}
+.ct-row.inactiva{opacity:.55}
+.ct-empty{padding:16px 8px;font-size:12px;color:var(--muted);font-style:italic}
+
+.ct-plat{display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 8px;
+         border-radius:5px;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+         background:var(--raise);color:var(--muted)}
+.ct-plat.plat-ig{background:rgba(232,72,158,.14);color:#c72a83}
+.ct-plat.plat-tt{background:rgba(37,37,37,.85);color:#fff}
+.ct-plat.plat-fb{background:rgba(24,119,242,.14);color:#1877F2}
+.ct-plat.plat-yt{background:rgba(255,0,0,.14);color:#c40000}
+[data-theme="dark"] .ct-plat.plat-tt{background:rgba(255,255,255,.15);color:#fff}
+
+.ct-handle{font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ct-url{color:var(--accent);text-decoration:none;font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ct-url:hover{color:var(--accent-2);text-decoration:underline}
+.ct-pubs{text-align:right;font-weight:600}
+.ct-pubs em{font-style:normal;font-weight:400;color:var(--muted);font-size:10px}
+.ct-sync{font-size:11px}
+.ct-acc{display:flex;justify-content:flex-end;gap:4px}
+.ct-toggle{color:var(--muted)}
+.ct-toggle.on{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+.ct-toggle:hover{border-color:var(--top);color:var(--top)}
+
+/* Form de añadir cuenta */
+.ct-add{display:flex;gap:8px;margin-top:10px;padding:8px 8px 0;border-top:1px dashed var(--hair)}
+.ct-add-url{flex:1;height:30px;padding:0 10px;border-radius:6px;border:1px solid var(--line);
+            background:var(--bg);font-size:12.5px;color:var(--text);outline:none;font-family:inherit}
+.ct-add-url:focus{border-color:var(--accent)}
+.ct-add-btn{height:30px;padding:0 14px;border-radius:6px;border:1px solid var(--accent);
+            background:var(--accent);color:var(--onaccent);font-size:12px;font-weight:600;
+            cursor:pointer;white-space:nowrap;font-family:inherit}
+.ct-add-btn:hover{background:var(--accent-2);border-color:var(--accent-2)}

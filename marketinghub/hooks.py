@@ -62,14 +62,11 @@ launcher_tiles = [
 		"icon": "store",
 	},
 	{
+		# B-Op3: Cuentas se unifico dentro de Competidores como acordeon.
+		# «Radar · Cuentas» ya no aparece — /radar/cuentas redirige aqui.
 		"label": "Radar · Competidores",
 		"url": "/radar/competidores",
 		"icon": "users",
-	},
-	{
-		"label": "Radar · Cuentas",
-		"url": "/radar/cuentas",
-		"icon": "user-square",
 	},
 	{
 		"label": "Radar · Categorias",

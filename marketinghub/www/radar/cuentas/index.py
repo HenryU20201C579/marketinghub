@@ -45,6 +45,15 @@ def _has_role(roles):
 
 
 def get_context(context):
+	# B-Op3: /radar/cuentas se unifica con /radar/competidores (acordeon).
+	# Este get_context ahora solo redirige — los endpoints @frappe.whitelist
+	# de abajo (guardar, borrar, listar, etc.) siguen sirviendo al JS de la
+	# nueva pagina; no se pueden mover porque romperia integraciones y URLs
+	# de API guardadas en otros lados.
+	frappe.local.flags.redirect_location = "/radar/competidores"
+	raise frappe.Redirect
+
+	# Codigo legacy conservado abajo por si hay que revivir esta vista.
 	if frappe.session.user == "Guest":
 		frappe.local.flags.redirect_location = "/login?redirect-to=/radar/cuentas"
 		raise frappe.Redirect
