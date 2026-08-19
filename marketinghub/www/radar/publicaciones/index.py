@@ -63,6 +63,16 @@ def get_context(context):
 	opciones = opciones_filtros()
 	context.tiers = [t["nombre"] for t in opciones["tiers"]]
 	context.competidores = opciones["competidores"]
+	# T1: mapa tier_orden -> {nombre, imagen_url, color} para pintar iconos
+	# de tier en cada fila. Serializado a JSON para acceso desde el JS.
+	context.tiers_map_json = frappe.as_json({
+		t["orden"]: {
+			"nombre": t["nombre"],
+			"imagen_url": t["imagen_url"] or "",
+			"color": t["color_hex"] or "#94a3b8",
+		}
+		for t in opciones["tiers"]
+	}).replace("</", "<\\/")
 	# solo las redes presentes, con la sigla que usa el diseño
 	context.redes = [
 		{"sigla": REDES.get(p, p[:2].upper()), "nombre": p}

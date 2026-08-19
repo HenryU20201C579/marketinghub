@@ -157,3 +157,12 @@ a{color:var(--accent);text-decoration:none} a:hover{color:var(--accent-2);text-d
 @media (max-width:1180px){
   :root{--cols:34px minmax(100px,1fr) 44px minmax(92px,.9fr) 86px minmax(170px,2fr) 66px minmax(90px,1fr) 62px 54px minmax(102px,.9fr) 64px}
 }
+
+/* T1: icono PNG de tier en cada fila (Dragón, Cetro, Hacha, Maso, Pollito).
+   Tamaño pequeño y crisp — pixel-art rendering para que se vea nítido a 18px. */
+.tier-img{
+  width:18px;height:18px;flex:none;object-fit:contain;
+  image-rendering:pixelated;image-rendering:-moz-crisp-edges;
+  vertical-align:middle;
+}
+.tier.top .tier-img{filter:drop-shadow(0 0 3px var(--top-soft))}

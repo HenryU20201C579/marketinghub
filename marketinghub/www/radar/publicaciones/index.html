@@ -247,6 +247,9 @@
   /* ---------- datos ---------- */
   var DATA = {{ filas_json }};
   var TOTAL = {{ total }};
+  /* T1: mapa tier_orden -> {nombre, imagen_url, color}. Se pinta como <img>
+     al lado del nombre del tier. Fallback SVG si el tier no tiene imagen. */
+  var TIERS_MAP = {{ tiers_map_json }};
   var TIER_ICON = {
     alto:  "M13.5 3.5c3 0 6 2 6.5 5-2.5.6-4.4.2-6.2-1M13.8 7.5 4.5 16.8l2.7 2.7 9.3-9.3",
     medio: "M6 8.5 12 4l6 4.5v7L12 20l-6-4.5z",
@@ -256,6 +259,14 @@
   function icono(orden){
     return orden <= 3 ? TIER_ICON.alto : orden <= 6 ? TIER_ICON.medio
          : orden <= 8 ? TIER_ICON.bajo : TIER_ICON.llano;
+  }
+  /* Devuelve <img> con el PNG del tier, o SVG fallback si no hay imagen_url. */
+  function tierIcono(orden){
+    var t = TIERS_MAP[orden];
+    if(t && t.imagen_url){
+      return '<img class="tier-img" src="' + esc(t.imagen_url) + '" alt="' + esc(t.nombre || '') + '" title="' + esc(t.nombre || '') + '">';
+    }
+    return '<svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="' + icono(orden) + '"/></svg>';
   }
 
   var sort = {k:"tier", dir:1}, sel = {};
@@ -305,7 +316,7 @@
       var dot = r.dias === 0 ? '' : r.dias <= 4 ? ' warn' : ' bad';
       return '<div class="tr' + (sel[r.id] ? ' sel' : '') + '" data-id="' + esc(r.id) + '">'
         + '<div class="td chk" data-check><span class="box"><svg class="ico" viewBox="0 0 24 24" width="9" height="9"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span></div>'
-        + '<div class="td"><span class="tier' + (r.top ? ' top' : '') + '"><svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="' + icono(r.orden) + '"/></svg><span class="chip">' + esc(r.tier) + '</span></span></div>'
+        + '<div class="td"><span class="tier' + (r.top ? ' top' : '') + '">' + tierIcono(r.orden) + '<span class="chip">' + esc(r.tier) + '</span></span></div>'
         + '<div class="td c"><span class="red">' + esc(r.plat) + '</span></div>'
         + '<div class="td comp">' + esc(r.comp) + '</div>'
         + '<div class="td tnum" style="color:var(--muted)">' + esc(r.fecha) + '</div>'
