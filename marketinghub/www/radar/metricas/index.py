@@ -81,6 +81,19 @@ def get_context(context):
 	context.tendencia = _tendencia_diaria(min(dias, 30))
 	context.scrape = _actividad_scrape()
 	context.top_posts = _top_posts(dias, limite=15)
+	# ---- M-A: Meta Ads (nuevas cards) ----
+	context.ads_kpis = _ads_kpis()
+	context.ads_marca = _ads_por_marca(dias)
+	context.ads_formatos = _ads_formatos(dias)
+	context.ads_landings = _ads_landings_top(dias)
+	# ---- M-B: Insights accionables ----
+	context.hashtags = _hashtags_top(dias, limite=15)
+	context.duracion_buckets = _duracion_video_buckets(dias)
+	context.formato_ganador = _formato_ganador(dias)
+	context.dow_engagement = _dow_engagement(dias)
+	context.frecuencia_marca = _frecuencia_por_marca(dias)
+	# ---- M-C: Panel financiero ----
+	context.financiero = _financiero(dias)
 
 
 # ============ KPIs generales ============
@@ -357,3 +370,326 @@ def _top_posts(dias, limite=15):
 		                  if r.get("fecha_publicacion") and len(str(r["fecha_publicacion"])) == 10
 		                  else "")
 	return rows
+
+
+# ============ M-A: Meta Ads ============
+
+def _ads_kpis():
+	"""Ads activos ahora + nuevos ultimos 7 dias + ganadores 30d+."""
+	hoy = date.today()
+	hace7 = hoy - timedelta(days=7)
+	# Query unica para eficiencia
+	row = frappe.db.sql("""
+		SELECT COUNT(*) AS total,
+		       SUM(esta_activo) AS activos,
+		       SUM(CASE WHEN esta_activo=1 AND fecha_inicio >= %s THEN 1 ELSE 0 END) AS nuevos_7d,
+		       SUM(CASE WHEN esta_activo=1 AND dias_activo >= 30 THEN 1 ELSE 0 END) AS ganadores_30d
+		FROM `tabAnuncio Competencia`
+	""", (hace7,), as_dict=True)[0]
+	return {
+		"total": int(row.total or 0),
+		"activos": int(row.activos or 0),
+		"nuevos_7d": int(row.nuevos_7d or 0),
+		"ganadores_30d": int(row.ganadores_30d or 0),
+	}
+
+
+def _ads_por_marca(dias):
+	"""Tabla ads por competidor: activos ahora, nuevos 7d, ganadores 30d+."""
+	hace7 = date.today() - timedelta(days=7)
+	rows = frappe.db.sql("""
+		SELECT competidor,
+		       COUNT(*) AS total,
+		       SUM(esta_activo) AS activos,
+		       SUM(CASE WHEN esta_activo=1 AND fecha_inicio >= %s THEN 1 ELSE 0 END) AS nuevos_7d,
+		       SUM(CASE WHEN esta_activo=1 AND dias_activo >= 30 THEN 1 ELSE 0 END) AS ganadores_30d,
+		       MAX(dias_activo) AS max_dias
+		FROM `tabAnuncio Competencia`
+		WHERE competidor IS NOT NULL AND competidor != ''
+		GROUP BY competidor
+		ORDER BY activos DESC, ganadores_30d DESC
+	""", (hace7,), as_dict=True)
+	for r in rows:
+		r["total"] = int(r.total or 0)
+		r["activos"] = int(r.activos or 0)
+		r["nuevos_7d"] = int(r.nuevos_7d or 0)
+		r["ganadores_30d"] = int(r.ganadores_30d or 0)
+		r["max_dias"] = int(r.max_dias or 0)
+		r["color"] = _color_competidor(r.competidor)
+	return rows
+
+
+def _ads_formatos(dias):
+	"""Distribucion por formato de creatividad: Video/Imagen/Carrusel/Otro."""
+	rows = frappe.db.sql("""
+		SELECT COALESCE(NULLIF(formato, ''), 'Sin formato') AS formato,
+		       COUNT(*) AS c,
+		       SUM(esta_activo) AS activos
+		FROM `tabAnuncio Competencia`
+		GROUP BY formato
+		ORDER BY c DESC
+	""", as_dict=True)
+	total = sum(int(r.c or 0) for r in rows) or 1
+	for r in rows:
+		r["c"] = int(r.c or 0)
+		r["activos"] = int(r.activos or 0)
+		r["pct"] = round(r["c"] / total * 100, 1)
+	return rows
+
+
+def _ads_landings_top(dias, limite=8):
+	"""Top URLs de landing donde llevan los ads (dominio.com/path)."""
+	rows = frappe.db.sql("""
+		SELECT landing_url, COUNT(*) AS c, SUM(esta_activo) AS activos
+		FROM `tabAnuncio Competencia`
+		WHERE landing_url IS NOT NULL AND landing_url != ''
+		GROUP BY landing_url
+		ORDER BY activos DESC, c DESC
+		LIMIT %s
+	""", (limite,), as_dict=True)
+	for r in rows:
+		# Truncar landing a algo legible en tabla
+		url = r.landing_url or ""
+		corta = url.split("://", 1)[-1]
+		if corta.startswith("www."):
+			corta = corta[4:]
+		r["corta"] = corta.rstrip("/")[:60]
+		r["c"] = int(r.c or 0)
+		r["activos"] = int(r.activos or 0)
+	return rows
+
+
+# ============ M-B: Insights accionables ============
+
+def _hashtags_top(dias, limite=15):
+	"""Top hashtags mas usados + engagement medio de los posts que los usan.
+
+	Los hashtags vienen concatenados en la columna: '#a #b #c'. Los parseamos
+	en Python (SQL no puede split-and-explode simple)."""
+	desde = date.today() - timedelta(days=dias)
+	rows = frappe.db.sql("""
+		SELECT hashtags, engagement_pct
+		FROM `tabPublicacion Competencia`
+		WHERE fecha_publicacion >= %s
+		  AND hashtags IS NOT NULL AND hashtags != ''
+	""", (desde,), as_dict=True)
+	from collections import defaultdict
+	usos = defaultdict(int)
+	eng_sum = defaultdict(float)
+	for r in rows:
+		tags = [t.strip().lower() for t in str(r.hashtags).split()
+		        if t.startswith("#") and len(t) > 1]
+		# dedupe dentro de la misma publicacion (por si venia "#peru #peru")
+		for tag in set(tags):
+			usos[tag] += 1
+			eng_sum[tag] += float(r.engagement_pct or 0)
+	items = []
+	for tag, n in usos.items():
+		items.append({
+			"tag": tag,
+			"n": n,
+			"eng_avg": round(eng_sum[tag] / n, 2) if n else 0,
+		})
+	items.sort(key=lambda x: (-x["n"], -x["eng_avg"]))
+	items = items[:limite]
+	maximo = items[0]["n"] if items else 1
+	for i in items:
+		i["pct"] = round(i["n"] / maximo * 100)
+	return items
+
+
+def _duracion_video_buckets(dias):
+	"""Duracion optima de video: buckets 0-15s / 15-30s / 30-60s / 60+s con
+	engagement medio de cada bucket. Solo considera pubs con duracion > 0."""
+	desde = date.today() - timedelta(days=dias)
+	rows = frappe.db.sql("""
+		SELECT
+			CASE
+				WHEN duracion_segundos <= 15 THEN '0-15s'
+				WHEN duracion_segundos <= 30 THEN '15-30s'
+				WHEN duracion_segundos <= 60 THEN '30-60s'
+				ELSE '60+s'
+			END AS bucket,
+			COUNT(*) AS c,
+			COALESCE(AVG(engagement_pct), 0) AS eng_avg,
+			COALESCE(AVG(vistas_actual), 0) AS vistas_avg,
+			SUM(CASE WHEN tier_orden BETWEEN 1 AND 5 THEN 1 ELSE 0 END) AS virales
+		FROM `tabPublicacion Competencia`
+		WHERE fecha_publicacion >= %s AND duracion_segundos > 0
+		GROUP BY bucket
+	""", (desde,), as_dict=True)
+	orden = ['0-15s', '15-30s', '30-60s', '60+s']
+	buckets = {r.bucket: r for r in rows}
+	out = []
+	# Bucket ganador = mayor engagement medio
+	max_eng = max((float(r.eng_avg or 0) for r in rows), default=0)
+	for b in orden:
+		r = buckets.get(b)
+		if not r:
+			out.append({"bucket": b, "c": 0, "eng_avg": 0, "vistas_avg": 0,
+			            "virales": 0, "es_ganador": False})
+			continue
+		out.append({
+			"bucket": b,
+			"c": int(r.c or 0),
+			"eng_avg": round(float(r.eng_avg or 0), 2),
+			"vistas_avg": int(r.vistas_avg or 0),
+			"virales": int(r.virales or 0),
+			"es_ganador": max_eng > 0 and abs(float(r.eng_avg or 0) - max_eng) < 0.001,
+		})
+	return out
+
+
+def _formato_ganador(dias):
+	"""% de virales por tipo_contenido — cual formato pega mas."""
+	desde = date.today() - timedelta(days=dias)
+	rows = frappe.db.sql("""
+		SELECT COALESCE(NULLIF(tipo_contenido, ''), 'Sin tipo') AS tipo,
+		       COUNT(*) AS c,
+		       SUM(CASE WHEN tier_orden BETWEEN 1 AND 5 THEN 1 ELSE 0 END) AS virales,
+		       COALESCE(AVG(engagement_pct), 0) AS eng_avg
+		FROM `tabPublicacion Competencia`
+		WHERE fecha_publicacion >= %s
+		GROUP BY tipo
+	""", (desde,), as_dict=True)
+	out = []
+	max_viral = 0
+	for r in rows:
+		c = int(r.c or 0)
+		v = int(r.virales or 0)
+		pct = round(v / c * 100, 1) if c else 0
+		max_viral = max(max_viral, pct)
+		out.append({
+			"tipo": r.tipo,
+			"c": c,
+			"virales": v,
+			"pct_viral": pct,
+			"eng_avg": round(float(r.eng_avg or 0), 2),
+		})
+	# marcar el ganador
+	for r in out:
+		r["es_ganador"] = max_viral > 0 and abs(r["pct_viral"] - max_viral) < 0.001
+	out.sort(key=lambda x: -x["pct_viral"])
+	return out
+
+
+def _dow_engagement(dias):
+	"""Engagement medio por dia de la semana. Ayuda a decidir cuando postear."""
+	desde = date.today() - timedelta(days=dias)
+	dias_nombre = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+	rows = frappe.db.sql("""
+		SELECT WEEKDAY(fecha_publicacion) AS dow,
+		       COUNT(*) AS c,
+		       COALESCE(AVG(engagement_pct), 0) AS eng_avg,
+		       SUM(CASE WHEN tier_orden BETWEEN 1 AND 5 THEN 1 ELSE 0 END) AS virales
+		FROM `tabPublicacion Competencia`
+		WHERE fecha_publicacion >= %s
+		GROUP BY dow
+	""", (desde,), as_dict=True)
+	por_dow = {int(r.dow): r for r in rows}
+	max_eng = max((float(r.eng_avg or 0) for r in rows), default=0)
+	out = []
+	for i in range(7):
+		r = por_dow.get(i)
+		eng = round(float(r.eng_avg or 0), 2) if r else 0
+		out.append({
+			"nombre": dias_nombre[i],
+			"c": int(r.c or 0) if r else 0,
+			"eng_avg": eng,
+			"virales": int(r.virales or 0) if r else 0,
+			"es_ganador": max_eng > 0 and abs(eng - max_eng) < 0.001,
+			"pct_bar": round(eng / max_eng * 100) if max_eng else 0,
+		})
+	return out
+
+
+def _frecuencia_por_marca(dias):
+	"""Pubs/semana por marca. Ayuda a comparar ritmos."""
+	desde = date.today() - timedelta(days=dias)
+	semanas = max(dias / 7.0, 1)
+	rows = frappe.db.sql("""
+		SELECT competidor, COUNT(*) AS c
+		FROM `tabPublicacion Competencia`
+		WHERE fecha_publicacion >= %s AND competidor IS NOT NULL AND competidor != ''
+		GROUP BY competidor
+		ORDER BY c DESC
+	""", (desde,), as_dict=True)
+	max_c = max((int(r.c or 0) for r in rows), default=1)
+	out = []
+	for r in rows:
+		c = int(r.c or 0)
+		out.append({
+			"competidor": r.competidor,
+			"pubs": c,
+			"pubs_semana": round(c / semanas, 1),
+			"color": _color_competidor(r.competidor),
+			"pct_bar": round(c / max_c * 100) if max_c else 0,
+		})
+	return out
+
+
+# ============ M-C: Panel financiero ============
+
+def _financiero(dias):
+	"""Gasto Apify (posts + ads separados), credito restante, ROI."""
+	hoy = date.today()
+	inicio_mes = hoy.replace(day=1)
+
+	# Gasto ads este mes (desde Radar Ads Gasto — nuevo del D1)
+	try:
+		gasto_ads_mes = float(frappe.db.sql("""
+			SELECT COALESCE(SUM(coste_estimado_usd), 0)
+			FROM `tabRadar Ads Gasto`
+			WHERE fecha_scrape >= %s
+		""", (inicio_mes,))[0][0] or 0)
+	except Exception:
+		gasto_ads_mes = 0
+
+	# Gasto posts este mes (desde Radar Corrida — usa coste_real si existe)
+	try:
+		gasto_posts_mes = float(frappe.db.sql("""
+			SELECT COALESCE(SUM(coste_usd), 0)
+			FROM `tabRadar Corrida`
+			WHERE fecha_inicio >= %s
+		""", (inicio_mes,))[0][0] or 0)
+	except Exception:
+		gasto_posts_mes = 0
+
+	# Insights conseguidos este mes (pubs nuevas + ads nuevos)
+	try:
+		insights_pubs = frappe.db.count("Publicacion Competencia",
+		                                 filters={"creation": [">=", inicio_mes]})
+	except Exception:
+		insights_pubs = 0
+	try:
+		insights_ads = frappe.db.count("Anuncio Competencia",
+		                                filters={"creation": [">=", inicio_mes]})
+	except Exception:
+		insights_ads = 0
+
+	total_gasto = gasto_ads_mes + gasto_posts_mes
+	total_insights = insights_pubs + insights_ads
+
+	# Credito Apify (cacheado por credito_apify() 10min)
+	credito = None
+	try:
+		from marketinghub.api.radar_scraper import credito_apify
+		credito = credito_apify() or None
+	except Exception:
+		credito = None
+
+	return {
+		"gasto_ads_mes": round(gasto_ads_mes, 3),
+		"gasto_posts_mes": round(gasto_posts_mes, 3),
+		"gasto_total_mes": round(total_gasto, 3),
+		"gasto_total_mes_fmt": f"${total_gasto:.2f}",
+		"insights_pubs": int(insights_pubs),
+		"insights_ads": int(insights_ads),
+		"insights_total": int(total_insights),
+		# insights por dolar — mas alto = mas eficiente
+		"roi": round(total_insights / total_gasto, 1) if total_gasto > 0.001 else None,
+		"coste_por_insight": round(total_gasto / total_insights, 4) if total_insights else None,
+		"credito_apify": credito,   # {usado, limite, restante, renueva} o None
+		"credito_pct": round(float(credito["usado"]) / float(credito["limite"]) * 100, 1)
+		               if credito and float(credito.get("limite") or 0) > 0 else 0,
+	}

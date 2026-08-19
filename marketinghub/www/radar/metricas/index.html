@@ -94,6 +94,60 @@
 	.rmx-delta { font-size:11px; font-weight:600; margin-left:6px; }
 	.rmx-delta--up { color:var(--accent); }
 	.rmx-delta--down { color:var(--warn); }
+
+	/* ============ M-A/B/C: nuevas cards ============ */
+	/* Sub-titulo de seccion (encima de un grupo de cards) */
+	.rmx-section-title { font-size:11px; font-weight:700; letter-spacing:.09em; text-transform:uppercase;
+	                     color:var(--muted); margin:8px 4px 8px; padding-top:8px;
+	                     border-top:1px dashed var(--hair); }
+
+	/* Hashtags (M-B) — misma logica visual que rmx-tipo pero mas compacto */
+	.rmx-tag { display:flex; align-items:center; gap:10px; font-size:12px; padding:5px 0;
+	           border-bottom:1px solid var(--hair); }
+	.rmx-tag:last-child { border-bottom:0; }
+	.rmx-tag__name { flex:none; width:150px; font-family:'JetBrains Mono', 'Courier New', monospace;
+	                 font-size:11px; color:var(--accent); font-weight:600;
+	                 overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:help; }
+	.rmx-tag__track { flex:1; height:5px; border-radius:3px; background:var(--raise); overflow:hidden; }
+	.rmx-tag__fill { height:100%; background:var(--accent); border-radius:3px; }
+	.rmx-tag__n { flex:none; min-width:110px; text-align:right; color:var(--muted);
+	              font-variant-numeric:tabular-nums; }
+
+	/* Duracion / formato ganador — 3 columnas horizontales tipo card */
+	.rmx-dur { display:grid; grid-template-columns:100px 1fr 1fr; gap:12px; align-items:center;
+	           padding:9px 12px; border-radius:8px; border:1px solid var(--hair); background:var(--raise);
+	           font-size:12px; }
+	.rmx-dur.is-ganador { border-color:var(--top); background:var(--top-soft); }
+	.rmx-dur__label { font-weight:600; color:var(--text); }
+	.rmx-dur__eng { text-align:center; font-variant-numeric:tabular-nums; color:var(--muted); }
+	.rmx-dur__eng strong { color:var(--text); font-size:14px; }
+	.rmx-dur.is-ganador .rmx-dur__eng strong { color:var(--top); }
+	.rmx-dur__meta { text-align:right; color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; }
+
+	/* Panel financiero (M-C) — total grande + split posts/ads + credito */
+	.rmx-fin-total { display:flex; align-items:baseline; gap:10px;
+	                 padding:10px 14px; background:var(--accent-soft); border-radius:8px; }
+	.rmx-fin-total__label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+	.rmx-fin-total__val { font-size:22px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums; }
+	.rmx-fin-split { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+	.rmx-fin-split__item { padding:8px 12px; border:1px solid var(--hair); border-radius:8px;
+	                       display:flex; flex-direction:column; gap:2px; cursor:help; }
+	.rmx-fin-split__k { font-size:11px; color:var(--muted); }
+	.rmx-fin-split__v { font-size:15px; font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; }
+	.rmx-fin-split__s { font-size:10.5px; color:var(--muted); }
+	.rmx-fin-roi { padding:8px 12px; border:1px dashed var(--hair); border-radius:8px;
+	               font-size:11.5px; color:var(--muted); cursor:help; }
+	.rmx-fin-roi strong { color:var(--text); }
+	.rmx-fin-credito { padding:8px 12px; border:1px solid var(--hair); border-radius:8px;
+	                   background:var(--panel); font-size:12px; cursor:help; }
+	.rmx-fin-credito.is-warn { border-color:var(--warn); background:rgba(251,146,60,.08); }
+	.rmx-fin-credito__top { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+	.rmx-fin-credito__top strong { color:var(--accent); font-variant-numeric:tabular-nums; }
+	.rmx-fin-credito.is-warn .rmx-fin-credito__top strong { color:var(--warn); }
+	.rmx-fin-credito__bar { height:6px; background:var(--raise); border-radius:3px; overflow:hidden; }
+	.rmx-fin-credito__bar > div { height:100%; background:var(--accent); }
+	.rmx-fin-credito.is-warn .rmx-fin-credito__bar > div { background:var(--warn); }
+	.rmx-fin-credito__hint { display:block; font-size:10.5px; color:var(--muted); margin-top:5px; }
 </style>
 </head>
 <body class="rad">
@@ -163,6 +217,24 @@
           <span class="rad-kpi__label">
             <svg class="is-top" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5s4.5 3.6 4.5 8a4.5 4.5 0 0 1-9 0c0-1.6.8-2.9 1.6-3.8 0 1.6.9 2.4 1.6 2.4 1 0 1.3-1 1.3-2.3 0-1.6-.5-3.1-1-4.3z"/></svg>
             <span>Virales / Casi virales</span>
+          </span>
+        </div>
+
+        {# M-A: KPI de ads activos + nuevos 7d #}
+        <div class="rad-kpi" title="Ads corriendo AHORA en Meta Ad Library / total histórico. Los «nuevos 7d» son ads que la competencia lanzó esta semana.">
+          <span class="rad-kpi__value">{{ ads_kpis.activos }}</span>
+          <span class="rad-kpi__label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6.5h17v11h-17zM3.5 10.5h17"/></svg>
+            <span>Ads activos{% if ads_kpis.nuevos_7d %} <span class="rmx-delta rmx-delta--up">+{{ ads_kpis.nuevos_7d }} nuevos</span>{% endif %}</span>
+          </span>
+        </div>
+
+        {# M-C: KPI de gasto total del mes #}
+        <div class="rad-kpi" title="Total gastado en Apify este mes (posts + ads). Detalle en el panel «Gasto Apify» abajo.">
+          <span class="rad-kpi__value">{{ financiero.gasto_total_mes_fmt }}</span>
+          <span class="rad-kpi__label">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v17 M15.5 7.5a3.5 3.5 0 0 0-3.5-2c-2 0-3.5 1-3.5 2.7 0 3.8 7 2.3 7 6.1 0 1.8-1.5 2.9-3.5 2.9a3.8 3.8 0 0 1-3.7-2.3"/></svg>
+            <span>Gasto Apify (mes)</span>
           </span>
         </div>
 
@@ -340,6 +412,261 @@
             </div>
             {% else %}
             <div style="padding:16px;text-align:center;color:var(--muted);font-size:12px">Sin cuentas registradas.</div>
+            {% endfor %}
+          </div>
+        </section>
+      </div>
+
+      {# ============ M-A: Meta Ads (4 cards) ============ #}
+      <div class="rmx-section-title">Meta Ads Library</div>
+      <div class="rmx-grid" style="margin-bottom:16px">
+        <section class="rad-card">
+          <div class="rad-card__head">
+            <span class="rad-card__title">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6.5h17v11h-17zM3.5 10.5h17"/></svg>
+              Ads por competidor
+            </span>
+            <span class="rad-card__sub">activos ahora · nuevos 7d · ganadores 30d+</span>
+          </div>
+          <div class="rad-tbl-wrap" style="padding:0 14px 14px">
+            <table class="rmx-tbl">
+              <thead>
+                <tr>
+                  <th>Marca</th>
+                  <th style="text-align:right">Activos</th>
+                  <th style="text-align:right" title="Ads lanzados en los últimos 7 días — indica quién está probando cosas nuevas">Nuevos 7d</th>
+                  <th style="text-align:right" title="Ads activos con 30+ días — los que probablemente funcionan">Ganadores 30d+</th>
+                  <th style="text-align:right" title="El ad más «viejo» de la marca (más días activo)">Max días</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for m in ads_marca %}
+                <tr>
+                  <td><span class="rmx-tbl__badge"><span class="rmx-tbl__dot" style="background:{{ m.color }}"></span>{{ m.competidor }}</span></td>
+                  <td class="rmx-tbl__num"><strong>{{ m.activos }}</strong><small style="color:var(--muted)"> / {{ m.total }}</small></td>
+                  <td class="rmx-tbl__num" style="color:{% if m.nuevos_7d %}var(--accent){% else %}var(--muted){% endif %}">{{ m.nuevos_7d }}</td>
+                  <td class="rmx-tbl__num" style="color:{% if m.ganadores_30d %}var(--top){% else %}var(--muted){% endif %}"><strong>{{ m.ganadores_30d }}</strong></td>
+                  <td class="rmx-tbl__num" style="color:var(--muted)">{{ m.max_dias }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Sin ads scrapeados aún.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="rad-card">
+          <div class="rad-card__head">
+            <span class="rad-card__title">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12H4zM8 10h8M8 14h5"/></svg>
+              Formatos de creatividad
+            </span>
+            <span class="rad-card__sub">todos los ads en la BD</span>
+          </div>
+          <div class="rad-card__body" style="gap:0">
+            {% for f in ads_formatos %}
+            <div class="rmx-tipo">
+              <span class="rmx-tipo__label">{{ f.formato }}</span>
+              <span class="rmx-tipo__track"><span class="rmx-tipo__fill" style="width:{{ f.pct }}%"></span></span>
+              <span class="rmx-tipo__n">{{ f.c }} · {{ f.pct }}% · <strong style="color:var(--text)">{{ f.activos }} activos</strong></span>
+            </div>
+            {% else %}
+            <div style="padding:20px;text-align:center;color:var(--muted);font-size:12px">Sin ads scrapeados.</div>
+            {% endfor %}
+          </div>
+        </section>
+      </div>
+
+      <div class="rmx-grid" style="margin-bottom:16px">
+        <section class="rad-card">
+          <div class="rad-card__head">
+            <span class="rad-card__title">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5h5v5M19 5l-8 8M18 14v5H5V6h5"/></svg>
+              Landing pages más usadas
+            </span>
+            <span class="rad-card__sub">a dónde llevan los ads</span>
+          </div>
+          <div class="rad-tbl-wrap" style="padding:0 14px 14px">
+            <table class="rmx-tbl">
+              <thead>
+                <tr>
+                  <th>URL</th>
+                  <th style="text-align:right">Ads</th>
+                  <th style="text-align:right">Activos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for l in ads_landings %}
+                <tr>
+                  <td style="max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                    <a href="{{ l.landing_url }}" target="_blank" rel="noopener" class="rmx-tbl__link" title="{{ l.landing_url }}">{{ l.corta }} ↗</a>
+                  </td>
+                  <td class="rmx-tbl__num">{{ l.c }}</td>
+                  <td class="rmx-tbl__num" style="color:{% if l.activos %}var(--accent){% else %}var(--muted){% endif %}"><strong>{{ l.activos }}</strong></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">Sin landings.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {# ============ M-C: Panel financiero (compacto) ============ #}
+        <section class="rad-card">
+          <div class="rad-card__head">
+            <span class="rad-card__title">
+              <svg class="is-accent" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v17 M15.5 7.5a3.5 3.5 0 0 0-3.5-2c-2 0-3.5 1-3.5 2.7 0 3.8 7 2.3 7 6.1 0 1.8-1.5 2.9-3.5 2.9a3.8 3.8 0 0 1-3.7-2.3"/></svg>
+              Gasto Apify este mes
+            </span>
+            <span class="rad-card__sub">posts + ads separados</span>
+          </div>
+          <div class="rad-card__body" style="gap:12px">
+            <div class="rmx-fin-total" title="Total gastado en Apify este mes (posts + ads)">
+              <span class="rmx-fin-total__label">Total mes</span>
+              <span class="rmx-fin-total__val">{{ financiero.gasto_total_mes_fmt }}</span>
+            </div>
+            <div class="rmx-fin-split">
+              <div class="rmx-fin-split__item" title="Gasto en scrape de publicaciones orgánicas">
+                <span class="rmx-fin-split__k">📷 Posts</span>
+                <span class="rmx-fin-split__v">${{ '%.3f'|format(financiero.gasto_posts_mes) }}</span>
+                <span class="rmx-fin-split__s">{{ financiero.insights_pubs }} pubs nuevas</span>
+              </div>
+              <div class="rmx-fin-split__item" title="Gasto en scrape de Meta Ad Library">
+                <span class="rmx-fin-split__k">📢 Ads</span>
+                <span class="rmx-fin-split__v">${{ '%.3f'|format(financiero.gasto_ads_mes) }}</span>
+                <span class="rmx-fin-split__s">{{ financiero.insights_ads }} ads nuevos</span>
+              </div>
+            </div>
+            {% if financiero.roi %}
+            <div class="rmx-fin-roi" title="Insights conseguidos por cada dólar gastado. Mayor = más eficiente.">
+              <span>ROI: <strong>{{ financiero.roi }} insights/$</strong> · coste por insight: <strong>${{ '%.4f'|format(financiero.coste_por_insight) }}</strong></span>
+            </div>
+            {% endif %}
+            {% if financiero.credito_apify %}
+            <div class="rmx-fin-credito{% if financiero.credito_pct >= 80 %} is-warn{% endif %}"
+                 title="Crédito del ciclo Apify — usado / límite del plan. Cuando llegue al 100%, el scraper deja de funcionar hasta renovación.">
+              <div class="rmx-fin-credito__top">
+                <span>Crédito Apify (ciclo)</span>
+                <span><strong>${{ financiero.credito_apify.usado }}</strong> / ${{ financiero.credito_apify.limite }}</span>
+              </div>
+              <div class="rmx-fin-credito__bar"><div style="width:{{ financiero.credito_pct }}%"></div></div>
+              {% if financiero.credito_apify.renueva %}<span class="rmx-fin-credito__hint">renueva {{ financiero.credito_apify.renueva[8:10] }}/{{ financiero.credito_apify.renueva[5:7] }}</span>{% endif %}
+            </div>
+            {% endif %}
+          </div>
+        </section>
+      </div>
+
+      {# ============ M-B: Insights accionables ============ #}
+      <div class="rmx-section-title">Insights para replicar</div>
+      <div class="rmx-grid" style="margin-bottom:16px">
+        <section class="rad-card">
+          <div class="rad-card__head">
+            <span class="rad-card__title">
+              <svg class="is-accent" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16 M4 15h16 M10 3 8 21 M16 3l-2 18"/></svg>
+              Top hashtags competencia
+            </span>
+            <span class="rad-card__sub">últimos {{ dias }} días</span>
+          </div>
+          <div class="rad-card__body" style="gap:4px;padding-top:8px">
+            {% for h in hashtags %}
+            <div class="rmx-tag">
+              <span class="rmx-tag__name" title="Copia este hashtag en tus posts para captar la misma audiencia">{{ h.tag }}</span>
+              <span class="rmx-tag__track"><span class="rmx-tag__fill" style="width:{{ h.pct }}%"></span></span>
+              <span class="rmx-tag__n">{{ h.n }}× · <strong style="color:var(--text)">{{ h.eng_avg }}%</strong> eng</span>
+            </div>
+            {% else %}
+            <div style="padding:16px;text-align:center;color:var(--muted);font-size:12px">Sin hashtags detectados.</div>
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="rad-card">
+          <div class="rad-card__head">
+            <span class="rad-card__title">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7h11v10h-11zM15.5 11l4-2.5v7L15.5 13z"/></svg>
+              Duración óptima de video
+            </span>
+            <span class="rad-card__sub">engagement medio por bucket</span>
+          </div>
+          <div class="rad-card__body" style="gap:8px">
+            {% for b in duracion_buckets %}
+            <div class="rmx-dur{% if b.es_ganador %} is-ganador{% endif %}"
+                 title="{{ b.c }} videos en este rango · {{ b.virales }} viral(es) · vistas promedio {{ b.vistas_avg }}">
+              <span class="rmx-dur__label">{{ b.bucket }}{% if b.es_ganador %} 🏆{% endif %}</span>
+              <span class="rmx-dur__eng"><strong>{{ b.eng_avg }}%</strong> eng</span>
+              <span class="rmx-dur__meta">{{ b.c }} pubs · {{ b.virales }} virales</span>
+            </div>
+            {% else %}
+            <div style="padding:16px;text-align:center;color:var(--muted);font-size:12px">Sin videos con duración.</div>
+            {% endfor %}
+          </div>
+        </section>
+      </div>
+
+      <div class="rmx-grid" style="margin-bottom:16px">
+        <section class="rad-card">
+          <div class="rad-card__head">
+            <span class="rad-card__title">
+              <svg class="is-top" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4.5h8v3.5a4 4 0 0 1-8 0zM10 12h4l.5 4h-5zM8.5 19.5h7"/></svg>
+              Formato ganador
+            </span>
+            <span class="rad-card__sub">% virales por tipo</span>
+          </div>
+          <div class="rad-card__body" style="gap:8px">
+            {% for f in formato_ganador %}
+            <div class="rmx-dur{% if f.es_ganador %} is-ganador{% endif %}"
+                 title="{{ f.c }} publicaciones · {{ f.virales }} viral(es) · engagement medio {{ f.eng_avg }}%">
+              <span class="rmx-dur__label">{{ f.tipo }}{% if f.es_ganador %} 🏆{% endif %}</span>
+              <span class="rmx-dur__eng"><strong>{{ f.pct_viral }}%</strong> virales</span>
+              <span class="rmx-dur__meta">{{ f.virales }} / {{ f.c }} · {{ f.eng_avg }}% eng</span>
+            </div>
+            {% else %}
+            <div style="padding:16px;text-align:center;color:var(--muted);font-size:12px">Sin datos.</div>
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="rad-card">
+          <div class="rad-card__head">
+            <span class="rad-card__title">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15v13.5h-15z M8.5 3.5v4 M15.5 3.5v4 M4.5 11h15"/></svg>
+              Mejor día para publicar
+            </span>
+            <span class="rad-card__sub">engagement medio por día · últimos {{ dias }} días</span>
+          </div>
+          <div class="rad-card__body" style="gap:6px">
+            {% for d in dow_engagement %}
+            <div class="rad-day">
+              <span class="rad-day__label{% if d.es_ganador %} rad-day__label--top{% elif not d.c %} rad-day__label--zero{% endif %}">{{ d.nombre }}{% if d.es_ganador %} 🏆{% endif %}</span>
+              <span class="rad-day__track"><span class="rad-day__fill{% if d.es_ganador %} rad-day__fill--top{% endif %}" style="width:{{ d.pct_bar }}%"></span></span>
+              <span class="rad-day__n">{{ d.eng_avg }}% · {{ d.c }}p</span>
+            </div>
+            {% endfor %}
+          </div>
+        </section>
+      </div>
+
+      <div class="rmx-grid" style="margin-bottom:16px">
+        <section class="rad-card">
+          <div class="rad-card__head">
+            <span class="rad-card__title">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg>
+              Frecuencia de posteo
+            </span>
+            <span class="rad-card__sub">publicaciones/semana por marca · últimos {{ dias }} días</span>
+          </div>
+          <div class="rad-card__body" style="gap:6px">
+            {% for f in frecuencia_marca %}
+            <div class="rad-day">
+              <span class="rad-day__label" style="width:120px"><span style="display:inline-block;width:8px;height:8px;background:{{ f.color }};border-radius:2px;margin-right:6px;vertical-align:middle"></span>{{ f.competidor }}</span>
+              <span class="rad-day__track"><span class="rad-day__fill" style="width:{{ f.pct_bar }}%;background:{{ f.color }}"></span></span>
+              <span class="rad-day__n"><strong>{{ f.pubs_semana }}</strong>/sem · {{ f.pubs }} pubs</span>
+            </div>
+            {% else %}
+            <div style="padding:16px;text-align:center;color:var(--muted);font-size:12px">Sin publicaciones.</div>
             {% endfor %}
           </div>
         </section>
