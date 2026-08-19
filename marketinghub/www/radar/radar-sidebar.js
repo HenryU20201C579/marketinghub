@@ -93,8 +93,11 @@
 
   function init() {
     if (document.getElementById('radx-side')) return;
-    // dentro de /panel la pagina va en un iframe y el layout lo pone el panel
-    if (window.self !== window.top) return;
+    // El navbar se inyecta TAMBIEN dentro del iframe de /panel (antes se ocultaba
+    // con window.self !== window.top). El sidebar externo del /panel solo tiene
+    // 1 item «Radar» — la navegacion entre secciones vive en este navbar
+    // horizontal, patron Shalom Pro. Los clicks en las tabs cambian el src del
+    // iframe y el navbar se repinta con el tab activo correspondiente.
     // paginas de error/acceso denegado no llevan navbar
     if (document.body.dataset.radxSide === 'off') return;
 
