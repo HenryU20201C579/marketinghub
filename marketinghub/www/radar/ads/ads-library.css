@@ -238,6 +238,19 @@ a{color:var(--accent);text-decoration:none} a:hover{color:var(--accent-2);text-d
 }
 .tnum.is-nunca{color:var(--faint) !important;font-style:italic}
 
+/* Barra de progreso del scrape (C2). Se muestra debajo del toolbar mientras
+   el scrape corre en background. */
+.ads-progreso{margin:10px 0 12px;padding:10px 12px;border:1px solid var(--accent);border-radius:8px;background:var(--accent-soft)}
+.ads-progreso.is-error{border-color:var(--top);background:var(--top-soft)}
+.ads-progreso__top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px;
+                   font-size:12px;font-weight:600;color:var(--text)}
+.ads-progreso__paso{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.ads-progreso__pct{color:var(--accent);font-variant-numeric:tabular-nums;flex:none}
+.ads-progreso.is-error .ads-progreso__pct{color:var(--top)}
+.ads-progreso__track{height:6px;border-radius:3px;background:var(--panel);overflow:hidden}
+.ads-progreso__bar{height:100%;background:var(--accent);border-radius:3px;transition:width .35s ease}
+.ads-progreso.is-error .ads-progreso__bar{background:var(--top)}
+
 /* Botón "Agregar marca" — misma altura que "Scrapear todas" pero secundario */
 .ajustes-ads__toolbar .btn:not(.primary){
   height:32px;padding:0 14px;display:inline-flex;align-items:center;gap:6px;

@@ -33,7 +33,11 @@ def get_context(context):
 	filas = [_fila(a) for a in listar()]
 	context.filas_json = frappe.as_json(filas).replace("</", "<\\/")
 	context.total = len(filas)
-	context.competidores = [c for c in obtener_competidores() if any(f["marca"] == c for f in filas)]
+	# El dropdown de filtro por marca debe listar TODAS las marcas activas — no
+	# solo las que ya tienen ads. Antes se filtraba a las que aparecian en
+	# `filas`: cuando los filtros de fecha/estado dejaban la tabla vacia, el
+	# select quedaba sin opciones y no habia como filtrar por otra marca.
+	context.competidores = obtener_competidores()
 	context.formatos = sorted({f["formato"] for f in filas if f["formato"]})
 	context.etiquetas = sorted({f["etiqueta"] for f in filas if f["etiqueta"]})
 	try:

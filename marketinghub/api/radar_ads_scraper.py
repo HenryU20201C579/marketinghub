@@ -205,6 +205,42 @@ COSTE_POR_AD_USD = 0.007
 # Default global de ads por marca cuando limite_ads = 0.
 DEFAULT_ADS_POR_MARCA = 50
 
+# Clave de cache para el progreso del scrape de ads (C2). El JS pollea cada 1.5s
+# leyendo esta clave; el scraper la va actualizando por cada marca terminada.
+CACHE_PROGRESO = "radar_ads_progreso"
+
+
+# =============== PROGRESO (C2) ===============
+
+def _set_progreso(pct, paso, estado="corriendo", **extra):
+	"""Guarda el estado actual del scrape en cache. `pct` es 0-100."""
+	import time
+	data = {
+		"estado": estado,
+		"pct": max(0, min(100, int(pct))),
+		"paso": paso or "",
+		"ts": time.time(),
+	}
+	data.update(extra)
+	frappe.cache().set_value(CACHE_PROGRESO, json.dumps(data), expires_in_sec=1800)
+
+
+@frappe.whitelist()
+def progreso_scrape_ads():
+	"""Estado en vivo del scrape de ads. Devuelve dict con pct/paso/estado.
+
+	Estados posibles: 'idle' (no hay scrape), 'corriendo', 'ok', 'error'.
+	El JS pollea esto cada 1.5s mientras haya un scrape corriendo."""
+	if not _has_role(ANALISTA_ROLES):
+		frappe.throw("Acceso denegado", frappe.PermissionError)
+	raw = frappe.cache().get_value(CACHE_PROGRESO)
+	if not raw:
+		return {"estado": "idle", "pct": 0, "paso": ""}
+	try:
+		return json.loads(raw)
+	except Exception:
+		return {"estado": "idle", "pct": 0, "paso": ""}
+
 
 def _cfg_de_marca(comp):
 	"""Extrae {query, pais, limite, pausada} para una marca competidor.
@@ -269,29 +305,46 @@ def estimar_scrape_ads(competidor=None):
 
 # =============== ORQUESTADOR ===============
 
-def correr_scrape_ads(count_per_marca=None):
-	"""Se invoca desde scheduled job o manualmente. In-process.
+def correr_scrape_ads(count_per_marca=None, solo_competidor=None):
+	"""Se invoca desde scheduled job o desde el enqueue del boton manual.
 
 	`count_per_marca` es un override global opcional (para pruebas). En operación
-	normal cada marca usa su propio limite_ads del DocType Competidor."""
+	normal cada marca usa su propio limite_ads del DocType Competidor.
+	`solo_competidor` limita la corrida a esa marca (para el ▶ por fila).
+
+	Actualiza CACHE_PROGRESO con pct/paso a cada paso para que el JS pueda
+	pintar la barra de avance (C2)."""
 	from frappe.utils.password import get_decrypted_password
 
 	inicio = time.time()
 	stats = {"insert": 0, "update": 0, "pausados": 0, "skip": 0, "error": 0}
 	log_lines = []
 
+	_set_progreso(2, "Buscando token de Apify…")
+
 	token = get_decrypted_password("Radar Settings", "Radar Settings", "apify_token")
 	if not token:
+		_set_progreso(0, "apify_token no configurado", estado="error")
 		return {"ok": False, "error": "apify_token no configurado"}
 
-	competidores = _marcas_para_scrape()
+	competidores = _marcas_para_scrape(solo_competidor=solo_competidor)
 	if not competidores:
-		return {"ok": True, "mensaje": "sin competidores activos"}
+		msg = "sin competidores para scrapear" if not solo_competidor else f"«{solo_competidor}» no encontrada o pausada"
+		_set_progreso(100, msg, estado="ok", stats=stats)
+		return {"ok": True, "mensaje": msg}
 
-	for comp in competidores:
+	total = len(competidores)
+	_set_progreso(5, f"Encolando {total} marca(s)…")
+
+	for idx, comp in enumerate(competidores, start=1):
 		cfg = _cfg_de_marca(comp)
 		# override manual (ej: probar con count=5) ignora el limite_ads de la marca
 		limite = int(count_per_marca) if count_per_marca else cfg["limite"]
+		# pct: el trabajo pesado esta entre 5% (encolando) y 95% (terminando). Se
+		# reparte por marca — la barra avanza al TERMINAR cada una para que el
+		# usuario vea que el trabajo esta progresando.
+		pct_inicio = int(5 + (idx - 1) / total * 90)
+		_set_progreso(pct_inicio, f"Scrapeando {cfg['nombre']} ({idx}/{total}) · {cfg['pais']}…")
 		try:
 			items = apify_actor.scrape_facebook_ads(
 				token, query=cfg["query"], country=cfg["pais"], count=limite,
@@ -304,13 +357,22 @@ def correr_scrape_ads(count_per_marca=None):
 					_upsert_ad(payload, stats)
 			_marcar_pausados(comp["name"], ids_vistos, stats)
 			log_lines.append(f"{cfg['nombre']} · {cfg['query']!r} @ {cfg['pais']} · {len(items)} ads")
+			pct_fin = int(5 + idx / total * 90)
+			_set_progreso(pct_fin, f"{cfg['nombre']} ✓ {len(items)} ads · siguiente…")
 		except Exception as e:
 			stats["error"] += 1
 			log_lines.append(f"{cfg['nombre']} · ERROR: {e}")
 			frappe.log_error(traceback.format_exc(), f"Radar Ads Scraper · {cfg['nombre']}")
+			_set_progreso(int(5 + idx / total * 90), f"{cfg['nombre']} × error · siguiente…")
 
 	duracion = round(time.time() - inicio, 1)
 	frappe.db.commit()
+	estado_final = "ok" if stats["error"] == 0 else "error"
+	total_ads = stats["insert"] + stats["update"]
+	_set_progreso(100,
+		f"Terminado · {stats['insert']} nuevos, {stats['update']} actualizados, {stats['pausados']} pausados",
+		estado=estado_final, stats=stats, duracion_s=duracion, log=log_lines,
+	)
 	return {
 		"ok": stats["error"] == 0,
 		"stats": stats,
@@ -319,29 +381,55 @@ def correr_scrape_ads(count_per_marca=None):
 	}
 
 
+def _hay_scrape_en_curso():
+	"""True si el ultimo estado en cache es 'corriendo' y es reciente (<15min).
+
+	El scraper se ejecuta con enqueue en un worker distinto; el cache es la
+	unica forma de saber si sigue vivo. Si el worker murio a media (15min sin
+	actualizar) lo damos por muerto y dejamos relanzar."""
+	import time
+	raw = frappe.cache().get_value(CACHE_PROGRESO)
+	if not raw:
+		return False
+	try:
+		p = json.loads(raw)
+	except Exception:
+		return False
+	if p.get("estado") != "corriendo":
+		return False
+	return (time.time() - float(p.get("ts") or 0)) < 900
+
+
 @frappe.whitelist()
 def ejecutar_scrape_ads_ahora():
-	"""Botón «Scrapear todas»: corre todas las marcas activas no pausadas."""
+	"""Boton «Scrapear todas»: encola el scrape en background y devuelve.
+
+	El JS pollea `progreso_scrape_ads` para pintar la barra de avance. Antes
+	este endpoint era sincrono y bloqueaba varios minutos con la UI congelada."""
 	if not _has_role(ANALISTA_ROLES):
 		frappe.throw("Solo un analista puede correr el scraper.", frappe.PermissionError)
-	return correr_scrape_ads()
+	if _hay_scrape_en_curso():
+		frappe.throw("Ya hay un scrape de ads en curso. Espera a que termine.")
+	# resetear progreso a 1% para que el JS sepa de inmediato que empezo
+	_set_progreso(1, "Encolando…")
+	frappe.enqueue(
+		"marketinghub.api.radar_ads_scraper.correr_scrape_ads",
+		queue="long", timeout=900, job_name="radar_ads_scrape",
+	)
+	return {"ok": True, "encolado": True}
 
 
 @frappe.whitelist()
 def ejecutar_scrape_ads_competidor(competidor=None, count=None):
-	"""Actualiza solo un competidor (botón ▶ por fila).
+	"""▶ por fila: encola scrape de solo esa marca en background.
 
-	`count` opcional: si viene, sobreescribe el limite_ads de la marca (uso
-	puntual, por ejemplo probar con 10). Sin él usa el default de la marca."""
+	`count` opcional sobreescribe el limite_ads (uso puntual, ej: 10)."""
 	if not _has_role(ANALISTA_ROLES):
 		frappe.throw("Solo un analista.", frappe.PermissionError)
 	if not competidor:
 		frappe.throw("competidor es obligatorio")
-	from frappe.utils.password import get_decrypted_password
-	token = get_decrypted_password("Radar Settings", "Radar Settings", "apify_token")
-	if not token:
-		frappe.throw("apify_token no configurado")
-	# leemos la marca completa para usar sus ajustes (query, pais, limite)
+	if _hay_scrape_en_curso():
+		frappe.throw("Ya hay un scrape de ads en curso. Espera a que termine.")
 	campos = ["name", "nombre_comercial", "query_ads_library", "pais_ads",
 	          "limite_ads", "pausar_ads"]
 	comp = frappe.db.get_value("Competidor", competidor, campos, as_dict=True)
@@ -350,16 +438,12 @@ def ejecutar_scrape_ads_competidor(competidor=None, count=None):
 	cfg = _cfg_de_marca(comp)
 	if cfg["pausada"]:
 		frappe.throw(f"«{cfg['nombre']}» tiene el scrapeo de ads pausado.")
-	limite = int(count) if count else cfg["limite"]
-	stats = {"insert": 0, "update": 0, "pausados": 0, "skip": 0, "error": 0}
-	items = apify_actor.scrape_facebook_ads(token, query=cfg["query"], country=cfg["pais"], count=limite)
-	ids_vistos = set()
-	for item in items:
-		payload = _map_fb_ad(item, competidor)
-		if payload["ad_archive_id"]:
-			ids_vistos.add(payload["ad_archive_id"])
-			_upsert_ad(payload, stats)
-	_marcar_pausados(competidor, ids_vistos, stats)
-	frappe.db.commit()
-	return {"ok": True, "stats": stats, "items": len(items),
-	        "query": cfg["query"], "pais": cfg["pais"], "limite": limite}
+	_set_progreso(1, f"Encolando {cfg['nombre']}…")
+	frappe.enqueue(
+		"marketinghub.api.radar_ads_scraper.correr_scrape_ads",
+		queue="long", timeout=900, job_name=f"radar_ads_scrape_{competidor}",
+		count_per_marca=int(count) if count else None,
+		solo_competidor=competidor,
+	)
+	return {"ok": True, "encolado": True, "marca": competidor,
+	        "query": cfg["query"], "pais": cfg["pais"], "limite": int(count) if count else cfg["limite"]}

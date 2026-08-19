@@ -124,6 +124,17 @@
             La query vacía usa el nombre comercial · País ISO 2 letras (PE, MX, US…) · Límite 0 = default global (50)
           </span>
         </div>
+        {# Barra de progreso del scrape (C2). Oculta por defecto; se muestra
+           cuando el JS detecta estado=corriendo via progreso_scrape_ads. #}
+        <div class="ads-progreso" id="ads-progreso" hidden>
+          <div class="ads-progreso__top">
+            <span class="ads-progreso__paso" id="ads-progreso-paso">Encolando…</span>
+            <span class="ads-progreso__pct" id="ads-progreso-pct">0%</span>
+          </div>
+          <div class="ads-progreso__track">
+            <div class="ads-progreso__bar" id="ads-progreso-bar" style="width:0%"></div>
+          </div>
+        </div>
         <div class="mrca-head">
           <div title="Nombre comercial del competidor (Competidor DocType). Editable en /radar/competidores.">Marca</div>
           <div title="Palabra o frase con la que Meta Ad Library busca los ads de esta marca. Vacío usa el nombre comercial. Cambialo si Meta indexa la marca con otro nombre (ej: «Apolusso Perú», «Ebrand Store»).">
@@ -202,7 +213,9 @@
         <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M9 5a3.4 3.4 0 1 0 0 6.8A3.4 3.4 0 0 0 9 5zM3 20c1.2-3.2 3.6-4.5 6-4.5s4.8 1.3 6 4.5M16.5 6.2a3 3 0 0 1 0 5.6M21 19.5c-.8-2.2-2-3.2-3.5-3.7"/></svg>
         <select id="f-marca" data-default="todas" title="Muestra solo ads de la marca elegida">
           <option value="todas">Todos los competidores</option>
-          {% for c in competidores %}<option value="{{ c|e }}">{{ c|e }}</option>
+          {# obtener_competidores() devuelve dicts con name y nombre_comercial:
+             el value es el 'name' (que coincide con d.marca en el JS) #}
+          {% for c in competidores %}<option value="{{ c.name|e }}">{{ (c.nombre_comercial or c.name)|e }}</option>
           {% endfor %}
         </select>
         <svg class="ico caret" viewBox="0 0 24 24" width="12" height="12"><path d="M7 10l5 5 5-5"/></svg>
@@ -566,9 +579,76 @@
     URL.revokeObjectURL(a.href);
     toast('Descargadas ' + rows.length + ' ads en CSV.');
   });
-  /* ============ BOTÓN GLOBAL «Actualizar» — antes silencioso, ahora con
-     estimado + confirmación (A5). El botón del topbar y el «run-all-ads» de
-     la card comparten flujo. ============ */
+  /* ============ BARRA DE PROGRESO (C2) ============
+     El scrape ahora corre en background (frappe.enqueue). Polleamos el estado
+     cada 1.5s y pintamos una barra con % + marca actual. */
+  var progBox = document.getElementById('ads-progreso');
+  var progBar = document.getElementById('ads-progreso-bar');
+  var progPct = document.getElementById('ads-progreso-pct');
+  var progPaso = document.getElementById('ads-progreso-paso');
+  var progTimer = null;
+
+  function pintarProgreso(p){
+    if(!progBox) return;
+    progBox.hidden = false;
+    progBox.classList.toggle('is-error', p.estado === 'error');
+    progBar.style.width = (p.pct || 0) + '%';
+    progPct.textContent = (p.pct || 0) + '%';
+    progPaso.textContent = p.paso || '';
+  }
+
+  function bloquearBotones(si){
+    document.querySelectorAll('[data-run], #run-all-ads, #upd').forEach(function(b){
+      // no reactivar los ▶ de filas pausadas
+      if(!si && b.closest && b.closest('.mrca') && b.closest('.mrca').classList.contains('is-pausada')){
+        b.disabled = true; return;
+      }
+      b.disabled = si;
+    });
+  }
+
+  function terminarProgreso(p){
+    clearInterval(progTimer); progTimer = null;
+    bloquearBotones(false);
+    if(p.estado === 'ok'){
+      toast('Scrape terminado. Recargando…');
+      setTimeout(function(){ window.location.reload(); }, 1500);
+    } else if(p.estado === 'error'){
+      toast('Scrape con errores. Revisa el log en Radar Settings.');
+      setTimeout(function(){ progBox.hidden = true; }, 5000);
+    }
+  }
+
+  function sondearProgreso(){
+    llamar('api.radar_ads_scraper.progreso_scrape_ads')
+      .then(function(p){
+        if(!p || p.estado === 'idle'){
+          clearInterval(progTimer); progTimer = null;
+          progBox.hidden = true;
+          return;
+        }
+        pintarProgreso(p);
+        if(p.estado !== 'corriendo') terminarProgreso(p);
+      })
+      .catch(function(){ /* fallo de red suelto no corta el sondeo */ });
+  }
+
+  function seguirProgreso(){
+    if(progTimer) return;
+    progTimer = setInterval(sondearProgreso, 1500);
+    sondearProgreso();
+  }
+
+  /* Al abrir la pagina, si por casualidad hay un scrape corriendo (usuario
+     recargo, o hay otro admin ejecutando), retomar la barra */
+  if(PUEDE_EDITAR){
+    llamar('api.radar_ads_scraper.progreso_scrape_ads').then(function(p){
+      if(p && p.estado === 'corriendo'){ bloquearBotones(true); pintarProgreso(p); seguirProgreso(); }
+    }).catch(function(){});
+  }
+
+  /* ============ BOTÓN GLOBAL «Actualizar» — antes bloqueaba UI. Ahora
+     encola en background y muestra la barra de progreso (C2). ============ */
   function scrapearTodas(desdeBoton){
     var activas = MARCAS_ADS.filter(function(m){ return !m.pausada; });
     if(!activas.length){ toast('No hay marcas activas.'); return; }
@@ -580,16 +660,13 @@
             + 'Marcas: ' + activas.map(function(m){ return m.nombre; }).join(', ') + '\n\n'
             + '¿Correr ahora?';
     if(!window.confirm(msg)) return;
-    if(desdeBoton) desdeBoton.disabled = true;
-    toast('Scrape en curso… ' + activas.length + ' marcas.');
+    bloquearBotones(true);
+    pintarProgreso({ pct: 1, paso: 'Encolando ' + activas.length + ' marcas…', estado: 'corriendo' });
     llamar('api.radar_ads_scraper.ejecutar_scrape_ads_ahora')
-      .then(function(r){
-        var s = r && r.stats || {};
-        toast('Terminado · ' + (s.insert || 0) + ' nuevos, ' + (s.update || 0) + ' actualizados. Recargando…');
-        setTimeout(function(){ window.location.reload(); }, 1500);
-      })
+      .then(function(){ seguirProgreso(); })
       .catch(function(err){
-        if(desdeBoton) desdeBoton.disabled = false;
+        bloquearBotones(false);
+        progBox.hidden = true;
         toast(String(err.message).replace(/<[^>]*>/g, ''));
       });
   }
@@ -669,17 +746,15 @@
                 + 'Trae hasta ' + (m.limite_efectivo || 50) + ' ads · coste ≈ $' + est.toFixed(3) + '\n\n'
                 + '¿Correr ahora?';
         if(!window.confirm(msg)) return;
-        var btn = e.target.closest('[data-run]');
-        btn.disabled = true;
-        toast('Scrape en curso para ' + m.nombre + '…');
+        // Encolar en background y arrancar el polling — misma barra que
+        // «Scrapear todas» pero con paso «Scrapeando <marca> (1/1)».
+        bloquearBotones(true);
+        pintarProgreso({ pct: 1, paso: 'Encolando ' + m.nombre + '…', estado: 'corriendo' });
         llamar('api.radar_ads_scraper.ejecutar_scrape_ads_competidor', { competidor: name })
-          .then(function(r){
-            var s = r && r.stats || {};
-            toast(m.nombre + ' terminado · ' + (s.insert || 0) + ' nuevos, ' + (s.update || 0) + ' actualizados. Recargando…');
-            setTimeout(function(){ window.location.reload(); }, 1500);
-          })
+          .then(function(){ seguirProgreso(); })
           .catch(function(err){
-            btn.disabled = false;
+            bloquearBotones(false);
+            progBox.hidden = true;
             toast(String(err.message).replace(/<[^>]*>/g, ''));
           });
       }
