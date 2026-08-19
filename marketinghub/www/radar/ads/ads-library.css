@@ -211,6 +211,17 @@ a{color:var(--accent);text-decoration:none} a:hover{color:var(--accent-2);text-d
           background:var(--bg);color:var(--text);font-size:12px;font-family:inherit;outline:none}
 .mrca__inp:focus{border-color:var(--accent)}
 .mrca__inp--sm{text-align:center}
+
+/* Celda del limite: input + aviso «Meta trajo N» debajo cuando devolvio
+   menos ads del limite pedido (C3). Ayuda a decidir si bajar el limite. */
+.mrca__limite-cell{display:flex;flex-direction:column;gap:2px;align-items:stretch}
+.mrca__limite-cell .mrca__inp{width:100%}
+.mrca__lim-nota{
+  font-size:9.5px;color:var(--top);background:var(--top-soft);
+  padding:1px 5px;border-radius:4px;text-align:center;
+  font-weight:600;white-space:nowrap;cursor:help;
+  line-height:1.2;
+}
 /* Grupo de acciones ▶ / ⏸. Botones ahora 30x30 (antes 25) para verse claro y
    ser fáciles de tocar en móvil. */
 .mrca__acc{display:flex;justify-content:flex-end;gap:6px}

@@ -281,6 +281,22 @@ def listar_marcas_ads():
 		WHERE competidor IS NOT NULL
 		GROUP BY competidor
 	""", as_dict=True)}
+	# Cuantos ads devolvio Meta en el ULTIMO scrape por marca. Se cuentan los que
+	# comparten el mismo minuto de fecha_ultimo_visto que el MAX (la corrida marca
+	# todos los ads que vio de una vez con la misma timestamp). Sirve para avisar
+	# «pediste 50, Meta trajo 5» → el limite alto era desperdicio (C3).
+	items_ultimo = {r["competidor"]: int(r["c"] or 0) for r in frappe.db.sql("""
+		SELECT a.competidor, COUNT(*) AS c
+		FROM `tabAnuncio Competencia` a
+		JOIN (
+			SELECT competidor, MAX(fecha_ultimo_visto) AS ult
+			FROM `tabAnuncio Competencia`
+			WHERE competidor IS NOT NULL AND fecha_ultimo_visto IS NOT NULL
+			GROUP BY competidor
+		) m ON m.competidor = a.competidor
+		   AND TIMESTAMPDIFF(MINUTE, a.fecha_ultimo_visto, m.ult) <= 5
+		GROUP BY a.competidor
+	""", as_dict=True)}
 	from frappe.utils import get_datetime, now_datetime
 	ahora = now_datetime()
 	filas = []
@@ -301,6 +317,12 @@ def listar_marcas_ads():
 			except Exception:
 				hace = ""
 		nombre = c.get("nombre_comercial") or c["name"]
+		lim_efec = int(c.get("limite_ads") or 0) or DEFAULT_ADS_POR_MARCA
+		items_u = int(items_ultimo.get(c["name"]) or 0)
+		# Aviso «Meta devolvio N (pediste M)» solo si hubo un scrape (items_u > 0)
+		# y devolvio MENOS del limite. Umbral: 80% para dejar margen (52/50 no es
+		# aviso, 5/50 si lo es). Devolvemos ambos numeros para el tooltip.
+		aviso_pocos = items_u > 0 and items_u < int(lim_efec * 0.8)
 		filas.append({
 			"name": c["name"],
 			"nombre": nombre,
@@ -310,11 +332,13 @@ def listar_marcas_ads():
 			"query_efectiva": (c.get("query_ads_library") or "").strip() or nombre,
 			"pais": (c.get("pais_ads") or "PE").upper()[:2],
 			"limite": int(c.get("limite_ads") or 0),
-			"limite_efectivo": int(c.get("limite_ads") or 0) or DEFAULT_ADS_POR_MARCA,
+			"limite_efectivo": lim_efec,
 			"pausada": int(c.get("pausar_ads") or 0),
 			"activos": int(st.get("activos") or 0),
 			"total": int(st.get("total") or 0),
 			"hace": hace or "nunca",
+			"items_ultimo": items_u,
+			"aviso_pocos": aviso_pocos,
 		})
 	return filas
 

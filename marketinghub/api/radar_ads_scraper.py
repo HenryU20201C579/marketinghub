@@ -336,6 +336,10 @@ def correr_scrape_ads(count_per_marca=None, solo_competidor=None):
 	total = len(competidores)
 	_set_progreso(5, f"Encolando {total} marca(s)…")
 
+	# resultados por marca (C3): pidio X ads / llegaron Y / N nuevos / M actualizados
+	# Se muestra en la UI al terminar para saber exactamente que trajo cada marca.
+	resultados = []
+
 	for idx, comp in enumerate(competidores, start=1):
 		cfg = _cfg_de_marca(comp)
 		# override manual (ej: probar con count=5) ignora el limite_ads de la marca
@@ -345,6 +349,9 @@ def correr_scrape_ads(count_per_marca=None, solo_competidor=None):
 		# usuario vea que el trabajo esta progresando.
 		pct_inicio = int(5 + (idx - 1) / total * 90)
 		_set_progreso(pct_inicio, f"Scrapeando {cfg['nombre']} ({idx}/{total}) · {cfg['pais']}…")
+		# snapshot de stats antes de esta marca para calcular el delta
+		antes = {"insert": stats["insert"], "update": stats["update"],
+		         "pausados": stats["pausados"], "error": stats["error"]}
 		try:
 			items = apify_actor.scrape_facebook_ads(
 				token, query=cfg["query"], country=cfg["pais"], count=limite,
@@ -357,27 +364,60 @@ def correr_scrape_ads(count_per_marca=None, solo_competidor=None):
 					_upsert_ad(payload, stats)
 			_marcar_pausados(comp["name"], ids_vistos, stats)
 			log_lines.append(f"{cfg['nombre']} · {cfg['query']!r} @ {cfg['pais']} · {len(items)} ads")
+			# delta despues de procesar la marca
+			resultados.append({
+				"marca": cfg["nombre"],
+				"query": cfg["query"],
+				"pais": cfg["pais"],
+				"pedidos": limite,
+				"llegaron": len(items),
+				"insertados": stats["insert"] - antes["insert"],
+				"actualizados": stats["update"] - antes["update"],
+				"pausados": stats["pausados"] - antes["pausados"],
+				# estado: 'vacio' si Meta no encontro nada, 'parcial' si trajo menos
+				# de lo pedido (probablemente no hay tantos ads en esa marca),
+				# 'ok' si el actor entrego el limite pedido
+				"estado": ("vacio" if len(items) == 0
+				           else "parcial" if len(items) < limite
+				           else "ok"),
+			})
 			pct_fin = int(5 + idx / total * 90)
-			_set_progreso(pct_fin, f"{cfg['nombre']} ✓ {len(items)} ads · siguiente…")
+			nota = f"{len(items)} ads" if items else "sin resultados"
+			_set_progreso(pct_fin, f"{cfg['nombre']} ✓ {nota} · siguiente…",
+			              resultados=resultados)
 		except Exception as e:
 			stats["error"] += 1
 			log_lines.append(f"{cfg['nombre']} · ERROR: {e}")
+			resultados.append({
+				"marca": cfg["nombre"],
+				"query": cfg["query"],
+				"pais": cfg["pais"],
+				"pedidos": limite,
+				"llegaron": 0,
+				"insertados": 0,
+				"actualizados": 0,
+				"pausados": 0,
+				"estado": "error",
+				"error_msg": str(e)[:200],
+			})
 			frappe.log_error(traceback.format_exc(), f"Radar Ads Scraper · {cfg['nombre']}")
-			_set_progreso(int(5 + idx / total * 90), f"{cfg['nombre']} × error · siguiente…")
+			_set_progreso(int(5 + idx / total * 90), f"{cfg['nombre']} × error · siguiente…",
+			              resultados=resultados)
 
 	duracion = round(time.time() - inicio, 1)
 	frappe.db.commit()
 	estado_final = "ok" if stats["error"] == 0 else "error"
-	total_ads = stats["insert"] + stats["update"]
 	_set_progreso(100,
 		f"Terminado · {stats['insert']} nuevos, {stats['update']} actualizados, {stats['pausados']} pausados",
 		estado=estado_final, stats=stats, duracion_s=duracion, log=log_lines,
+		resultados=resultados,
 	)
 	return {
 		"ok": stats["error"] == 0,
 		"stats": stats,
 		"duracion_s": duracion,
 		"log": log_lines,
+		"resultados": resultados,
 	}
 
 

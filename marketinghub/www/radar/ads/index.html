@@ -168,8 +168,18 @@
                    title="Editar la keyword que Meta busca. Deja vacío para usar «{{ m.nombre|e }}». Cambio se guarda al pulsar Tab o Enter.">
             <input class="mrca__inp mrca__inp--sm c" type="text" data-campo="pais" value="{{ m.pais|e }}" maxlength="2"
                    title="País ISO 2 letras. Cambia si la marca tiene campañas en otro pais.">
-            <input class="mrca__inp mrca__inp--sm c tnum" type="text" data-campo="limite" value="{{ m.limite }}"
-                   title="Ads a pedir. 0 = default global (50). Baja para ahorrar crédito, sube si la marca tiene muchos ads (>50).">
+            <div class="c mrca__limite-cell">
+              <input class="mrca__inp mrca__inp--sm tnum" type="text" data-campo="limite" value="{{ m.limite }}"
+                     title="Ads a pedir. 0 = default global (50). Baja para ahorrar crédito, sube si la marca tiene muchos ads (>50).">
+              {% if m.aviso_pocos %}
+              {# C3: Meta devolvio menos ads del limite pedido — el limite alto es
+                  desperdicio o la query no matchea. Se puede bajar el limite. #}
+              <span class="mrca__lim-nota"
+                    title="Meta solo devolvió {{ m.items_ultimo }} ads en la última corrida, pero pediste {{ m.limite_efectivo }}. Puedes bajar el «Límite» a ~{{ m.items_ultimo }} para ahorrar crédito, o revisar la query si crees que la marca tiene más ads.">
+                Meta trajo {{ m.items_ultimo }}
+              </span>
+              {% endif %}
+            </div>
             <div class="c tnum">
               {% if m.total == 0 %}
                 <em class="mrca__empty" title="Aún no se ha scrapeado esta marca. Pulsa ▶ para empezar.">Sin scrapear</em>
