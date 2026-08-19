@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/radar/settings/configuracion.css?v=cfg5">
+<link rel="stylesheet" href="/radar/settings/configuracion.css?v=cfg6">
 <link rel="stylesheet" href="/radar/radar-sidebar.css?v=1">
 </head>
 <body class="cfg">
@@ -45,6 +45,22 @@
     </div>
   </header>
 
+  {# Banner de token invalido: solo se pinta si el usuario tiene token guardado pero
+     Apify no lo reconoce. En ese caso el cron esta mudo y ninguna corrida funciona,
+     asi que es lo primero que ve el admin al entrar. #}
+  {% if token_invalido %}
+  <div class="cfg-banner cfg-banner--error" role="alert">
+    <span class="cfg-banner__ico">!</span>
+    <div class="cfg-banner__txt">
+      <strong>El token de Apify no funciona.</strong>
+      Apify rechazo el ultimo intento con este token (401/403 o red caida).
+      Ninguna corrida programada saldra hasta que lo repongas. Rota el token en
+      <a href="https://console.apify.com/settings/integrations" target="_blank" rel="noopener">console.apify.com</a>
+      y pegalo abajo en «API de Apify».
+    </div>
+  </div>
+  {% endif %}
+
   <!-- ============ UNA SOLA HOJA, DOS COLUMNAS ============ -->
   <div class="cfg-body">
     <div class="cfg-grid">
@@ -59,6 +75,18 @@
             <span class="cfg-card__meta">{{ marcas|length }} marcas activas</span>
           </div>
           <p class="cfg-card__note">Cada marca se scrapea con el ▶ de su fila. <strong>0</strong> = usar el default general (IG {{ ig }} · TikTok {{ tt }}), que se ajusta más abajo. Las marcas en pausa no se scrapean ni cuentan para el estimado.</p>
+          {% if can_edit and marcas %}
+          {# Boton global: dispara ejecutar_scrape_ahora() sin marca; el JS pide
+             confirmacion con el estimado total antes de gastar. Usa la misma
+             barra de progreso que el ▶ por marca. #}
+          <div class="cfg-runall">
+            <button class="cfg-btn" type="button" id="run-all" title="Scrapear en cadena todas las marcas activas no pausadas">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v14l12-7z"/></svg>
+              Scrapear todas las marcas
+            </button>
+            <span class="cfg-runall__meta">Coste total estimado: <strong>${{ coste_total }}</strong> · respeta pausas y tope del ciclo.</span>
+          </div>
+          {% endif %}
           {% if can_edit %}
           <!-- plegado: es una corrida de relleno puntual y si no, empuja la lista
                de marcas fuera de la pantalla -->
@@ -75,6 +103,7 @@
           {% endif %}
           <div class="cfg-marca-head">
             <div>Marca</div>
+            <div class="cfg-marca-head__roi" title="Posts nuevos por USD gastado, últimos 30 días">ROI 30d</div>
             <div class="cfg-tier-head__end">Posts{% if techo %} <span class="cfg-marca-head__max">máx {{ techo }}</span>{% endif %}</div>
             <div></div>
           </div>
@@ -90,6 +119,10 @@
                   {%- if m.ultima %} <span class="cfg-marca__ultima{% if m.reciente %} is-reciente{% endif %}">{{ m.ultima }}</span>
                   {%- else %} <span class="cfg-marca__ultima is-nunca">nunca</span>{% endif %}</span>
               </div>
+              <span class="cfg-roi cfg-roi--{{ m.roi_cls }}"
+                    title="{% if m.roi_cls == 'n/a' %}Sin corridas en los últimos 30 días{% else %}{{ m.roi_nuevos }} posts nuevos ÷ ${{ m.roi_gastado }} gastados{% endif %}">
+                {{ m.roi_txt }}<small>/USD</small>
+              </span>
               <input class="cfg-input cfg-input--num" type="text" value="{{ m.limite }}" data-campo="limite"{% if not can_edit %} disabled{% endif %}>
               {% if can_edit %}
               <div class="cfg-marca__acciones">
@@ -190,6 +223,69 @@
 
       <!-- ---- Columna derecha: lo que cuesta ---- -->
       <div class="cfg-col-right">
+
+        <!-- API de Apify: token + credito real del ciclo -->
+        <section class="cfg-card">
+          <div class="cfg-card__head">
+            <span class="cfg-card__title"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3h7v7 M10 21H3v-7 M21 3l-8 8 M3 21l8-8"/></svg>API de Apify</span>
+            <span class="cfg-card__meta">
+              {% if token_invalido %}<span class="cfg-status cfg-status--bad">token rechazado</span>
+              {% elif token_hay %}<span class="cfg-status cfg-status--ok">activo</span>
+              {% else %}<span class="cfg-status cfg-status--warn">sin token</span>{% endif %}
+            </span>
+          </div>
+
+          {# Credito real Apify (usado / limite del ciclo). Si no hay token o Apify
+             no respondio, mostramos aviso: el tope local no es lo mismo que el
+             limite duro de Apify. #}
+          {% if credito_apify %}
+          <div class="cfg-credito{% if credito_apify.agotado %} is-agotado{% endif %}">
+            <div class="cfg-credito__top">
+              <span class="cfg-credito__lbl">
+                {% if credito_apify.agotado %}Crédito Apify agotado
+                {% elif credito_apify.casi_agotado %}Crédito Apify casi agotado
+                {% else %}Crédito real de Apify{% endif %}
+              </span>
+              <span class="cfg-credito__val">${{ credito_apify.restante }} de ${{ credito_apify.limite }}</span>
+            </div>
+            <div class="cfg-progress__track"><div class="cfg-credito__bar" style="width:{{ credito_apify.pct }}%"></div></div>
+            <span class="cfg-credito__hint">
+              Ya usaste <strong>${{ credito_apify.usado }}</strong> del ciclo.
+              {% if credito_apify.renueva %}Renueva el <strong>{{ credito_apify.renueva }}</strong>.{% endif %}
+              Este número lo reporta Apify directo (independiente del tope local de abajo).
+            </span>
+          </div>
+          {% elif token_hay %}
+          <p class="cfg-card__note">No pude leer el crédito ahora mismo. Reintenta con «Probar token» o recarga en unos minutos.</p>
+          {% else %}
+          <p class="cfg-card__note">Sin token no puedo consultar el crédito. Pega uno abajo para empezar.</p>
+          {% endif %}
+
+          {% if can_edit %}
+          <div class="cfg-fields">
+            <div class="cfg-field">
+              <span class="cfg-field__label">Apify API Token</span>
+              <div class="cfg-field__box">
+                <input type="password" id="apify-token" placeholder="{% if token_hay %}Guardado · termina en {{ token_tail }}{% else %}apify_api_...{% endif %}" autocomplete="off">
+              </div>
+              <span class="cfg-field__hint">
+                Se guarda encriptado. Se valida contra Apify antes de guardarse: un token con typo se rechaza.
+                Deja vacío y pulsa «Guardar token» para <em>borrarlo</em> (el scraper se apaga hasta que pongas otro).
+              </span>
+            </div>
+          </div>
+          <div class="cfg-token-actions">
+            <button class="cfg-btn cfg-btn--quiet" type="button" id="btn-probar-token">Probar token</button>
+            <button class="cfg-btn" type="button" id="btn-guardar-token">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
+              Guardar token
+            </button>
+          </div>
+          <p class="cfg-token-result" id="token-result" hidden></p>
+          {% else %}
+          <p class="cfg-card__note">Solo un administrador puede rotar el token.</p>
+          {% endif %}
+        </section>
 
         <!-- Presupuesto de Apify -->
         <section class="cfg-card">
@@ -626,6 +722,106 @@
         if (!confirmar(fila, btn.dataset.run)) return;
         lanzar(btn.dataset.run);
       });
+    });
+
+    // ---- BOTON GLOBAL: scrapear todas las marcas (punto 4) ----
+    // Backend: ejecutar_scrape_ahora() sin marca corre todas. La confirmacion
+    // suma los estimados de las no-pausadas y muestra cuanto se gasta y con
+    // cuanto credito nos quedamos.
+    var btnAll = document.getElementById('run-all');
+    if (btnAll) btnAll.addEventListener('click', function () {
+      var pausas = leerPausas();
+      var activas = MARCAS.filter(function (m) { return !pausas[m.nombre]; });
+      if (!activas.length) { toast('No hay marcas activas para scrapear.'); return; }
+      var total = 0;
+      activas.forEach(function (m) { total += estimadoDe(m.nombre); });
+      var v = ventana();
+      var hayVentana = !!(v.desde || v.hasta);
+      var lineas = [
+        'Scrapear ' + activas.length + ' marca(s): gastarás como mucho ≈$' + total.toFixed(3) + ' de crédito.',
+      ];
+      if (RESTANTE) {
+        lineas.push('Te quedarán ≈$' + Math.max(RESTANTE - total, 0).toFixed(2) + ' de $' + TECHO + '.');
+      }
+      lineas.push('');
+      if (hayVentana) {
+        lineas.push('Histórico: ' + (v.desde || 'todo') + ' → ' + (v.hasta || 'hoy') + '.');
+      } else if (INCREMENTAL()) {
+        lineas.push('Modo «solo posts nuevos» activo: si no hay novedades, casi no se paga.');
+      } else {
+        lineas.push('Modo completo: re-pedirá posts que ya tienes para refrescar métricas.');
+      }
+      lineas.push('');
+      lineas.push('¿Correr las ' + activas.length + ' marcas ahora?');
+      if (!window.confirm(lineas.join('\n'))) return;
+
+      // guardamos primero si hay cambios pendientes: el scraper lee de la BD, no
+      // de la pantalla, y no queremos que al usuario le sorprenda
+      bloquear(true);
+      pintar({ pct: 1, paso: 'Encolando ' + activas.length + ' marca(s)…', estado: 'corriendo' });
+      var previo = JSON.stringify(leerTodo()) !== INICIAL
+        ? post(API + 'guardar_settings', payloadGuardar()).then(function () { INICIAL = JSON.stringify(leerTodo()); revisar(); })
+        : Promise.resolve();
+      previo
+        .then(function () {
+          return post(API_SCRAPER + 'ejecutar_scrape_ahora',
+                      { desde: v.desde || '', hasta: v.hasta || '' });
+        })
+        .then(function () { seguir(); })
+        .catch(function (e) {
+          bloquear(false);
+          caja.style.display = 'none';
+          toast(e.message);
+        });
+    });
+
+    // ---- GESTION DEL TOKEN APIFY (puntos 1, 2, 3) ----
+    var inpToken = document.getElementById('apify-token');
+    var btnProbar = document.getElementById('btn-probar-token');
+    var btnGuardarToken = document.getElementById('btn-guardar-token');
+    var elResult = document.getElementById('token-result');
+    function pintarResultToken(clase, msg) {
+      if (!elResult) return;
+      elResult.hidden = false;
+      elResult.className = 'cfg-token-result ' + clase;
+      elResult.textContent = msg;
+    }
+    if (btnProbar) btnProbar.addEventListener('click', function () {
+      var t = inpToken ? inpToken.value.trim() : '';
+      btnProbar.disabled = true;
+      pintarResultToken('is-neutral', 'Consultando Apify…');
+      post(API + 'test_token', t ? { token: t } : {})
+        .then(function (r) {
+          if (r && r.ok) {
+            pintarResultToken('is-ok', '✓ Token válido · usuario ' + r.usuario + ' · plan ' + r.plan);
+          } else {
+            pintarResultToken('is-err', '✗ ' + (r && r.mensaje ? r.mensaje : 'No pude validar.'));
+          }
+        })
+        .catch(function (e) { pintarResultToken('is-err', '✗ ' + e.message); })
+        .then(function () { btnProbar.disabled = false; });
+    });
+    if (btnGuardarToken) btnGuardarToken.addEventListener('click', function () {
+      var t = inpToken ? inpToken.value.trim() : '';
+      // caso 'borrar token': confirmar porque apaga el scraper
+      if (!t) {
+        if (!window.confirm('¿Borrar el token guardado? El scraper dejará de correr hasta que pongas otro.')) return;
+      }
+      btnGuardarToken.disabled = true;
+      pintarResultToken('is-neutral', 'Validando contra Apify y guardando…');
+      post(API + 'guardar_token', { token: t })
+        .then(function (r) {
+          if (r && r.borrado) {
+            pintarResultToken('is-ok', '✓ Token borrado. El scraper está apagado.');
+          } else {
+            pintarResultToken('is-ok', '✓ Token guardado · usuario ' + (r && r.usuario) + ' · plan ' + (r && r.plan));
+          }
+          if (inpToken) inpToken.value = '';
+          // recargar para refrescar banner, credito y placeholder del input
+          setTimeout(function () { window.location.reload(); }, 1200);
+        })
+        .catch(function (e) { pintarResultToken('is-err', '✗ ' + e.message); })
+        .then(function () { btnGuardarToken.disabled = false; });
     });
 
     // pausar / reanudar una marca: se guarda con el resto de la configuración

@@ -13,10 +13,13 @@ Lo que se quitó y por qué:
 import json
 
 import frappe
+from frappe.utils.password import get_decrypted_password
 
+from marketinghub.api import apify_actor
 from marketinghub.api.radar_scraper import (
 	IMPORTADA,
 	coste_item,
+	credito_apify,
 	estimar_corrida,
 	resumen_gasto,
 )
@@ -177,6 +180,39 @@ def get_context(context):
 		"duracion": f"{float(s.ultima_corrida_duracion or 0):.0f} s",
 		"mensaje": s.ultima_corrida_mensaje or "Sin registro de la última corrida.",
 	}
+	# ---- Estado del token de Apify (puntos 1, 2, 5) ----
+	# Guardamos solo los últimos 4 chars para que la UI muestre "•••••7ZvXhR4oLfIS"
+	# sin exponer el token entero. Si no hay token, el input queda vacío.
+	token = get_decrypted_password("Radar Settings", "Radar Settings", "apify_token", raise_exception=False) or ""
+	context.token_hay = bool(token)
+	context.token_tail = token[-4:] if len(token) >= 4 else ""
+	# Healthcheck: si hay token, preguntamos a Apify si sigue vivo. `credito_apify`
+	# cachea 10 min y llama a /users/me/limits: si devuelve None es que el token
+	# esta roto o Apify no responde.
+	credito = None
+	if token:
+		try:
+			credito = credito_apify()
+		except Exception:
+			credito = None
+	context.token_invalido = bool(token) and credito is None
+	if credito:
+		usado = float(credito.get("usado") or 0)
+		limite = float(credito.get("limite") or 0)
+		restante = float(credito.get("restante") or 0)
+		pct = round(usado / limite * 100, 1) if limite else 0
+		context.credito_apify = {
+			"usado": f"{usado:.3f}",
+			"limite": f"{limite:.2f}",
+			"restante": f"{restante:.3f}",
+			"pct": pct,
+			"agotado": limite > 0 and restante <= 0,
+			"casi_agotado": pct >= 80 and not (limite > 0 and restante <= 0),
+			"renueva": _fecha_corta(credito.get("renueva")),
+		}
+	else:
+		context.credito_apify = None
+
 	try:
 		context.csrf_token = frappe.local.session.data.csrf_token
 	except Exception:
@@ -222,6 +258,37 @@ def _ultima_por_marca():
 	return {f["marca"]: f["ultima"] for f in filas if f["ultima"]}
 
 
+def _roi_por_marca(dias=30):
+	"""ROI = posts nuevos insertados / USD gastado, últimos N días.
+
+	Sale de `tabRadar Corrida Marca` (una fila por marca por corrida):
+	agrega insertados y coste_usd solo de corridas dentro del rango. Marcas
+	sin gasto en el periodo salen con roi=None (no las divido por cero)."""
+	desde = frappe.utils.add_days(frappe.utils.nowdate(), -int(dias))
+	filas = frappe.db.sql("""
+		SELECT m.marca AS marca,
+		       COALESCE(SUM(m.insertados), 0) AS nuevos,
+		       COALESCE(SUM(m.coste_usd), 0)  AS gastado
+		FROM `tabRadar Corrida Marca` m
+		JOIN `tabRadar Corrida` c ON c.name = m.parent
+		WHERE c.fecha_inicio >= %s AND m.marca IS NOT NULL
+		GROUP BY m.marca
+	""", (desde,), as_dict=True)
+	out = {}
+	for f in filas:
+		nuevos = int(f["nuevos"] or 0)
+		gastado = float(f["gastado"] or 0)
+		out[f["marca"]] = {
+			"nuevos": nuevos,
+			"gastado": gastado,
+			# posts/USD: cuanto mayor mejor. Si gastado=0 (marca sin corridas),
+			# no calculamos: 0/0 no es informativo. Si nuevos=0 pero gastado>0
+			# el ROI es 0 (marca "cara" que no da nada).
+			"roi": round(nuevos / gastado, 2) if gastado > 0 else None,
+		}
+	return out
+
+
 def _marcas_con_cuentas(estimados=None):
 	"""Competidores que tienen al menos una cuenta activa, con su límite propio.
 
@@ -246,6 +313,7 @@ def _marcas_con_cuentas(estimados=None):
 		)
 	}
 	ultimas = _ultima_por_marca()
+	rois = _roi_por_marca(30)
 	estimados = estimados or {}
 	ahora = frappe.utils.now_datetime()
 
@@ -261,6 +329,23 @@ def _marcas_con_cuentas(estimados=None):
 		# aviso si se scrapeó hace poco: repetir el mismo día vuelve a pagar los
 		# mismos posts, que es donde se fue el dinero el 15/08
 		horas = ((ahora - ultima).total_seconds() / 3600) if ultima else None
+		roi = rois.get(nombre) or {}
+		roi_val = roi.get("roi")
+		# etiquetas legibles para la UI: `roi` bruto es number/None; damos texto
+		# corto y una clase (mala=<3, ok=3-8, buena=>8 posts/USD). Los umbrales
+		# son heurísticos: se pueden calibrar cuando haya más historial.
+		if roi_val is None:
+			roi_txt = "—"
+			roi_cls = "n/a"
+		elif roi_val >= 8:
+			roi_txt = f"{roi_val:.1f}"
+			roi_cls = "buena"
+		elif roi_val >= 3:
+			roi_txt = f"{roi_val:.1f}"
+			roi_cls = "ok"
+		else:
+			roi_txt = f"{roi_val:.1f}"
+			roi_cls = "mala"
 		marcas.append({
 			"nombre": nombre,
 			"ini": _iniciales(nombre),
@@ -272,6 +357,10 @@ def _marcas_con_cuentas(estimados=None):
 			"ultima": frappe.utils.format_datetime(ultima, "dd/MM/yy HH:mm") if ultima else "",
 			"reciente": bool(horas is not None and horas < 24),
 			"estimado": f"{estimados.get(nombre, 0):.3f}",
+			"roi_txt": roi_txt,
+			"roi_cls": roi_cls,
+			"roi_nuevos": int(roi.get("nuevos") or 0),
+			"roi_gastado": f"{float(roi.get('gastado') or 0):.2f}",
 		})
 	marcas.sort(key=lambda m: m["nombre"].lower())
 	return marcas
@@ -380,3 +469,81 @@ def _usd(valor, etiqueta):
 	if monto < 0:
 		frappe.throw(f"El {etiqueta} no puede ser negativo.")
 	return round(monto, 4)
+
+
+# ============ Gestión del Apify token (puntos 1, 2, 3) ============
+
+def _probar_token(token):
+	"""Preguntamos a /users/me con el token: si no vuelve 200 el token es basura.
+
+	Devuelve dict con {ok, usuario, plan, mensaje}. Usamos urllib directo y no
+	el helper `apify_actor.credito()` porque queremos poder distinguir 'sin
+	internet' de 'token muerto' (credito devuelve None en ambos)."""
+	import urllib.request
+	import urllib.error
+	if not token:
+		return {"ok": False, "mensaje": "Token vacío."}
+	try:
+		req = urllib.request.Request(
+			"https://api.apify.com/v2/users/me",
+			headers={"Authorization": f"Bearer {token}"},
+		)
+		with urllib.request.urlopen(req, timeout=10) as r:
+			data = json.loads(r.read().decode("utf-8"))["data"]
+			return {
+				"ok": True,
+				"usuario": data.get("username") or data.get("email") or "?",
+				"plan": (data.get("plan") or {}).get("id") or "?",
+				"mensaje": "",
+			}
+	except urllib.error.HTTPError as e:
+		if e.code in (401, 403):
+			return {"ok": False, "mensaje": "Apify rechazó el token (401/403). Verifica que sea válido y esté activo."}
+		return {"ok": False, "mensaje": f"Apify respondió HTTP {e.code}. Reintenta en unos minutos."}
+	except Exception as e:
+		return {"ok": False, "mensaje": f"No pude contactar Apify: {e}. Revisa la conexión."}
+
+
+@frappe.whitelist()
+def guardar_token(token=None):
+	"""Actualiza `Radar Settings.apify_token` tras validarlo contra la API.
+
+	El campo es Password (encriptado en tabPasswords). Si el token es basura
+	no lo guardamos: preferimos rechazar antes que dejar el cron mudo por
+	semanas. Un string vacío borra el token y desactiva el scraper."""
+	if not _has_role(ADMIN_ROLES):
+		frappe.throw("Solo un administrador puede cambiar el token.", frappe.PermissionError)
+	token = (token or "").strip()
+	if not token:
+		# borrar el token: no lo probamos contra Apify, solo lo limpiamos.
+		s = frappe.get_single("Radar Settings")
+		s.apify_token = ""
+		s.save(ignore_permissions=True)
+		# invalidamos el cache de crédito porque cambia el token
+		frappe.cache().delete_value("radar_apify_credito")
+		frappe.db.commit()
+		return {"ok": True, "borrado": True}
+	prueba = _probar_token(token)
+	if not prueba["ok"]:
+		frappe.throw(prueba["mensaje"])
+	s = frappe.get_single("Radar Settings")
+	s.apify_token = token
+	s.save(ignore_permissions=True)
+	frappe.cache().delete_value("radar_apify_credito")
+	frappe.db.commit()
+	return {"ok": True, "usuario": prueba["usuario"], "plan": prueba["plan"]}
+
+
+@frappe.whitelist()
+def test_token(token=None):
+	"""Prueba un token contra Apify SIN guardarlo. Sirve para el botón 'Probar'.
+
+	Si no se pasa token, prueba el que hay guardado en Radar Settings."""
+	if not _has_role(VIEW_ROLES):
+		frappe.throw("Acceso denegado", frappe.PermissionError)
+	token = (token or "").strip()
+	if not token:
+		token = get_decrypted_password(
+			"Radar Settings", "Radar Settings", "apify_token", raise_exception=False
+		) or ""
+	return _probar_token(token)
