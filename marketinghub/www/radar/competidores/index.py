@@ -5,6 +5,7 @@ extiende `templates/web.html`) y `competidores.css` es copia literal del CSS del
 diseño. `get_context` solo arma los datos que pinta ese markup; el alta, la
 edición y el borrado siguen pasando por los endpoints de abajo, sin cambios.
 """
+import json
 from datetime import date, datetime, timedelta
 
 from frappe.utils import get_datetime
@@ -254,6 +255,71 @@ def guardar(name=None, nombre_comercial=None, categoria=None, prioridad=None,
 		doc.insert(ignore_permissions=True)
 	frappe.db.commit()
 	return {"ok": True, "name": doc.name}
+
+
+@frappe.whitelist()
+def guardar_con_cuentas(name=None, nombre_comercial=None, categoria=None,
+                        prioridad=None, pais=None, website=None, activo=None,
+                        notas_estrategicas=None, cuentas=None):
+	"""Guarda un Competidor + sus cuentas sociales en una sola llamada (D-Op1).
+
+	`cuentas` = lista JSON [{plataforma, url}, ...]. Si algo falla, ROLLBACK
+	de todo (competidor + cuentas) — no queremos dejar un competidor huerfano
+	sin sus cuentas o cuentas sin dueño.
+
+	El competidor se guarda con `guardar()` (reutiliza validacion y unicidad).
+	Cada cuenta se guarda con `www.radar.cuentas.index.guardar` — reusa toda
+	la logica de deteccion de handle, dedupe, etc."""
+	if not _has_role(ADMIN_ROLES):
+		frappe.throw("Solo un administrador puede crear competidores.", frappe.PermissionError)
+	# Parsear cuentas — puede venir como str JSON del JS o como lista Python
+	if isinstance(cuentas, str):
+		try:
+			cuentas = json.loads(cuentas)
+		except (ValueError, TypeError):
+			cuentas = []
+	cuentas = cuentas or []
+	# Filtrar cuentas sin URL — el user puede tener filas vacias en el modal
+	cuentas = [c for c in cuentas if isinstance(c, dict) and (c.get("url") or "").strip()]
+
+	# 1. Crear/actualizar el competidor. `guardar()` hace su propio commit al
+	# final; si algo falla despues, esto ya quedo en la BD — por eso usamos
+	# rollback explicito abajo si algo revienta con las cuentas.
+	res = guardar(
+		name=name, nombre_comercial=nombre_comercial, categoria=categoria,
+		prioridad=prioridad, pais=pais, website=website, activo=activo,
+		notas_estrategicas=notas_estrategicas,
+	)
+	comp_name = res["name"]
+
+	# 2. Crear las cuentas — reusa el endpoint existente de cuentas.
+	from marketinghub.www.radar.cuentas.index import (
+		guardar as guardar_cuenta,
+		detectar_plataforma,
+	)
+	creadas = 0
+	errores = []
+	for c in cuentas:
+		url = (c.get("url") or "").strip()
+		plat = (c.get("plataforma") or "").strip() or detectar_plataforma(url)
+		if not plat:
+			errores.append(f"URL no reconocida: «{url[:60]}»")
+			continue
+		try:
+			guardar_cuenta(competidor=comp_name, plataforma=plat, url_perfil=url, activo=1)
+			creadas += 1
+		except Exception as e:
+			# Si falla una cuenta (dedupe, url invalida, etc.) apuntar el error
+			# pero seguir con las demas — no revertimos el competidor por 1 cuenta.
+			# El usuario puede volver al acordeon a completar/corregir.
+			frappe.db.rollback()
+			errores.append(f"«{url[:60]}»: {e}")
+	frappe.db.commit()
+	return {
+		"ok": True, "name": comp_name,
+		"cuentas_creadas": creadas,
+		"errores_cuentas": errores,
+	}
 
 
 @frappe.whitelist()

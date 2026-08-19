@@ -161,7 +161,7 @@
 {% if can_edit %}
 <!-- Diálogos: el diseño no trae modal, se componen con sus propios controles -->
 <div id="overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:60;padding:24px">
-  <div id="dlg-editar" style="display:none;width:430px;max-width:94vw;padding:20px;border-radius:12px;background:var(--panel);border:1px solid var(--line)">
+  <div id="dlg-editar" style="display:none;width:520px;max-width:94vw;padding:20px;border-radius:12px;background:var(--panel);border:1px solid var(--line);max-height:92vh;overflow-y:auto">
     <div style="font-size:16px;font-weight:700;margin-bottom:14px" id="ed-titulo">Nuevo competidor</div>
     <input id="ed-nombre" placeholder="Nombre comercial" style="height:34px;width:100%;padding:0 11px;margin-bottom:9px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;color:var(--text);background:var(--bg)">
     <select id="ed-categoria" style="height:34px;width:100%;padding:0 9px;margin-bottom:9px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;color:var(--text);background:var(--bg)">
@@ -175,6 +175,20 @@
     </select>
     <input id="ed-pais" placeholder="País" style="height:34px;width:100%;padding:0 11px;margin-bottom:9px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;color:var(--text);background:var(--bg)">
     <input id="ed-web" placeholder="https://…" style="height:34px;width:100%;padding:0 11px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;color:var(--text);background:var(--bg)">
+
+    {# D-Op2: bloque dinamico de cuentas sociales — solo aparece al CREAR
+       (no al editar). Cada fila es dropdown plataforma + URL + boton borrar.
+       El «+ Añadir otra red» pre-selecciona la proxima plataforma no usada. #}
+    <div id="ed-cuentas-wrap" style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--hair)">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">
+        Cuentas sociales <span style="text-transform:none;font-weight:500;letter-spacing:0;color:var(--faint)">— opcional, se pueden añadir después</span>
+      </div>
+      <div id="ed-cuentas-list"></div>
+      <button type="button" id="ed-add-cuenta" class="btn" style="height:28px;padding:0 12px;font-size:12px;margin-top:8px" title="Añadir otra red social a este competidor">
+        <svg class="ico" viewBox="0 0 24 24" width="12" height="12" style="margin-right:4px"><path d="M12 4.5v15M4.5 12h15"/></svg>Añadir otra red
+      </button>
+    </div>
+
     <div id="ed-error" style="color:var(--danger);font-size:12px;margin-top:9px;display:none"></div>
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
       <button class="btn" data-cerrar>Cancelar</button>
@@ -432,6 +446,74 @@
     overlay.addEventListener('click', function(ev){ if(ev.target === overlay) cerrar(); });
   }
 
+  /* D-Op2: bloque de cuentas dinamico en el modal — solo aparece al CREAR.
+     Al editar un competidor existente lo escondemos porque las cuentas
+     existentes se gestionan en el acordeon (para no chocar con lo ya guardado). */
+  var PLATAFORMAS = ['Instagram', 'TikTok', 'Facebook', 'YouTube'];
+  var PLACEHOLDER = {
+    Instagram: 'instagram.com/handle',
+    TikTok: 'tiktok.com/@handle',
+    Facebook: 'facebook.com/handle',
+    YouTube: 'youtube.com/@handle',
+  };
+
+  function proximaPlataforma(){
+    // devuelve la primera plataforma que aun no esta en las filas actuales
+    var usadas = Array.prototype.map.call(
+      document.querySelectorAll('#ed-cuentas-list [data-cta-plat]'),
+      function(s){ return s.value; }
+    );
+    for(var i = 0; i < PLATAFORMAS.length; i++){
+      if(usadas.indexOf(PLATAFORMAS[i]) < 0) return PLATAFORMAS[i];
+    }
+    return PLATAFORMAS[0];
+  }
+
+  function pintarFilaCuenta(plataforma, url){
+    var lista = document.getElementById('ed-cuentas-list');
+    var fila = document.createElement('div');
+    fila.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:center';
+    var opciones = PLATAFORMAS.map(function(p){
+      return '<option value="' + p + '"' + (p === plataforma ? ' selected' : '') + '>' + p + '</option>';
+    }).join('');
+    fila.innerHTML =
+      '<select data-cta-plat style="height:30px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px;font-family:inherit">'
+      + opciones + '</select>'
+      + '<input type="text" data-cta-url placeholder="' + PLACEHOLDER[plataforma] + '" value="' + (url || '') + '" '
+      + 'style="flex:1;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text);font-size:12.5px;font-family:inherit;outline:none">'
+      + '<button type="button" data-cta-del title="Quitar esta cuenta" '
+      + 'style="width:30px;height:30px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--muted);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center">'
+      + '<svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l.8 13h9.4l.8-13"/></svg>'
+      + '</button>';
+    // eventos: cambiar plataforma actualiza placeholder; borrar quita fila
+    var sel = fila.querySelector('[data-cta-plat]');
+    var inp = fila.querySelector('[data-cta-url]');
+    sel.addEventListener('change', function(){ inp.placeholder = PLACEHOLDER[sel.value] || ''; });
+    fila.querySelector('[data-cta-del]').addEventListener('click', function(){ fila.remove(); });
+    lista.appendChild(fila);
+    inp.focus();
+  }
+
+  function limpiarCuentasForm(){
+    document.getElementById('ed-cuentas-list').innerHTML = '';
+  }
+
+  function leerCuentasForm(){
+    return Array.prototype.map.call(
+      document.querySelectorAll('#ed-cuentas-list > div'),
+      function(f){
+        return {
+          plataforma: f.querySelector('[data-cta-plat]').value,
+          url: f.querySelector('[data-cta-url]').value.trim(),
+        };
+      }
+    ).filter(function(c){ return c.url; });
+  }
+
+  document.getElementById('ed-add-cuenta').addEventListener('click', function(){
+    pintarFilaCuenta(proximaPlataforma(), '');
+  });
+
   function abrirEditar(id){
     editando = id;
     var d = id ? (fila(id) || {}) : {};
@@ -442,6 +524,16 @@
     document.getElementById('ed-pais').value = (d.pais && d.pais !== '—') ? d.pais : '';
     document.getElementById('ed-web').value = d.website || '';
     document.getElementById('ed-error').style.display = 'none';
+    // Bloque cuentas solo en CREAR (las existentes se editan en el acordeon)
+    limpiarCuentasForm();
+    var wrapCuentas = document.getElementById('ed-cuentas-wrap');
+    if(id){
+      wrapCuentas.style.display = 'none';
+    } else {
+      wrapCuentas.style.display = '';
+      // pre-cargar 1 fila vacia (Instagram) para invitar a rellenar
+      pintarFilaCuenta('Instagram', '');
+    }
     abrir('edit');
   }
   ['nuevo','add'].forEach(function(id){
@@ -545,7 +637,10 @@
   if(overlay){
     document.getElementById('ed-guardar').addEventListener('click', function(){
       var err = document.getElementById('ed-error');
-      llamar('www.radar.competidores.index.guardar', {
+      /* D-Op2: si es creacion, llamamos al endpoint transaccional que crea
+         competidor + cuentas de una. Si es edicion, seguimos usando guardar()
+         plano (las cuentas se editan en el acordeon). */
+      var payload = {
         name: editando || '',
         nombre_comercial: document.getElementById('ed-nombre').value.trim(),
         categoria: document.getElementById('ed-categoria').value,
@@ -553,7 +648,31 @@
         pais: document.getElementById('ed-pais').value.trim(),
         website: document.getElementById('ed-web').value.trim(),
         activo: 1
-      }).then(function(){ window.location.reload(); })
+      };
+      var endpoint, msgOk;
+      if(editando){
+        endpoint = 'www.radar.competidores.index.guardar';
+        msgOk = null;
+      } else {
+        endpoint = 'www.radar.competidores.index.guardar_con_cuentas';
+        payload.cuentas = JSON.stringify(leerCuentasForm());
+        msgOk = function(r){
+          var n = (r && r.cuentas_creadas) || 0;
+          return n ? ('Competidor creado con ' + n + ' cuenta(s).') : 'Competidor creado.';
+        };
+      }
+      llamar(endpoint, payload)
+        .then(function(r){
+          if(msgOk) toast(msgOk(r));
+          // Si hubo errores parciales en cuentas, mostrarlos antes de recargar
+          if(r && r.errores_cuentas && r.errores_cuentas.length){
+            err.innerHTML = 'Se creo el competidor pero algunas cuentas fallaron:<br>· ' + r.errores_cuentas.join('<br>· ');
+            err.style.display = '';
+            setTimeout(function(){ window.location.reload(); }, 3500);
+          } else {
+            window.location.reload();
+          }
+        })
         .catch(function(e){ err.textContent = String(e.message).replace(/<[^>]*>/g, ''); err.style.display = ''; });
     });
     document.getElementById('bo-confirmar').addEventListener('click', function(){
