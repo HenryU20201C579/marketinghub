@@ -180,8 +180,8 @@ a{color:var(--accent);text-decoration:none} a:hover{color:var(--accent-2);text-d
    nombre | query | pais | limite | activos | ultimo | acciones */
 .mrca-head, .mrca{
   display:grid;
-  /* nombre | query | pais | limite | activos | ultimo | gastado | acciones */
-  grid-template-columns:minmax(140px,1.4fr) minmax(160px,2fr) 62px 74px 88px 108px 92px 76px;
+  /* nombre | query | pais | limite | activos | ultimo | gastado | acciones (3 botones) */
+  grid-template-columns:minmax(140px,1.4fr) minmax(160px,2fr) 62px 74px 88px 108px 92px 112px;
   gap:8px;align-items:center;padding:6px 4px;
 }
 /* Celda de gasto D1: dorado suave cuando hay scrapes vacios (dinero quemado) */
@@ -236,6 +236,9 @@ a{color:var(--accent);text-decoration:none} a:hover{color:var(--accent-2);text-d
 .mrca__run:not([disabled]):hover{background:var(--accent);color:var(--onaccent);border-color:var(--accent-2);
                                  transform:translateY(-1px);box-shadow:0 2px 6px rgba(0,128,96,.25)}
 .mrca__run[disabled]{opacity:.35;cursor:not-allowed;background:transparent;color:var(--muted);border-color:var(--line)}
+/* 🔗 Link a Meta Ad Library — azul discreto, hover mas fuerte */
+.mrca__meta{color:var(--faint);text-decoration:none}
+.mrca__meta:hover{color:#1877F2;border-color:#1877F2;background:rgba(24,119,242,.08);text-decoration:none}
 /* ⏸ en reposo: neutro; on (marca pausada): naranja para señalizar el estado */
 .mrca__pausa{color:var(--muted)}
 .mrca__pausa:hover{color:var(--top);border-color:var(--top)}
