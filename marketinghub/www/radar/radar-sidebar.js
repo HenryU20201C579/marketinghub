@@ -1,13 +1,13 @@
-/* Sidebar compartido del modulo Radar.
+/* Navbar horizontal del modulo Radar (N1 — Opcion B).
  *
- * Cada pagina de /radar/* es un documento independiente (unas standalone y
- * otras extendiendo templates/web.html), asi que en vez de duplicar el markup
- * en 10 plantillas se inyecta desde aqui: basta con incluir radar-sidebar.css
- * y este script. Marca el item activo por la URL y pide los contadores al
- * backend. El estado colapsado se recuerda en localStorage.
+ * Antes era un <aside> lateral; ahora es un <nav> sticky arriba con las 6
+ * secciones como tabs (patron Shalom Pro). Cada pagina /radar/* sigue siendo
+ * un documento independiente: al hacer click en una tab, navega a esa URL.
+ *
+ * El script se llama radar-sidebar.js por compatibilidad — todas las plantillas
+ * lo referencian por ese nombre. Solo cambia lo que hace por dentro.
  */
 (function () {
-  var STORAGE_KEY = 'radx-collapsed';
   var ICON = {
     marca: '<path d="M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z M12 11.4a.6.6 0 1 0 0 1.2.6.6 0 0 0 0-1.2z"/>',
     metricas: '<path d="M3 3v18h18 M7 15l4-4 3 3 5-6"/>',
@@ -15,35 +15,20 @@
     calendario: '<path d="M4.5 6.5h15v13.5h-15z M8.5 3.5v4 M15.5 3.5v4 M4.5 11h15"/>',
     ads: '<path d="M4 6.5h16v11H4z M4 10h16 M8 6.5v11"/>',
     competidores: '<path d="M6.5 3.5v17 M6.5 4.5h11l-2.2 3.8 2.2 3.7h-11"/>',
-    cuentas: '<path d="M12 7.8a4.2 4.2 0 1 0 0 8.4 4.2 4.2 0 0 0 0-8.4z M16.2 7.8v5.1a3 3 0 0 0 5.3 1.9 M20 15.9A9 9 0 1 1 18.4 5.6"/>',
-    categorias: '<path d="M4 4.5h7l9 9-6.5 6.5-9-9z M7.6 8.1h.01"/>',
     ajustes: '<path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8z M19.4 14.2a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1v.2a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.8-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H3.4a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 2.7-1.1V3.4a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7h.2a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.4 1.1z"/>',
-    tema: '<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>',
-    ocultar: '<path d="M14 6l-6 6 6 6"/>',
-    mostrar: '<path d="M10 6l6 6-6 6"/>'
+    tema: '<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>'
   };
 
-  var GRUPOS = [
-    {
-      titulo: 'Contenido',
-      items: [
-        { href: '/radar/metricas', icono: 'metricas', label: 'Métricas', destacado: true },
-        { href: '/radar/publicaciones', icono: 'publicaciones', label: 'Publicaciones', count: 'publicaciones' },
-        { href: '/radar/comparativa', icono: 'calendario', label: 'Calendario pubs' },
-        { href: '/radar/ads', icono: 'ads', label: 'Ads Library', count: 'ads' }
-      ]
-    },
-    {
-      titulo: 'Configuración',
-      items: [
-        // B-Op3+F3: Cuentas y Categorias ya no son items aparte — viven dentro
-        // de la pagina de Competidores (cuentas via acordeon, categorias via
-        // modal ⚙️ al lado del filtro). /radar/cuentas y /radar/categorias
-        // redirigen aqui.
-        { href: '/radar/competidores', icono: 'competidores', label: 'Competidores & Cuentas', count: 'competidores' },
-        { href: '/radar/settings', icono: 'ajustes', label: 'Ajustes' }
-      ]
-    }
+  /* Lista plana de tabs — orden = orden visual en el navbar.
+     Los items internos «Cuentas» y «Categorias» ya viven dentro de Competidores
+     (acordeon + modal ⚙️), asi que no son tabs. */
+  var TABS = [
+    { href: '/radar/metricas',       icono: 'metricas',       label: 'Métricas' },
+    { href: '/radar/publicaciones',  icono: 'publicaciones',  label: 'Publicaciones', count: 'publicaciones' },
+    { href: '/radar/comparativa',    icono: 'calendario',     label: 'Calendario' },
+    { href: '/radar/ads',            icono: 'ads',            label: 'Ads Library', count: 'ads' },
+    { href: '/radar/competidores',   icono: 'competidores',   label: 'Competidores', count: 'competidores' },
+    { href: '/radar/settings',       icono: 'ajustes',        label: 'Ajustes' }
   ];
 
   function svg(nombre, tam) {
@@ -51,69 +36,44 @@
       'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + ICON[nombre] + '</svg>';
   }
 
-  // El item activo se decide por ruta + query, para que dos entradas que
-  // apunten al mismo path con distinta ?vista no se marquen ambas.
+  /* Activo si el pathname coincide. Diferencias como ?vista=calendario
+     tambien matchean el mismo href (una tab, misma URL). */
   function esActivo(href) {
     var url = new URL(href, window.location.origin);
-    if (url.pathname !== window.location.pathname) return false;
-    var vistaMenu = url.searchParams.get('vista');
-    var vistaActual = new URLSearchParams(window.location.search).get('vista');
-    return (vistaMenu || '') === (vistaActual || '');
+    return url.pathname === window.location.pathname;
   }
 
   function construir() {
-    var aside = document.createElement('aside');
-    aside.className = 'radx-side';
-    aside.id = 'radx-side';
+    var nav = document.createElement('nav');
+    nav.className = 'radx-topbar';
+    nav.id = 'radx-side';   // ID legacy conservado por si algo lo referencia
 
-    var html = '' +
-      '<div class="radx-top">' +
-        '<a class="radx-brand" href="/radar" title="Radar">' + svg('marca', 17) + '<span>Radar</span></a>' +
-        '<button class="radx-toggle" id="radx-toggle" type="button" title="Ocultar menú" aria-label="Ocultar menú">' +
-          svg('ocultar', 15) +
-        '</button>' +
-      '</div>' +
-      '<div class="radx-body">';
+    var tabs = TABS.map(function (t) {
+      return '<a class="radx-tab' + (esActivo(t.href) ? ' is-active' : '') + '" href="' + t.href + '" title="' + t.label + '">' +
+        svg(t.icono, 14) +
+        '<span class="radx-tab__label">' + t.label + '</span>' +
+        '<span class="radx-tab__count"' + (t.count ? ' data-count="' + t.count + '"' : '') + '></span>' +
+      '</a>';
+    }).join('');
 
-    GRUPOS.forEach(function (grupo) {
-      html += '<div class="radx-group"><div class="radx-group__title">' + grupo.titulo + '</div>';
-      grupo.items.forEach(function (item) {
-        html += '<a class="radx-nav' + (esActivo(item.href) ? ' is-active' : '') + '" href="' + item.href + '" title="' + item.label + '">' +
-          '<span class="radx-nav__label">' + svg(item.icono, 15) + '<span>' + item.label + '</span></span>' +
-          '<span class="radx-nav__count"' + (item.count ? ' data-count="' + item.count + '"' : '') + '></span>' +
-        '</a>';
-      });
-      html += '</div>';
-    });
+    /* Boton de tema — solo si la pagina expone su propio toggle (cada una
+       persiste el tema con clave distinta, delegamos). */
+    var pagTema = document.querySelector('#theme-toggle, #themeBtn');
+    var tema = (pagTema && !pagTema.closest('.radx-topbar'))
+      ? '<button class="radx-themebtn" id="radx-theme" type="button" title="Cambiar tema">' + svg('tema', 14) + '</button>'
+      : '';
 
-    html += '</div>';
-
-    // El boton de tema solo aparece si la pagina trae su propio toggle: cada
-    // una persiste el tema con su propia clave, asi que delegamos en el suyo.
-    var toggleTema = document.querySelector('#theme-toggle, #themeBtn');
-    if (toggleTema && !toggleTema.closest('.radx-side')) {
-      html += '<div class="radx-foot">' +
-        '<button class="radx-themebtn" id="radx-theme" type="button" title="Cambiar tema">' +
-          svg('tema', 15) + '<span>Cambiar tema</span>' +
-        '</button>' +
-      '</div>';
-    }
-
-    aside.innerHTML = html;
-    return aside;
+    nav.innerHTML =
+      '<a class="radx-brand" href="/radar/metricas" title="Radar · ir al dashboard">' +
+        svg('marca', 16) + '<span>Radar</span>' +
+      '</a>' +
+      '<div class="radx-tabs">' + tabs + '</div>' +
+      '<div class="radx-actions">' + tema + '</div>';
+    return nav;
   }
 
-  function aplicarEstado(colapsado) {
-    document.body.classList.toggle('radx-collapsed', colapsado);
-    var btn = document.getElementById('radx-toggle');
-    if (!btn) return;
-    btn.innerHTML = svg(colapsado ? 'mostrar' : 'ocultar', 15);
-    btn.title = colapsado ? 'Mostrar menú' : 'Ocultar menú';
-    btn.setAttribute('aria-label', btn.title);
-  }
-
-  function cargarContadores(aside) {
-    var celdas = aside.querySelectorAll('[data-count]');
+  function cargarContadores(nav) {
+    var celdas = nav.querySelectorAll('[data-count]');
     if (!celdas.length) return;
     fetch('/api/method/marketinghub.www.radar.index.obtener_contadores', {
       credentials: 'same-origin',
@@ -128,40 +88,29 @@
           celda.textContent = valor ? valor : '';
         });
       })
-      .catch(function () { /* sin contadores; el menu sigue usable */ });
+      .catch(function () { /* sin contadores; el navbar sigue usable */ });
   }
 
   function init() {
     if (document.getElementById('radx-side')) return;
-    // dentro de /panel la pagina va en un iframe y el sidebar lo pone el panel
+    // dentro de /panel la pagina va en un iframe y el layout lo pone el panel
     if (window.self !== window.top) return;
-    // Las paginas de error/acceso denegado no llevan menu.
+    // paginas de error/acceso denegado no llevan navbar
     if (document.body.dataset.radxSide === 'off') return;
 
-    var aside = construir();
-    document.body.insertBefore(aside, document.body.firstChild);
-    document.body.classList.add('radx-has-side');
-
-    var guardado = null;
-    try { guardado = localStorage.getItem(STORAGE_KEY); } catch (e) {}
-    var colapsado = guardado === null ? window.innerWidth <= 860 : guardado === '1';
-    aplicarEstado(colapsado);
-
-    document.getElementById('radx-toggle').addEventListener('click', function () {
-      var nuevo = !document.body.classList.contains('radx-collapsed');
-      aplicarEstado(nuevo);
-      try { localStorage.setItem(STORAGE_KEY, nuevo ? '1' : '0'); } catch (e) {}
-    });
+    var nav = construir();
+    document.body.insertBefore(nav, document.body.firstChild);
+    document.body.classList.add('radx-has-topbar');
 
     var btnTema = document.getElementById('radx-theme');
     if (btnTema) {
       btnTema.addEventListener('click', function () {
         var nativo = document.querySelector('#theme-toggle, #themeBtn');
-        if (nativo && !nativo.closest('.radx-side')) nativo.click();
+        if (nativo && !nativo.closest('.radx-topbar')) nativo.click();
       });
     }
 
-    cargarContadores(aside);
+    cargarContadores(nav);
   }
 
   if (document.readyState === 'loading') {

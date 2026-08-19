@@ -1,11 +1,10 @@
-/* Sidebar compartido del modulo Radar.
-   Se inyecta desde radar-sidebar.js en todas las paginas de /radar/*, que son
-   documentos independientes con su propio CSS. Por eso va en posicion fija y
-   con tokens propios (--radx-*): no depende de las variables de cada pagina.
-   Soporta los dos mecanismos de tema del modulo: data-theme en <html>
-   (categorias, cuentas) y en <body> (el resto). */
+/* Topbar horizontal compartida del modulo Radar (N1).
+   Antes era un sidebar fijo a la izquierda; ahora es una barra sticky arriba
+   estilo Shalom Pro. Cada tab lleva a una URL /radar/* distinta.
+   Se inyecta desde radar-sidebar.js en todas las paginas /radar/*.
+   Soporta ambos mecanismos de tema del modulo: data-theme en <html> o <body>. */
 
-.radx-side {
+.radx-topbar {
     --radx-panel: #F7F7F4;
     --radx-bg: #E9EAE6;
     --radx-line: #D2D3CD;
@@ -14,27 +13,33 @@
     --radx-muted: #4E5358;
     --radx-faint: #61666B;
     --radx-accent: #008060;
+    --radx-accent-2: #006B51;
     --radx-accent-soft: rgba(0, 128, 96, .12);
+    --radx-onaccent: #FFFFFF;
 
-    position: fixed;
+    position: sticky;
     top: 0;
-    left: 0;
-    bottom: 0;
     z-index: 900;
-    width: var(--radx-w, 222px);
     display: flex;
-    flex-direction: column;
-    box-sizing: border-box;
+    align-items: center;
+    gap: 14px;
+    padding: 0 18px;
+    height: 48px;
     background: var(--radx-panel);
-    border-right: 1px solid var(--radx-line);
+    border-bottom: 1px solid var(--radx-line);
     color: var(--radx-text);
     font-family: "Public Sans", system-ui, -apple-system, sans-serif;
     font-size: 13px;
-    transition: width .15s ease;
+    box-sizing: border-box;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
 }
+.radx-topbar::-webkit-scrollbar { display: none; }
 
-html[data-theme="dark"] .radx-side,
-body[data-theme="dark"] .radx-side {
+html[data-theme="dark"] .radx-topbar,
+body[data-theme="dark"] .radx-topbar,
+.rad[data-theme="dark"] .radx-topbar {
     --radx-panel: #151616;
     --radx-bg: #0C0D0D;
     --radx-line: #2E3030;
@@ -43,239 +48,140 @@ body[data-theme="dark"] .radx-side {
     --radx-muted: #A8AAAA;
     --radx-faint: #8C8E8E;
     --radx-accent: #00A47C;
+    --radx-accent-2: #00C08B;
     --radx-accent-soft: rgba(0, 164, 124, .16);
+    --radx-onaccent: #08120E;
 }
 
-/* El contenido de cada pagina se desplaza para dejarle sitio.
-   Va con !important porque las paginas que extienden templates/web.html
-   neutralizan los contenedores de Frappe con `html, body { padding:0 !important }`
-   y si no, el contenido quedaria debajo del sidebar. */
-body.radx-has-side {
-    padding-left: var(--radx-w, 222px) !important;
-    transition: padding-left .15s ease;
-}
-
-body.radx-collapsed {
-    --radx-w: 56px;
-}
-
-.radx-side *,
-.radx-side *::before,
-.radx-side *::after {
-    box-sizing: border-box;
-}
-
-.radx-side a {
-    color: inherit;
-    text-decoration: none;
-}
-
-.radx-side a:hover {
-    color: inherit;
-    text-decoration: none;
-}
-
-/* ---------- cabecera ---------- */
-.radx-top {
-    flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 16px 12px 14px 16px;
-    border-bottom: 1px solid var(--radx-hair);
-}
-
+/* Brand pill izquierdo: «🛰 Radar» — clickable, va al dashboard */
 .radx-brand {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 9px;
-    min-width: 0;
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: -.02em;
-}
-
-.radx-brand svg {
-    flex: none;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: var(--radx-accent-soft);
     color: var(--radx-accent);
-}
-
-.radx-toggle {
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+    white-space: nowrap;
     flex: none;
-    width: 28px;
-    height: 28px;
+}
+.radx-brand:hover { background: var(--radx-accent); color: var(--radx-onaccent); }
+
+/* Contenedor de tabs (grande, flex:1) */
+.radx-tabs {
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 0;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+/* Tab individual — patron Shalom: texto + icono, subrayado al activo */
+.radx-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    height: 34px;
+    border-radius: 7px;
+    color: var(--radx-muted);
+    text-decoration: none;
+    font-weight: 500;
+    white-space: nowrap;
+    position: relative;
+    transition: background .12s ease, color .12s ease;
+}
+.radx-tab:hover {
+    background: var(--radx-hair);
+    color: var(--radx-text);
+    text-decoration: none;
+}
+.radx-tab svg { flex: none; opacity: .8; }
+.radx-tab__label { font-size: 13px; }
+.radx-tab__count {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--radx-faint);
+    background: var(--radx-hair);
+    padding: 1px 6px;
+    border-radius: 999px;
+    min-width: 8px;
+    text-align: center;
+}
+.radx-tab__count:empty { display: none; }
+
+/* Tab activa: color acento + underline sutil (patron Shalom) */
+.radx-tab.is-active {
+    color: var(--radx-accent);
+    background: var(--radx-accent-soft);
+    font-weight: 600;
+}
+.radx-tab.is-active svg { opacity: 1; }
+.radx-tab.is-active .radx-tab__count {
+    color: var(--radx-onaccent);
+    background: var(--radx-accent);
+}
+.radx-tab.is-active::after {
+    content: "";
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: -1px;
+    height: 2px;
+    background: var(--radx-accent);
+    border-radius: 2px 2px 0 0;
+}
+
+/* Acciones a la derecha (tema, etc) */
+.radx-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+    margin-left: auto;
+}
+.radx-themebtn {
+    width: 32px;
+    height: 32px;
     border-radius: 7px;
     border: 1px solid var(--radx-line);
-    background: var(--radx-panel);
-    color: var(--radx-muted);
-    cursor: pointer;
-}
-
-.radx-toggle:hover {
-    color: var(--radx-accent);
-    border-color: var(--radx-accent);
-}
-
-/* ---------- navegacion ---------- */
-.radx-body {
-    flex: 1;
-    min-height: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    padding: 14px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-}
-
-.radx-group {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.radx-group__title {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .07em;
-    text-transform: uppercase;
-    color: var(--radx-faint);
-    padding: 4px 10px 6px;
-    white-space: nowrap;
-}
-
-.radx-nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 8px 10px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--radx-muted);
-    cursor: pointer;
-}
-
-.radx-nav:hover {
-    background: var(--radx-bg);
-    color: var(--radx-text);
-}
-
-.radx-nav.is-active {
-    background: var(--radx-accent-soft);
-    color: var(--radx-text);
-    font-weight: 600;
-}
-
-.radx-nav.is-active svg {
-    color: var(--radx-accent);
-}
-
-.radx-nav__label {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-}
-
-.radx-nav__label svg {
-    flex: none;
-}
-
-.radx-nav__label span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.radx-nav__count {
-    font-size: 11px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    color: var(--radx-faint);
-}
-
-.radx-nav.is-active .radx-nav__count {
-    color: var(--radx-accent);
-}
-
-/* ---------- pie ---------- */
-.radx-foot {
-    flex: none;
-    padding: 12px;
-    border-top: 1px solid var(--radx-hair);
-}
-
-.radx-themebtn {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    width: 100%;
-    padding: 8px 10px;
-    border-radius: 8px;
-    font-family: inherit;
-    font-size: 13px;
-    color: var(--radx-muted);
     background: transparent;
-    border: none;
+    color: var(--radx-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    white-space: nowrap;
+    padding: 0;
+    transition: color .12s ease, border-color .12s ease;
+}
+.radx-themebtn:hover { color: var(--radx-accent); border-color: var(--radx-accent); }
+
+/* Body offset — como la topbar es sticky NO hay que empujar el contenido
+   con padding-top; el sticky ya se comporta como parte del flow.
+   Solo bajamos ceros heredados del layout viejo del sidebar. */
+body.radx-has-topbar {
+    padding-left: 0 !important;
 }
 
-.radx-themebtn:hover {
-    background: var(--radx-bg);
-    color: var(--radx-text);
-}
+/* Ocultar sidebars locales de las paginas que tenian su propio <aside.side>
+   (publicaciones, competidores, ads, comparativa). Con el navbar horizontal
+   arriba ya no hacen falta — el main toma todo el ancho. */
+body.radx-has-topbar .side { display: none !important; }
+body.radx-has-topbar .hamb { display: none !important; }
+body.radx-has-topbar .app  { display: block !important; height: auto !important; min-height: 0 !important; }
+body.radx-has-topbar .main { width: 100% !important; flex: 1 1 auto !important; }
+/* El .app original usa height:100vh — ahora que la topbar consume 48px,
+   el content debe caber en el resto. En lugar de calc'ar, dejamos que fluya. */
 
-/* ---------- estado colapsado ---------- */
-body.radx-collapsed .radx-side {
-    align-items: stretch;
-}
-
-body.radx-collapsed .radx-top {
-    justify-content: center;
-    padding: 16px 8px 14px;
-}
-
-body.radx-collapsed .radx-brand,
-body.radx-collapsed .radx-group__title,
-body.radx-collapsed .radx-nav__label span,
-body.radx-collapsed .radx-nav__count,
-body.radx-collapsed .radx-themebtn span {
-    display: none;
-}
-
-body.radx-collapsed .radx-body {
-    padding: 14px 8px;
-}
-
-body.radx-collapsed .radx-nav,
-body.radx-collapsed .radx-themebtn {
-    justify-content: center;
-    padding: 9px 0;
-}
-
-body.radx-collapsed .radx-group {
-    gap: 4px;
-}
-
-body.radx-collapsed .radx-foot {
-    padding: 10px 8px;
-}
-
-/* En pantallas estrechas arranca colapsado (lo fuerza el JS) */
-@media (max-width: 860px) {
-    .radx-side {
-        --radx-w: 56px;
-    }
-
-    body.radx-has-side {
-        padding-left: 56px !important;
-    }
+/* Mobile: reducir padding, ocultar labels — solo iconos + count */
+@media (max-width: 720px) {
+    .radx-topbar { padding: 0 10px; gap: 8px; height: 44px; }
+    .radx-tab { padding: 0 8px; }
+    .radx-tab__label { display: none; }
+    .radx-tab.is-active .radx-tab__label { display: inline; }
+    .radx-brand span { display: none; }
 }

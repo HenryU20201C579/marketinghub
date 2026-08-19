@@ -40,39 +40,16 @@ launcher_tiles = [
 		"icon": "trending-up",
 		"role": "Marketinghub-Marketing-Ver",
 	},
-	# --- Radar de Competencia: las 10 secciones de su sidebar ---
+	# --- Radar de Competencia ---
+	# N2: colapsado a un solo tile. La navegacion entre secciones (Metricas,
+	# Publicaciones, Calendario, Ads Library, Competidores, Ajustes) vive
+	# ahora en el navbar horizontal que inyecta radar-sidebar.js dentro de
+	# cada pagina /radar/*. Antes eran 6 tiles distintos en el sidebar del
+	# /panel — el sidebar externo quedaba saturado con items de Radar.
 	{
-		"label": "Radar · Metricas",
+		"label": "Radar",
 		"url": "/radar/metricas",
 		"icon": "trending-up",
-	},
-	{
-		"label": "Radar · Publicaciones",
-		"url": "/radar/publicaciones",
-		"icon": "file-text",
-	},
-	{
-		"label": "Radar · Calendario pubs",
-		"url": "/radar/comparativa",
-		"icon": "calendar-days",
-	},
-	{
-		"label": "Radar · Ads Library",
-		"url": "/radar/ads",
-		"icon": "store",
-	},
-	{
-		# B-Op3+F3: Cuentas y Categorias se unificaron dentro de Competidores
-		# (cuentas via acordeon, categorias via modal ⚙️). «Radar · Cuentas» y
-		# «Radar · Categorias» ya no aparecen — sus URLs redirigen aqui.
-		"label": "Radar · Competidores",
-		"url": "/radar/competidores",
-		"icon": "users",
-	},
-	{
-		"label": "Radar · Ajustes",
-		"url": "/radar/settings",
-		"icon": "clipboard-check",
 	},
 ]
 
