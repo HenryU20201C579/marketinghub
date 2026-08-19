@@ -103,7 +103,12 @@
       <summary class="ajustes-ads__sum">
         <svg class="ico" viewBox="0 0 24 24" width="14" height="14"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8zM19.4 14.2a1.6 1.6 0 0 0 .3 1.8 2 2 0 1 1-2.8 2.8 1.6 1.6 0 0 0-2.7 1.1 2 2 0 1 1-4 0 1.6 1.6 0 0 0-2.8-1.1 2 2 0 1 1-2.8-2.8 1.6 1.6 0 0 0-1.1-2.7 2 2 0 1 1 0-4 1.6 1.6 0 0 0 1.1-2.8 2 2 0 1 1 2.8-2.8 1.6 1.6 0 0 0 2.7-1.1 2 2 0 1 1 4 0 1.6 1.6 0 0 0 2.7 1.1 2 2 0 1 1 2.8 2.8 1.6 1.6 0 0 0 1.1 2.7 2 2 0 1 1 0 4z"/></svg>
         <span>Ajustes de scrapeo por marca</span>
-        <span class="ajustes-ads__meta">{{ marcas_ads|length }} marcas · estimado total <strong>${{ estimado_total_usd }}</strong> (${{ coste_por_ad_usd }}/ad)</span>
+        <span class="ajustes-ads__meta">
+          {{ marcas_ads|length }} marcas ·
+          próximo scrape estimado <strong>${{ estimado_total_usd }}</strong> ·
+          gastado histórico <strong title="Suma de todos los scrapes registrados. {{ gasto_total_scrapes }} corridas en total.">${{ gasto_total_usd }}</strong>
+          <small>({{ gasto_total_scrapes }} corridas)</small>
+        </span>
       </summary>
       <div class="ajustes-ads__body">
         <div class="ajustes-ads__toolbar">
@@ -156,6 +161,9 @@
           <div class="c" title="Cuánto tiempo hace desde que el scraper tocó esta marca por última vez. «nunca» = todavía no la has scrapeado.">
             Último scrape
           </div>
+          <div class="c" title="Total gastado en scrapear esta marca desde siempre. Cada corrida suma el estimado ($0.007 por ad pedido). Fuente: Radar Ads Gasto.">
+            Gastado
+          </div>
           <div class="c" title="Acciones por marca">Acciones</div>
         </div>
         <div class="mrca-list" id="marcas-ads-list">
@@ -194,6 +202,11 @@
             <div class="c tnum{% if m.hace == 'nunca' %} is-nunca{% endif %}"
                  title="{% if m.hace == 'nunca' %}Nunca scrapeada{% else %}Scrapeada {{ m.hace }}{% endif %}"
                  style="color:var(--muted)">{{ m.hace }}</div>
+            <div class="c tnum mrca__gasto{% if m.n_vacios %} has-vacios{% endif %}"
+                 title="Gastado histórico en scrapear {{ m.nombre|e }}: ${{ m.gastado_usd }} en {{ m.n_scrapes }} corrida(s){% if m.n_vacios %} · {{ m.n_vacios }} sin resultados (crédito quemado sin ads){% endif %}. Cada scrape suma coste estimado (Apify cobra por ads pedidos, no por los que devuelve).">
+              <strong>{{ m.gastado_fmt }}</strong>
+              {% if m.n_scrapes %}<small style="color:var(--muted)"> · {{ m.n_scrapes }}x</small>{% endif %}
+            </div>
             <div class="mrca__acc">
               <button class="act mrca__pausa{% if m.pausada %} on{% endif %}" type="button" data-pausa
                       aria-label="{% if m.pausada %}Reanudar{% else %}Pausar{% endif %} scrapeo de {{ m.nombre|e }}"

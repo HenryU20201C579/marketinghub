@@ -180,9 +180,14 @@ a{color:var(--accent);text-decoration:none} a:hover{color:var(--accent-2);text-d
    nombre | query | pais | limite | activos | ultimo | acciones */
 .mrca-head, .mrca{
   display:grid;
-  grid-template-columns:minmax(140px,1.4fr) minmax(160px,2fr) 62px 74px 88px 108px 76px;
+  /* nombre | query | pais | limite | activos | ultimo | gastado | acciones */
+  grid-template-columns:minmax(140px,1.4fr) minmax(160px,2fr) 62px 74px 88px 108px 92px 76px;
   gap:8px;align-items:center;padding:6px 4px;
 }
+/* Celda de gasto D1: dorado suave cuando hay scrapes vacios (dinero quemado) */
+.mrca__gasto{white-space:nowrap}
+.mrca__gasto.has-vacios strong{color:var(--top)}
+.mrca__gasto.has-vacios{background:var(--top-soft);border-radius:4px;padding:0 6px;cursor:help}
 /* Cabeceras: cursor help sobre los labels para que se vea que hay tooltip */
 .mrca-head{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;padding-top:8px;border-bottom:1px solid var(--hair);padding-bottom:8px}
 .mrca-head > div{cursor:help}

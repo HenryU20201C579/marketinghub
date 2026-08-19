@@ -1,0 +1,165 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "hash",
+ "creation": "2026-08-19 00:00:00.000000",
+ "description": "Registro de un scrape de ads para una marca. Sirve para trackear cuánto se ha gastado por marca acumulado en el tiempo.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "marca",
+  "fecha_scrape",
+  "estado",
+  "cb_1",
+  "query",
+  "pais",
+  "sb_metrics",
+  "ads_pedidos",
+  "ads_llegaron",
+  "cb_2",
+  "insertados",
+  "actualizados",
+  "pausados_delta",
+  "sb_coste",
+  "coste_estimado_usd",
+  "precio_por_ad_usd",
+  "sb_error",
+  "error_msg"
+ ],
+ "fields": [
+  {
+   "fieldname": "marca",
+   "fieldtype": "Link",
+   "label": "Marca",
+   "options": "Competidor",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "fecha_scrape",
+   "fieldtype": "Datetime",
+   "label": "Fecha del scrape",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "reqd": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "estado",
+   "fieldtype": "Select",
+   "label": "Estado",
+   "options": "ok\nparcial\nvacio\nerror",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1,
+   "description": "ok = pedidos y llegados coinciden · parcial = llegaron menos · vacio = no encontró · error = falló"
+  },
+  {"fieldname": "cb_1", "fieldtype": "Column Break"},
+  {
+   "fieldname": "query",
+   "fieldtype": "Data",
+   "label": "Query usada",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pais",
+   "fieldtype": "Data",
+   "label": "País",
+   "read_only": 1
+  },
+  {"fieldname": "sb_metrics", "fieldtype": "Section Break", "label": "Volumen"},
+  {
+   "fieldname": "ads_pedidos",
+   "fieldtype": "Int",
+   "label": "Ads pedidos",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "ads_llegaron",
+   "fieldtype": "Int",
+   "label": "Ads llegaron",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {"fieldname": "cb_2", "fieldtype": "Column Break"},
+  {
+   "fieldname": "insertados",
+   "fieldtype": "Int",
+   "label": "Insertados",
+   "read_only": 1
+  },
+  {
+   "fieldname": "actualizados",
+   "fieldtype": "Int",
+   "label": "Actualizados",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pausados_delta",
+   "fieldtype": "Int",
+   "label": "Pausados (nuevos)",
+   "read_only": 1
+  },
+  {"fieldname": "sb_coste", "fieldtype": "Section Break", "label": "Coste"},
+  {
+   "fieldname": "coste_estimado_usd",
+   "fieldtype": "Currency",
+   "label": "Coste estimado (USD)",
+   "options": "USD",
+   "precision": "4",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "precio_por_ad_usd",
+   "fieldtype": "Currency",
+   "label": "Precio por ad (USD)",
+   "options": "USD",
+   "precision": "4",
+   "read_only": 1
+  },
+  {"fieldname": "sb_error", "fieldtype": "Section Break", "label": "Error", "depends_on": "eval:doc.estado==='error'"},
+  {
+   "fieldname": "error_msg",
+   "fieldtype": "Small Text",
+   "label": "Mensaje de error",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-08-19 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "MarketingHub",
+ "name": "Radar Ads Gasto",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "Marketinghub-Radar-Administrar",
+   "create": 1, "read": 1, "write": 1, "delete": 1,
+   "email": 1, "export": 1, "print": 1, "report": 1, "share": 1
+  },
+  {
+   "role": "Marketinghub-Radar-Analista",
+   "read": 1, "report": 1, "export": 1
+  },
+  {
+   "role": "Marketinghub-Radar-Ver",
+   "read": 1, "report": 1, "export": 1
+  },
+  {
+   "role": "System Manager",
+   "create": 1, "read": 1, "write": 1, "delete": 1,
+   "email": 1, "export": 1, "print": 1, "report": 1, "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "fecha_scrape",
+ "sort_order": "DESC",
+ "states": [],
+ "search_fields": "marca,estado,query,pais",
+ "title_field": "marca"
+}

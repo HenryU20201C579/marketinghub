@@ -49,6 +49,11 @@ def get_context(context):
 	# Ajustes por marca para la card nueva "Ads por marca" (puntos A1-A5, A8)
 	context.marcas_ads = listar_marcas_ads()
 	context.marcas_ads_json = frappe.as_json(context.marcas_ads).replace("</", "<\\/")
+	# Gasto acumulado historico total (suma D1) para el badge del header
+	total_gastado = sum(m.get("gastado_usd", 0) for m in context.marcas_ads)
+	total_scrapes = sum(m.get("n_scrapes", 0) for m in context.marcas_ads)
+	context.gasto_total_usd = f"{total_gastado:.3f}"
+	context.gasto_total_scrapes = total_scrapes
 	# Estimador global para el boton "Scrapear todas"
 	try:
 		from marketinghub.api.radar_ads_scraper import estimar_scrape_ads, COSTE_POR_AD_USD
@@ -281,6 +286,22 @@ def listar_marcas_ads():
 		WHERE competidor IS NOT NULL
 		GROUP BY competidor
 	""", as_dict=True)}
+	# Gasto histórico acumulado por marca (D1). Fallback silencioso si el DocType
+	# aún no está instalado (site pre-migrate): la card sale con $0 y n_scrapes=0.
+	gasto = {}
+	try:
+		gasto = {r["marca"]: r for r in frappe.db.sql("""
+			SELECT marca,
+			       COALESCE(SUM(coste_estimado_usd), 0) AS total_usd,
+			       COUNT(*) AS n_scrapes,
+			       MAX(fecha_scrape) AS ultimo_scrape,
+			       SUM(CASE WHEN estado = 'vacio' THEN 1 ELSE 0 END) AS n_vacios
+			FROM `tabRadar Ads Gasto`
+			WHERE marca IS NOT NULL
+			GROUP BY marca
+		""", as_dict=True)}
+	except Exception:
+		pass
 	# Cuantos ads devolvio Meta en el ULTIMO scrape por marca. Se cuentan los que
 	# comparten el mismo minuto de fecha_ultimo_visto que el MAX (la corrida marca
 	# todos los ads que vio de una vez con la misma timestamp). Sirve para avisar
@@ -323,6 +344,8 @@ def listar_marcas_ads():
 		# y devolvio MENOS del limite. Umbral: 80% para dejar margen (52/50 no es
 		# aviso, 5/50 si lo es). Devolvemos ambos numeros para el tooltip.
 		aviso_pocos = items_u > 0 and items_u < int(lim_efec * 0.8)
+		g = gasto.get(c["name"], {})
+		gastado_total = float(g.get("total_usd") or 0)
 		filas.append({
 			"name": c["name"],
 			"nombre": nombre,
@@ -339,6 +362,11 @@ def listar_marcas_ads():
 			"hace": hace or "nunca",
 			"items_ultimo": items_u,
 			"aviso_pocos": aviso_pocos,
+			# D1: gasto historico acumulado por marca
+			"gastado_usd": round(gastado_total, 4),
+			"gastado_fmt": f"${gastado_total:.3f}" if gastado_total >= 0.001 else "$0",
+			"n_scrapes": int(g.get("n_scrapes") or 0),
+			"n_vacios": int(g.get("n_vacios") or 0),
 		})
 	return filas
 

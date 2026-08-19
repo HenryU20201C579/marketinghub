@@ -405,6 +405,9 @@ def correr_scrape_ads(count_per_marca=None, solo_competidor=None):
 			              resultados=resultados)
 
 	duracion = round(time.time() - inicio, 1)
+	# Grabamos gasto acumulado por marca (D1) — una fila por marca por corrida.
+	# Se hace ANTES del commit para que todo entre en la misma transaccion.
+	_registrar_gasto_por_marca(resultados)
 	frappe.db.commit()
 	estado_final = "ok" if stats["error"] == 0 else "error"
 	_set_progreso(100,
@@ -419,6 +422,40 @@ def correr_scrape_ads(count_per_marca=None, solo_competidor=None):
 		"log": log_lines,
 		"resultados": resultados,
 	}
+
+
+def _registrar_gasto_por_marca(resultados):
+	"""Inserta una fila en `Radar Ads Gasto` por cada marca del scrape.
+
+	Cada fila captura pedidos/llegaron/insertados/actualizados/coste. El coste
+	se calcula sobre `pedidos` (no llegaron): Apify factura por lo que le pides
+	al actor, no por lo que devuelve — si pides 50 y no hay ads, igual cobra."""
+	ahora = frappe.utils.now_datetime()
+	for r in resultados or []:
+		try:
+			pedidos = int(r.get("pedidos") or 0)
+			coste = round(pedidos * COSTE_POR_AD_USD, 4)
+			doc = frappe.get_doc({
+				"doctype": "Radar Ads Gasto",
+				"marca": r.get("marca"),
+				"fecha_scrape": ahora,
+				"estado": r.get("estado") or "ok",
+				"query": r.get("query"),
+				"pais": r.get("pais"),
+				"ads_pedidos": pedidos,
+				"ads_llegaron": int(r.get("llegaron") or 0),
+				"insertados": int(r.get("insertados") or 0),
+				"actualizados": int(r.get("actualizados") or 0),
+				"pausados_delta": int(r.get("pausados") or 0),
+				"coste_estimado_usd": coste,
+				"precio_por_ad_usd": COSTE_POR_AD_USD,
+				"error_msg": r.get("error_msg") or "",
+			})
+			doc.insert(ignore_permissions=True)
+		except Exception:
+			# Un fallo al grabar el registro NO debe romper el scrape entero;
+			# el gasto queda sin trackear en el peor caso.
+			frappe.log_error(traceback.format_exc(), "Radar Ads Gasto insert")
 
 
 def _hay_scrape_en_curso():
