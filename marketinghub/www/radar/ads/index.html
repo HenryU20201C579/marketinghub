@@ -103,46 +103,85 @@
       </summary>
       <div class="ajustes-ads__body">
         <div class="ajustes-ads__toolbar">
-          <button class="btn primary" type="button" id="run-all-ads" title="Scrapear todas las marcas activas no pausadas">
+          {# Boton primario: dispara todas las marcas no pausadas #}
+          <button class="btn primary" type="button" id="run-all-ads"
+                  title="Scrapea en cadena todas las marcas activas y no pausadas. Antes de gastar te muestra el coste estimado total y la lista de marcas afectadas.">
             <svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="M6 5v14l12-7z"/></svg>
             Scrapear todas las marcas
           </button>
-          <span class="ajustes-ads__hint">La query vacía usa el nombre comercial. País es código ISO de 2 letras (PE, MX, US…). Límite 0 = default global (50).</span>
+          {# Boton secundario: link a /radar/competidores para crear una marca nueva.
+             Se abre en la misma pestaña porque el flujo natural es: agregar → volver aqui. #}
+          <a class="btn" id="add-marca" href="/radar/competidores"
+             title="Agrega un nuevo competidor. Se abre /radar/competidores donde defines nombre, pais y categoria. Al volver aqui aparece automaticamente en esta lista.">
+            <svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="M12 4.5v15M4.5 12h15"/></svg>
+            Agregar marca
+          </a>
+          <span class="ajustes-ads__hint">
+            La query vacía usa el nombre comercial · País ISO 2 letras (PE, MX, US…) · Límite 0 = default global (50)
+          </span>
         </div>
         <div class="mrca-head">
-          <div>Marca</div>
-          <div>Query en Ad Library</div>
-          <div class="c">País</div>
-          <div class="c">Límite</div>
-          <div class="c">Ads activos</div>
-          <div class="c">Último scrape</div>
-          <div></div>
+          <div title="Nombre comercial del competidor (Competidor DocType). Editable en /radar/competidores.">Marca</div>
+          <div title="Palabra o frase con la que Meta Ad Library busca los ads de esta marca. Vacío usa el nombre comercial. Cambialo si Meta indexa la marca con otro nombre (ej: «Apolusso Perú», «Ebrand Store»).">
+            Query en Ad Library
+          </div>
+          <div class="c" title="Código ISO de 2 letras del país. Meta Ad Library segmenta por pais: PE=Perú, MX=México, CO=Colombia, US=EE.UU., ES=España. Solo se scrapean ads que corran en ese pais.">
+            País
+          </div>
+          <div class="c" title="Cuántos ads pedir a Meta por corrida. 0 = usar el default global (50 ads). Marcas chicas pueden bajarlo (ahorra crédito), marcas grandes pueden subirlo hasta 200.">
+            Límite
+          </div>
+          <div class="c" title="Ads corriendo AHORA / total de ads jamás vistos de esta marca (incluye los ya pausados).">
+            Ads activos
+          </div>
+          <div class="c" title="Cuánto tiempo hace desde que el scraper tocó esta marca por última vez. «nunca» = todavía no la has scrapeado.">
+            Último scrape
+          </div>
+          <div class="c" title="Acciones por marca">Acciones</div>
         </div>
         <div class="mrca-list" id="marcas-ads-list">
           {% for m in marcas_ads %}
-          <div class="mrca{% if m.pausada %} is-pausada{% endif %}" data-marca="{{ m.name|e }}">
+          <div class="mrca{% if m.pausada %} is-pausada{% endif %}{% if m.total == 0 %} is-nueva{% endif %}"
+               data-marca="{{ m.name|e }}"
+               title="{% if m.pausada %}Marca pausada · no se scrapea{% elif m.total == 0 %}Nueva · aún no scrapeada — pulsa ▶{% else %}{{ m.activos }} ads activos ahora · {{ m.total }} totales vistos{% endif %}">
             <div class="mrca__nom">
-              <span class="mark">{{ m.ini|e }}</span>
+              <span class="mark" title="Iniciales del competidor">{{ m.ini|e }}</span>
               <span class="name">{{ m.nombre|e }}{% if m.pausada %}<em class="mrca__tag">pausada</em>{% endif %}</span>
             </div>
-            <input class="mrca__inp" type="text" data-campo="query" value="{{ m.query|e }}" placeholder="{{ m.nombre|e }} (default)">
-            <input class="mrca__inp mrca__inp--sm c" type="text" data-campo="pais" value="{{ m.pais|e }}" maxlength="2">
-            <input class="mrca__inp mrca__inp--sm c tnum" type="text" data-campo="limite" value="{{ m.limite }}" title="0 = usar el default global (50)">
-            <div class="c tnum"><strong>{{ m.activos }}</strong><small style="color:var(--muted)"> / {{ m.total }}</small></div>
-            <div class="c tnum" style="color:var(--muted)">{{ m.hace }}</div>
+            <input class="mrca__inp" type="text" data-campo="query" value="{{ m.query|e }}"
+                   placeholder="{{ m.nombre|e }} (default)"
+                   title="Editar la keyword que Meta busca. Deja vacío para usar «{{ m.nombre|e }}». Cambio se guarda al pulsar Tab o Enter.">
+            <input class="mrca__inp mrca__inp--sm c" type="text" data-campo="pais" value="{{ m.pais|e }}" maxlength="2"
+                   title="País ISO 2 letras. Cambia si la marca tiene campañas en otro pais.">
+            <input class="mrca__inp mrca__inp--sm c tnum" type="text" data-campo="limite" value="{{ m.limite }}"
+                   title="Ads a pedir. 0 = default global (50). Baja para ahorrar crédito, sube si la marca tiene muchos ads (>50).">
+            <div class="c tnum">
+              {% if m.total == 0 %}
+                <em class="mrca__empty" title="Aún no se ha scrapeado esta marca. Pulsa ▶ para empezar.">Sin scrapear</em>
+              {% else %}
+                <strong title="Anuncios activos en este momento">{{ m.activos }}</strong><small style="color:var(--muted)" title="Total histórico"> / {{ m.total }}</small>
+              {% endif %}
+            </div>
+            <div class="c tnum{% if m.hace == 'nunca' %} is-nunca{% endif %}"
+                 title="{% if m.hace == 'nunca' %}Nunca scrapeada{% else %}Scrapeada {{ m.hace }}{% endif %}"
+                 style="color:var(--muted)">{{ m.hace }}</div>
             <div class="mrca__acc">
-              <button class="act mrca__pausa{% if m.pausada %} on{% endif %}" type="button" data-pausa title="{% if m.pausada %}Reanudar{% else %}Pausar{% endif %} el scrapeo de ads de {{ m.nombre|e }}">
-                {% if m.pausada %}<svg class="ico" viewBox="0 0 24 24" width="11" height="11"><path d="M8 5.5v13l10-6.5z"/></svg>
-                {% else %}<svg class="ico" viewBox="0 0 24 24" width="11" height="11"><path d="M9.5 5v14M14.5 5v14"/></svg>{% endif %}
+              <button class="act mrca__pausa{% if m.pausada %} on{% endif %}" type="button" data-pausa
+                      aria-label="{% if m.pausada %}Reanudar{% else %}Pausar{% endif %} scrapeo de {{ m.nombre|e }}"
+                      title="{% if m.pausada %}Reanudar el scrapeo de {{ m.nombre|e }} (los ▶ y el «Scrapear todas» la volverán a incluir).{% else %}Pausar el scrapeo de {{ m.nombre|e }} (queda excluida de ▶ individual y de «Scrapear todas» hasta que la reanudes).{% endif %}">
+                {% if m.pausada %}<svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M8 5.5v13l10-6.5z"/></svg>
+                {% else %}<svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M9.5 5v14M14.5 5v14"/></svg>{% endif %}
               </button>
-              <button class="act mrca__run" type="button" data-run title="Scrapear solo {{ m.nombre|e }}"{% if m.pausada %} disabled{% endif %}>
-                <svg class="ico" viewBox="0 0 24 24" width="11" height="11"><path d="M8 5.5v13l10-6.5z"/></svg>
+              <button class="act mrca__run" type="button" data-run
+                      aria-label="Scrapear solo {{ m.nombre|e }}"
+                      title="Scrapear SOLO {{ m.nombre|e }} ahora. Antes de gastar te confirma el coste estimado."{% if m.pausada %} disabled{% endif %}>
+                <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M8 5.5v13l10-6.5z"/></svg>
               </button>
             </div>
           </div>
           {% else %}
           <div class="mrca mrca--vacia">
-            No hay competidores activos. Agrégalos en <a href="/radar/competidores">Radar · Competidores</a>.
+            No hay competidores activos. <a href="/radar/competidores" title="Ir a la página de competidores para crear uno nuevo">Agrega tu primera marca en Radar · Competidores</a>.
           </div>
           {% endfor %}
         </div>
