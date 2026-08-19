@@ -176,7 +176,24 @@
       <option value="">Sin categoría</option>
       {% for c in categorias_alta %}<option value="{{ c|e }}">{{ c|e }}</option>
       {% endfor %}
+      {% if can_edit %}
+      {# Opcion especial al final del dropdown: activarla revela un mini-input
+         para crear una categoria nueva sin salir del modal. El JS se encarga. #}
+      <option value="__nueva__" style="font-weight:600;color:var(--accent)">+ Crear nueva categoría…</option>
+      {% endif %}
     </select>
+    {% if can_edit %}
+    {# Input inline para crear categoria al vuelo. Oculto por defecto, se
+       muestra cuando el user elige «+ Crear nueva». Enter guarda. #}
+    <div id="ed-cat-nueva" style="display:none;gap:6px;margin:-4px 0 9px;align-items:center">
+      <input id="ed-cat-nueva-nombre" type="text" placeholder="Nombre de la nueva categoría"
+             style="flex:1;height:32px;padding:0 11px;border:1px solid var(--accent);border-radius:8px;font:inherit;font-size:13px;color:var(--text);background:var(--bg);outline:none">
+      <button type="button" id="ed-cat-nueva-guardar" class="btn primary"
+              style="height:32px;padding:0 12px;font-size:12px" title="Crear y usar esta categoría">Crear</button>
+      <button type="button" id="ed-cat-nueva-cancelar" class="btn"
+              style="height:32px;padding:0 10px;font-size:12px" title="Cancelar">✕</button>
+    </div>
+    {% endif %}
     <select id="ed-prioridad" style="height:34px;width:100%;padding:0 9px;margin-bottom:9px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;color:var(--text);background:var(--bg)">
       {% for p in prioridades %}<option value="{{ p|e }}">{{ p|e }}</option>
       {% endfor %}
@@ -725,6 +742,70 @@
         .catch(function(e){ err.textContent = String(e.message).replace(/<[^>]*>/g, ''); err.style.display = ''; });
     });
   }
+
+  /* ============ Crear categoria al vuelo desde el dropdown del modal ============
+     Cuando el user elige «+ Crear nueva…» en #ed-categoria mostramos el input
+     inline. Al crear, guardamos via www.radar.categorias.index.guardar y
+     inyectamos la opcion nueva en ambos selects (modal + filtro principal).*/
+  var edCat = document.getElementById('ed-categoria');
+  var edCatNueva = document.getElementById('ed-cat-nueva');
+  var edCatNuevaNombre = document.getElementById('ed-cat-nueva-nombre');
+
+  function ocultarNuevaCat(){
+    if(!edCatNueva) return;
+    edCatNueva.style.display = 'none';
+    if(edCatNuevaNombre) edCatNuevaNombre.value = '';
+  }
+
+  function crearCategoriaAlVuelo(){
+    var nombre = (edCatNuevaNombre.value || '').trim();
+    if(!nombre){ edCatNuevaNombre.focus(); return; }
+    var btn = document.getElementById('ed-cat-nueva-guardar');
+    btn.disabled = true; btn.textContent = '…';
+    llamar('www.radar.categorias.index.guardar', {
+      name: '', nombre_categoria: nombre, descripcion: '',
+    })
+      .then(function(r){
+        var nuevo = (r && r.name) || nombre;
+        // Inyectar opcion en el select del modal + en el filtro principal, para
+        // que la nueva categoria salga sin recargar. Se posiciona antes del
+        // «+ Crear nueva» (siempre el ultimo <option>).
+        [edCat, document.getElementById('f-cat')].forEach(function(sel){
+          if(!sel) return;
+          if(!Array.prototype.some.call(sel.options, function(o){ return o.value === nuevo; })){
+            var opt = new Option(nuevo, nuevo);
+            var opcionNueva = sel.querySelector('option[value="__nueva__"]');
+            if(opcionNueva) sel.insertBefore(opt, opcionNueva);
+            else sel.appendChild(opt);
+          }
+        });
+        edCat.value = nuevo;      // seleccionar automatico en el modal
+        ocultarNuevaCat();
+        toast('Categoría «' + nuevo + '» creada.');
+      })
+      .catch(function(err){ toast(String(err.message).replace(/<[^>]*>/g, '')); })
+      .then(function(){ btn.disabled = false; btn.textContent = 'Crear'; });
+  }
+
+  if(edCat) edCat.addEventListener('change', function(){
+    if(edCat.value === '__nueva__'){
+      edCat.value = '';   // reset para que el «Sin categoría» quede como default
+      if(edCatNueva){
+        edCatNueva.style.display = 'flex';
+        edCatNuevaNombre.focus();
+      }
+    } else {
+      ocultarNuevaCat();
+    }
+  });
+  if(edCatNuevaNombre) edCatNuevaNombre.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); crearCategoriaAlVuelo(); }
+    if(e.key === 'Escape'){ ocultarNuevaCat(); }
+  });
+  var btnCrearCat = document.getElementById('ed-cat-nueva-guardar');
+  if(btnCrearCat) btnCrearCat.addEventListener('click', crearCategoriaAlVuelo);
+  var btnCancelCat = document.getElementById('ed-cat-nueva-cancelar');
+  if(btnCancelCat) btnCancelCat.addEventListener('click', ocultarNuevaCat);
 
   /* ============ F1+F2: modal de categorias ============ */
   var CATS = [];
