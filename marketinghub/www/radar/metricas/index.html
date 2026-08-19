@@ -67,16 +67,21 @@
 	.rmx-tbl-wrap { overflow-x:auto; max-height:540px; }
 
 	/* Tendencia diaria (barras verticales) */
-	.rmx-trend { display:flex; align-items:flex-end; gap:3px; height:110px; padding:12px 4px 4px; }
-	.rmx-trend__bar { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;
-	                  min-width:0; cursor:default; }
+	/* Chart de tendencia diaria — barras verticales que crecen desde abajo.
+	   Fix: cada bar necesita height:100% para que sus % anidados resuelvan.
+	   Sin eso, height:44% del col se computa contra un padre sin altura y
+	   el navegador defaultea a auto → barras aplastadas casi invisibles. */
+	.rmx-trend { display:flex; align-items:stretch; gap:3px; height:160px; padding:8px 4px 4px; }
+	.rmx-trend__bar { flex:1; display:flex; flex-direction:column; justify-content:flex-end;
+	                  align-items:center; gap:3px; min-width:0; cursor:default; height:100%; }
 	.rmx-trend__col { width:100%; background:var(--accent-soft); border-radius:3px 3px 0 0;
-	                  position:relative; transition:background 0.15s; }
+	                  min-height:2px; transition:background 0.15s; }
 	.rmx-trend__bar:hover .rmx-trend__col { background:var(--accent); }
 	.rmx-trend__col--zero { background:var(--hair); height:2px !important; }
-	.rmx-trend__label { font-size:9px; color:var(--faint); font-variant-numeric:tabular-nums;
-	                    white-space:nowrap; }
-	.rmx-trend__val { font-size:9px; color:var(--muted); font-weight:600; }
+	.rmx-trend__label { flex:none; font-size:9px; color:var(--faint); font-variant-numeric:tabular-nums;
+	                    white-space:nowrap; margin-top:2px; }
+	.rmx-trend__val { flex:none; font-size:10px; color:var(--text); font-weight:700;
+	                  font-variant-numeric:tabular-nums; }
 
 	/* Scrape status */
 	.rmx-scr { display:flex; align-items:center; gap:12px; padding:8px 0; font-size:12px;
