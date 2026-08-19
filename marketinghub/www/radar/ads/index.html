@@ -76,13 +76,17 @@
           <svg class="ico" viewBox="0 0 24 24" width="17" height="17"><path d="M3.5 6.5h17v11h-17zM3.5 10.5h17"/></svg>
           Ads Library
         </span>
-        <span class="sub"><span class="tnum" id="shown">0</span> de <span class="tnum" id="total">0</span> ads · <span class="tnum" id="prom">0</span> d promedio</span>
+        <span class="sub" title="Ads que se muestran con los filtros actuales / total de ads en la base de datos · promedio de días activos de todos los ads">
+          <span class="tnum" id="shown" title="Ads que pasan los filtros activos">0</span> de
+          <span class="tnum" id="total" title="Total de ads en la base de datos (sin filtrar)">0</span> ads ·
+          <span class="tnum" id="prom" title="Promedio de días que llevan corriendo los ads. Alto = tienen ads que funcionan por semanas/meses">0</span> d promedio
+        </span>
       </div>
       <div class="topbar-r">
-        <button class="btn" id="csv">
+        <button class="btn" id="csv" title="Descarga la tabla filtrada en formato CSV (abre en Excel/Google Sheets). Incluye días activo, marca, formato, copy, CTA y landing de cada ad.">
           <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M12 4v11M8 11l4 4 4-4M4.5 19.5h15"/></svg>Descargar CSV
         </button>
-        {% if can_edit %}<button class="btn primary" id="upd">
+        {% if can_edit %}<button class="btn primary" id="upd" title="Scrapea AHORA todas las marcas activas no pausadas contra Meta Ad Library. Antes de gastar te muestra el coste estimado. Equivalente al botón «Scrapear todas» de la card de arriba.">
           <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4h-4"/></svg>Actualizar
         </button>{% endif %}
       </div>
@@ -190,76 +194,94 @@
     {% endif %}
 
     <div class="filters">
-      <div class="searchbox">
+      <div class="searchbox" title="Buscar texto en el copy del anuncio, marca o URL de landing. Filtra en vivo mientras escribes.">
         <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM16.2 16.2 20.5 20.5"/></svg>
-        <input type="search" id="q" placeholder="Buscar en copy...">
+        <input type="search" id="q" placeholder="Buscar en copy..." title="Buscar en el texto del ad, nombre de marca o URL de landing (case-insensitive)">
       </div>
-      <div class="pick" data-filter>
+      <div class="pick" data-filter title="Filtrar ads por competidor. Elige una marca para ver solo sus anuncios.">
         <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M9 5a3.4 3.4 0 1 0 0 6.8A3.4 3.4 0 0 0 9 5zM3 20c1.2-3.2 3.6-4.5 6-4.5s4.8 1.3 6 4.5M16.5 6.2a3 3 0 0 1 0 5.6M21 19.5c-.8-2.2-2-3.2-3.5-3.7"/></svg>
-        <select id="f-marca" data-default="todas">
+        <select id="f-marca" data-default="todas" title="Muestra solo ads de la marca elegida">
           <option value="todas">Todos los competidores</option>
           {% for c in competidores %}<option value="{{ c|e }}">{{ c|e }}</option>
           {% endfor %}
         </select>
         <svg class="ico caret" viewBox="0 0 24 24" width="12" height="12"><path d="M7 10l5 5 5-5"/></svg>
       </div>
-      <div class="pick" data-filter>
+      <div class="pick" data-filter title="Filtrar por tipo de creatividad: Video, Imagen, Carrusel u Otro.">
         <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M3.5 6.5h17v11h-17zM3.5 10.5h17"/></svg>
-        <select id="f-formato" data-default="todos">
+        <select id="f-formato" data-default="todos" title="Tipo de contenido del ad">
           <option value="todos">Todos los formatos</option>
           {% for f in formatos %}<option value="{{ f|e }}">{{ f|e }}</option>
           {% endfor %}
         </select>
         <svg class="ico caret" viewBox="0 0 24 24" width="12" height="12"><path d="M7 10l5 5 5-5"/></svg>
       </div>
-      <div class="pick" data-filter>
+      <div class="pick" data-filter title="Filtrar por etiqueta de rendimiento inferida por el sistema: «Ganador» = 30+ días activo, «Ganador top» = 90+ días.">
         <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M4 11.5 11.5 4H20v8.5L12.5 20zM15.5 8.5h.01"/></svg>
-        <select id="f-etiqueta" data-default="todas">
+        <select id="f-etiqueta" data-default="todas" title="Etiqueta de calidad automática (basada en días activos)">
           <option value="todas">Todas las etiquetas</option>
           {% for e in etiquetas %}<option value="{{ e|e }}">{{ e|e }}</option>
           {% endfor %}
         </select>
         <svg class="ico caret" viewBox="0 0 24 24" width="12" height="12"><path d="M7 10l5 5 5-5"/></svg>
       </div>
-      <button class="chk" id="c30" role="checkbox" aria-checked="false">
+      <button class="chk" id="c30" role="checkbox" aria-checked="false"
+              title="Muestra solo ads que llevan 30 o más días corriendo. Meta no da métricas de rendimiento, pero si un ad sobrevive 30+ días es porque a la marca le funciona — vale la pena replicarlo.">
         <span class="box"><svg class="ico" viewBox="0 0 24 24" width="9" height="9"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span>30d+ activos
       </button>
-      <button class="chk" id="cact" role="checkbox" aria-checked="true">
+      <button class="chk" id="cact" role="checkbox" aria-checked="true"
+              title="Muestra solo ads que están corriendo AHORA. Desmarca para ver también los ya pausados (útil para revisar el histórico de creatividades de la competencia).">
         <span class="box"><svg class="ico" viewBox="0 0 24 24" width="9" height="9"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span>Solo activos
       </button>
       {# ============ FILTROS POR FECHA (A9) ============
          Presets rápidos (Este mes, Últimos 7d, 30d, Todo) + rango custom.
          El filtro se aplica en JS sobre d.iso (fecha_inicio). #}
-      <div class="rango" data-filter>
+      <div class="rango" data-filter title="Filtrar por fecha de PUBLICACIÓN del ad. «Este mes» muestra solo ads que Meta empezó a mostrar este mes, útil para ver campañas nuevas de la competencia.">
         <svg class="ico" viewBox="0 0 24 24" width="13" height="13"><path d="M4.5 6.5h15v13.5h-15zM8.5 3.5v4M15.5 3.5v4M4.5 11h15"/></svg>
-        <select id="f-preset" data-default="todo">
-          <option value="todo">Cualquier fecha</option>
-          <option value="mes">Este mes</option>
-          <option value="7d">Últimos 7 días</option>
-          <option value="30d">Últimos 30 días</option>
-          <option value="90d">Últimos 90 días</option>
-          <option value="custom">Rango custom…</option>
+        <select id="f-preset" data-default="todo" title="Rango de fecha del ad (fecha_inicio). Elige un preset o «Rango custom» para poner desde/hasta manual.">
+          <option value="todo" title="Sin filtro de fecha">Cualquier fecha</option>
+          <option value="mes" title="Ads publicados desde el 1 de este mes">Este mes</option>
+          <option value="7d" title="Ads publicados en los últimos 7 días">Últimos 7 días</option>
+          <option value="30d" title="Ads publicados en los últimos 30 días">Últimos 30 días</option>
+          <option value="90d" title="Ads publicados en los últimos 90 días">Últimos 90 días</option>
+          <option value="custom" title="Elige tú las fechas de inicio y fin">Rango custom…</option>
         </select>
         <svg class="ico caret" viewBox="0 0 24 24" width="12" height="12"><path d="M7 10l5 5 5-5"/></svg>
       </div>
-      <div class="rango-custom" id="rango-custom" hidden>
-        <input type="date" id="f-desde" aria-label="Desde"><span class="rango-custom__sep">→</span><input type="date" id="f-hasta" aria-label="Hasta">
+      <div class="rango-custom" id="rango-custom" hidden title="Rango de fecha custom: se aplica sobre fecha_inicio del ad">
+        <input type="date" id="f-desde" aria-label="Desde" title="Fecha desde (inclusive)"><span class="rango-custom__sep">→</span><input type="date" id="f-hasta" aria-label="Hasta" title="Fecha hasta (inclusive)">
       </div>
-      <button class="clear" id="clear">Limpiar</button>
-      <span class="hint" id="hint">Clic en el encabezado para ordenar</span>
+      <button class="clear" id="clear" title="Resetea todos los filtros a su valor por defecto (todos los competidores, todos los formatos, solo activos = ON, sin fecha, sin búsqueda)">Limpiar</button>
+      <span class="hint" id="hint" title="Truco: haz click en el encabezado de una columna para ordenar por ella. Click otra vez para invertir el orden.">Clic en el encabezado para ordenar</span>
     </div>
 
     <div class="tablewrap">
       <div class="thead">
-        <button class="th sortable c on" data-sort="dias"><span>Días act.</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg></button>
-        <button class="th sortable" data-sort="estado"><span>Estado</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg></button>
-        <button class="th sortable" data-sort="marca"><span>Marca</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg></button>
-        <button class="th sortable" data-sort="formato"><span>Formato</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg></button>
-        <button class="th sortable c" data-sort="pub"><span>Publicado</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg></button>
-        <button class="th sortable" data-sort="copy"><span>Copy</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg></button>
-        <div class="th c"><span>CTA</span></div>
-        <button class="th sortable" data-sort="landing"><span>Landing</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg></button>
-        <div class="th c"><span></span></div>
+        <button class="th sortable c on" data-sort="dias" title="Días activo: cuántos días lleva corriendo el ad. Más días = mejor rendimiento inferido (Meta lo mantendría vivo solo si convierte). Click para ordenar.">
+          <span>Días act.</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg>
+        </button>
+        <button class="th sortable" data-sort="estado" title="Etiqueta de estado del ad: «Ganador» = 30+ días activo, «Ganador top» = 90+ días. Point verde = activo ahora, gris = ya pausado.">
+          <span>Estado</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg>
+        </button>
+        <button class="th sortable" data-sort="marca" title="Competidor (dueño de la página de FB que publicó el ad). Ordena alfabéticamente al hacer click.">
+          <span>Marca</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg>
+        </button>
+        <button class="th sortable" data-sort="formato" title="Tipo de creatividad: Video / Imagen / Carrusel / Otro. Ideal para replicar por formato: los videos ganadores son las mejores plantillas para tu propio contenido.">
+          <span>Formato</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg>
+        </button>
+        <button class="th sortable c" data-sort="pub" title="Fecha en que Meta empezó a mostrar este ad (fecha_inicio). Ads recientes = campañas nuevas por replicar rápido.">
+          <span>Publicado</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg>
+        </button>
+        <button class="th sortable" data-sort="copy" title="Texto principal del anuncio (el «gancho»). Click en la celda abre el ad en Meta Ad Library para ver la creatividad completa.">
+          <span>Copy</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg>
+        </button>
+        <div class="th c" title="Call To Action: el botón del ad (Comprar, Más info, WhatsApp, etc.). Indica el objetivo de la campaña.">
+          <span>CTA</span>
+        </div>
+        <button class="th sortable" data-sort="landing" title="URL de destino cuando el usuario hace click en el ad. Revísala para entender la estrategia completa: dónde llevan al lead.">
+          <span>Landing</span><svg class="ico" viewBox="0 0 24 24" width="10" height="10"><path d="M6 10l6 5 6-5"/></svg>
+        </button>
+        <div class="th c" title="Acciones por ad"><span></span></div>
       </div>
       <div id="rows"></div>
       <div class="empty" id="empty" hidden>
@@ -269,11 +291,13 @@
     </div>
 
     <div class="footbar">
-      <span><span id="counter">0</span> de <span id="total2">0</span> ads · orden por <span id="sortLabel">días act.</span></span>
+      <span title="Cuántos ads pasan los filtros actuales, sobre el total en la BD. La columna por la que se está ordenando aparece a la derecha.">
+        <span id="counter">0</span> de <span id="total2">0</span> ads · orden por <span id="sortLabel">días act.</span>
+      </span>
       <div class="sums">
-        <span>Activos: <strong id="sumA">0</strong></span>
-        <span>Ganadores: <strong class="hot" id="sumG">0</strong></span>
-        <span>Días máx.: <strong id="maxD">0</strong></span>
+        <span title="Ads que están corriendo AHORA (esta_activo=1) dentro de los filtros aplicados">Activos: <strong id="sumA">0</strong></span>
+        <span title="Ads etiquetados como «Ganador» o «Ganador top» dentro de los filtros aplicados. Son los que probablemente están funcionando y vale la pena replicar." >Ganadores: <strong class="hot" id="sumG">0</strong></span>
+        <span title="El ad más «viejo» del conjunto filtrado — cuántos días lleva corriendo. Valor alto = campaña muy establecida.">Días máx.: <strong id="maxD">0</strong></span>
       </div>
     </div>
   </div>
@@ -378,22 +402,27 @@
   function renderKpis(){
     var marcas = [];
     DATA.forEach(function(d){ if(d.marca && marcas.indexOf(d.marca) < 0) marcas.push(d.marca); });
+    /* Cada tarjeta lleva un `tip` que aparece al hover para explicar de dónde
+       sale el número y por qué importa. Sin tip el usuario ve una cifra suelta. */
     var cards = marcas.slice(0, 2).map(function(m){
       var ads = DATA.filter(function(d){ return d.marca === m; });
       return {k:m, ic:'tag', cls:'a', v:ads.length,
-        s:ads.filter(function(d){return d.activo;}).length + ' activos · ' + ads.filter(function(d){return d.ganador;}).length + ' ganadores'};
+        s:ads.filter(function(d){return d.activo;}).length + ' activos · ' + ads.filter(function(d){return d.ganador;}).length + ' ganadores',
+        tip:'Total de ads scrapeados de ' + m + ' (activos + pausados históricos). El desglose de abajo separa los que corren ahora de los ganadores (30+ días activos).'};
     });
     cards.push({k:'Ganadores (30d+)', ic:'trophy', cls:'t',
-      v:DATA.filter(function(d){ return d.ganador && d.dias >= 30; }).length, s:'de ' + DATA.length + ' ads en total'});
+      v:DATA.filter(function(d){ return d.ganador && d.dias >= 30; }).length, s:'de ' + DATA.length + ' ads en total',
+      tip:'Ads etiquetados como «Ganador» y con 30 o más días corriendo. Meta no da métricas de rendimiento, pero si un ad sobrevive 30+ días es porque la marca lo tiene invirtiendo — señal fuerte de que funciona. Estos son los que vale la pena replicar.'});
     cards.push({k:'Nuevos esta semana', ic:'spark', cls:'a',
-      v:DATA.filter(function(d){ return d.dias <= 7; }).length, s:'creados hace menos de 7 días'});
+      v:DATA.filter(function(d){ return d.dias <= 7; }).length, s:'creados hace menos de 7 días',
+      tip:'Ads que la competencia lanzó en los últimos 7 días. Útil para detectar nuevas campañas, promociones o pruebas de creatividad de tu competencia antes de que escalen.'});
     var D = {
       tag:"M4 11.5 11.5 4H20v8.5L12.5 20zM15.5 8.5h.01",
       trophy:"M8 4.5h8v3.5a4 4 0 0 1-8 0zM8 5.5H5.5V7a2.5 2.5 0 0 0 2.5 2.5M16 5.5h2.5V7A2.5 2.5 0 0 1 16 9.5M10 12h4l.5 4h-5zM8.5 19.5h7",
       spark:"M12 3.5v3M12 17.5v3M4.5 12h3M16.5 12h3M6.8 6.8l2.1 2.1M15.1 15.1l2.1 2.1M17.2 6.8l-2.1 2.1M8.9 15.1l-2.1 2.1"
     };
     document.getElementById('kpis').innerHTML = cards.map(function(c){
-      return '<article class="kpi"><span class="k"><svg class="ico ' + c.cls + '" viewBox="0 0 24 24" width="12" height="12"><path d="' + D[c.ic] + '"/></svg><span>' + esc(c.k) + '</span></span>'
+      return '<article class="kpi" title="' + esc(c.tip || '') + '"><span class="k"><svg class="ico ' + c.cls + '" viewBox="0 0 24 24" width="12" height="12"><path d="' + D[c.ic] + '"/></svg><span>' + esc(c.k) + '</span></span>'
         + '<span class="v ' + c.cls + '">' + c.v + '</span><span class="s">' + esc(c.s) + '</span></article>';
     }).join('');
   }
@@ -424,8 +453,8 @@
         + '<div class="td c"><span class="cta">' + esc(d.cta) + '</span></div>'
         + '<div class="td"><span class="land">' + esc(d.landing) + '</span></div>'
         + '<div class="td last">'
-          + '<button class="act" data-ver title="Ver anuncio en Meta Ads Library"><svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.6"/></svg></button>'
-          + (PUEDE_EDITAR ? '<button class="act go" data-guion title="Crear guion"><svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5zM14.5 6.5l3 3"/></svg></button>' : '')
+          + '<button class="act" data-ver title="Abrir este ad en Meta Ad Library (facebook.com/ads/library) para ver la creatividad original completa: imagen HD, video, todos los slides del carrusel, y la ficha con page, país y fechas."><svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.6"/></svg></button>'
+          + (PUEDE_EDITAR ? '<button class="act go" data-guion title="Crear un Guion nuevo (Radar · Guiones) usando este ad como referencia. El copy y la marca se copian al Guion para acelerar la producción de tu propia versión."><svg class="ico" viewBox="0 0 24 24" width="12" height="12"><path d="M4 20l1-4 10.5-10.5 3 3-10.5 10.5zM14.5 6.5l3 3"/></svg></button>' : '')
         + '</div>'
       + '</div>';
     }).join('');
