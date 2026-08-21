@@ -129,6 +129,33 @@
 	.rmx-dur.is-ganador .rmx-dur__eng strong { color:var(--top); }
 	.rmx-dur__meta { text-align:right; color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; }
 
+
+	/* Historial de importaciones */
+	.rmx-imp { display:flex; align-items:baseline; gap:10px; padding:8px 4px;
+	           border-bottom:1px solid var(--hair); font-size:12.5px; }
+	.rmx-imp:last-child { border-bottom:0; }
+	.rmx-imp__cuando { color:var(--muted); font-variant-numeric:tabular-nums; width:82px; flex:none; }
+	.rmx-imp__alcance { color:var(--text); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+	.rmx-imp__nums { color:var(--text); flex:none; }
+	.rmx-imp__nums strong { color:var(--accent); font-variant-numeric:tabular-nums; }
+	.rmx-imp__nums small, .rmx-imp__nums em { color:var(--muted); font-style:normal; }
+	.rmx-imp__coste { color:var(--muted); font-variant-numeric:tabular-nums; width:62px; text-align:right; flex:none; }
+	.rmx-imp__coste small { opacity:.7; }
+	.rmx-imp.is-error .rmx-imp__alcance { color:var(--danger, #dc2626); }
+	.rmx-imp.is-warn .rmx-imp__alcance { color:var(--warn, #f59e0b); }
+	.rmx-imp-nueva { animation:rmx-destacar 2.4s ease-out; }
+	@keyframes rmx-destacar { from { background:var(--accent-soft); } to { background:transparent; } }
+
+	/* Aviso de corrida: en curso, terminada o colgada */
+	.rmx-imp-aviso { margin:0 0 10px; padding:9px 12px; border-radius:8px; font-size:12.5px;
+	                 background:var(--accent-soft); color:var(--text); }
+	.rmx-imp-aviso.is-ok { background:rgba(16,185,129,.10); }
+	.rmx-imp-aviso.is-error { background:rgba(220,38,38,.10); }
+	.rmx-imp-aviso.is-colgada { background:rgba(251,146,60,.12); }
+	.rmx-imp-aviso strong { font-variant-numeric:tabular-nums; }
+	.rmx-imp-aviso__bar { height:5px; background:var(--raise); border-radius:3px; overflow:hidden; margin-top:7px; }
+	.rmx-imp-aviso__bar > div { height:100%; background:var(--accent); transition:width .4s ease; }
+
 	/* Panel financiero (M-C) — total grande + split posts/ads + credito */
 	.rmx-fin-total { display:flex; align-items:baseline; gap:10px;
 	                 padding:10px 14px; background:var(--accent-soft); border-radius:8px; }
@@ -677,6 +704,45 @@
         </section>
       </div>
 
+
+      <!-- Historial de importaciones + aviso de la corrida en curso -->
+      <div class="rmx-grid" style="margin-bottom:16px">
+        <section class="rad-card" id="rmx-imp-card">
+          <div class="rad-card__head">
+            <span class="rad-card__title">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+              Ultimas importaciones
+            </span>
+            <span class="rad-card__sub">cuantas trajo cada corrida</span>
+          </div>
+
+          <!-- El aviso solo existe mientras hay algo que avisar -->
+          <div class="rmx-imp-aviso" id="rmx-imp-aviso" hidden></div>
+
+          <div class="rad-card__body" style="gap:0" id="rmx-imp-lista">
+            {% for c in importaciones %}
+            <div class="rmx-imp {% if c.estado == 'error' %}is-error{% elif c.estado == 'warn' %}is-warn{% endif %}">
+              <span class="rmx-imp__cuando">{{ c.cuando }}</span>
+              <span class="rmx-imp__alcance">{{ c.alcance }}</span>
+              {% if c.historica %}
+              <span class="rmx-imp__nums"><em>histórico de Apify</em></span>
+              {% else %}
+              <span class="rmx-imp__nums">
+                <strong>{{ c.nuevas }}</strong> nuevas
+                <small>· {{ c.actualizadas }} act.{% if c.errores %} · {{ c.errores }} err.{% endif %}</small>
+              </span>
+              {% endif %}
+              <span class="rmx-imp__coste" title="{% if c.coste_real %}coste real de Apify{% else %}coste estimado{% endif %}">
+                ${{ c.coste }}{% if not c.coste_real %}<small>~</small>{% endif %}
+              </span>
+            </div>
+            {% else %}
+            <div style="padding:24px 12px;text-align:center;color:var(--muted);font-size:12px">Todavía no hay corridas registradas.</div>
+            {% endfor %}
+          </div>
+        </section>
+      </div>
+
       <!-- Fila 4: Top posts detallado -->
       <section class="rad-card">
         <div class="rad-card__head">
@@ -768,6 +834,113 @@
         window.location.href = u.toString();
       });
     });
+
+    // ================= Aviso de importacion =================
+    // Solo se sondea cuando hay algo que mirar: si al abrir no hay corrida en
+    // curso, no se molesta al servidor cada pocos segundos para nada.
+    var puedeVer = {{ 'true' if puede_ver_progreso else 'false' }};
+    var API = '/api/method/marketinghub.www.radar.metricas.index.';
+    var CSRF = '{{ csrf_token }}';
+    var aviso = document.getElementById('rmx-imp-aviso');
+    var lista = document.getElementById('rmx-imp-lista');
+    var timer = null, corriendo = false, primeraVuelta = true;
+
+    function pintarAviso(html, clase) {
+      aviso.className = 'rmx-imp-aviso' + (clase ? ' ' + clase : '');
+      aviso.innerHTML = html;
+      aviso.hidden = false;
+    }
+
+    function resumen(u) {
+      if (!u) return 'La importacion termino.';
+      if (u.historica) return 'Corrida historica importada de Apify.';
+      return '<strong>' + u.nuevas + '</strong> nuevas · ' + u.actualizadas + ' actualizadas' +
+             (u.errores ? ' · <strong>' + u.errores + '</strong> con error' : '') +
+             ' · $' + u.coste + ' · ' + u.duracion;
+    }
+
+    function filaHTML(c, nueva) {
+      var clase = 'rmx-imp' + (c.estado === 'error' ? ' is-error' : c.estado === 'warn' ? ' is-warn' : '') +
+                  (nueva ? ' rmx-imp-nueva' : '');
+      var nums = c.historica
+        ? '<span class="rmx-imp__nums"><em>historico de Apify</em></span>'
+        : '<span class="rmx-imp__nums"><strong>' + c.nuevas + '</strong> nuevas <small>· ' +
+          c.actualizadas + ' act.' + (c.errores ? ' · ' + c.errores + ' err.' : '') + '</small></span>';
+      return '<div class="' + clase + '">' +
+             '<span class="rmx-imp__cuando">' + c.cuando + '</span>' +
+             '<span class="rmx-imp__alcance">' + (c.alcance || '') + '</span>' + nums +
+             '<span class="rmx-imp__coste">$' + c.coste + (c.coste_real ? '' : '<small>~</small>') + '</span>' +
+             '</div>';
+    }
+
+    function refrescarLista(importaciones, marcarPrimera) {
+      if (!importaciones || !importaciones.length) return;
+      lista.innerHTML = importaciones.map(function (c, i) {
+        return filaHTML(c, marcarPrimera && i === 0);
+      }).join('');
+    }
+
+    function sondear() {
+      fetch(API + 'estado_importacion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Frappe-CSRF-Token': CSRF },
+        body: '{}'
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          var d = j.message || {};
+          var p = d.progreso || {};
+
+          if (p.estado === 'corriendo' && !d.colgada) {
+            corriendo = true;
+            pintarAviso('Importando… <strong>' + (p.pct || 0) + '%</strong>' +
+                        (p.paso ? ' <small>· ' + p.paso + '</small>' : '') +
+                        '<div class="rmx-imp-aviso__bar"><div style="width:' + (p.pct || 0) + '%"></div></div>');
+            programar(4000);
+            return;
+          }
+
+          if (d.colgada) {
+            // El worker `long` se ha muerto a medias mas de una vez: sin esto
+            // la barra se quedaria clavada y el aviso no llegaria nunca.
+            corriendo = false;
+            pintarAviso('La importacion lleva mas de 15 min sin avanzar. ' +
+                        'Puede que el worker se haya caido — revisa /radar/settings.', 'is-colgada');
+            programar(30000);
+            return;
+          }
+
+          if (corriendo) {
+            // Acaba de terminar mientras mirabamos: este es el aviso que se pidio.
+            corriendo = false;
+            var u = d.ultima || null;
+            pintarAviso('Importacion terminada · ' + resumen(u),
+                        (u && u.estado === 'error') ? 'is-error' : 'is-ok');
+            refrescarLista(d.importaciones, true);
+            programar(30000);
+            return;
+          }
+
+          // En reposo no hay nada que avisar; se vigila de tanto en tanto por si
+          // la corrida la lanzo otro desde /radar/settings.
+          if (primeraVuelta) { aviso.hidden = true; primeraVuelta = false; }
+          programar(30000);
+        })
+        .catch(function () { programar(60000); });
+    }
+
+    function programar(ms) {
+      clearTimeout(timer);
+      timer = setTimeout(sondear, ms);
+    }
+
+    if (puedeVer && aviso && lista) {
+      sondear();
+      // Al volver a la pestana se mira enseguida, no se espera al siguiente turno.
+      document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) programar(200);
+      });
+    }
   })();
 </script>
 

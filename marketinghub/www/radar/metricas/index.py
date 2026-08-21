@@ -10,6 +10,7 @@ el scraper cada dia). Sin cache: el usuario espera ver los efectos del
 ultimo scrape en la misma pagina.
 """
 import hashlib
+import json
 from datetime import date, datetime, timedelta
 
 import frappe
@@ -94,6 +95,9 @@ def get_context(context):
 	context.frecuencia_marca = _frecuencia_por_marca(dias)
 	# ---- M-C: Panel financiero ----
 	context.financiero = _financiero(dias)
+	# ---- Historial de importaciones ----
+	context.importaciones = _ultimas_importaciones()
+	context.puede_ver_progreso = _has_role(_ingest_roles())
 
 
 # ============ KPIs generales ============
@@ -692,4 +696,114 @@ def _financiero(dias):
 		"credito_apify": credito,   # {usado, limite, restante, renueva} o None
 		"credito_pct": round(float(credito["usado"]) / float(credito["limite"]) * 100, 1)
 		               if credito and float(credito.get("limite") or 0) > 0 else 0,
+	}
+
+
+# ============ Historial de importaciones ============
+# Los conteos ya los guarda `Radar Corrida` en cada corrida; aca solo se
+# muestran. Vivian solo en /radar/settings, que no es donde se miran las
+# metricas.
+
+def _marca_importada():
+	"""Valor de `disparada_por` en las corridas reconstruidas desde Apify.
+
+	Se lee del scraper: el literal exacto es "Importado de Apify" y tenerlo
+	copiado aca a mano ya me lo hizo escribir mal una vez.
+	"""
+	try:
+		from marketinghub.api.radar_scraper import IMPORTADA
+		return IMPORTADA
+	except Exception:
+		return "Importado de Apify"
+
+
+def _ingest_roles():
+	"""Los roles que pueden lanzar una corrida. Se leen del scraper para no
+	tener la lista escrita en dos sitios."""
+	try:
+		from marketinghub.api.radar_scraper import INGEST_ROLES
+		return INGEST_ROLES
+	except Exception:
+		return ("System Manager",)
+
+
+def _fila_importacion(c):
+	"""Normaliza una corrida para pintarla en la tarjeta."""
+	# Las corridas reconstruidas del historico de Apify no traen conteos: no
+	# vale mirar items==0 porque una corrida fallida tambien da cero.
+	historica = (c.get("disparada_por") or "") == _marca_importada()
+	dur = int(c.get("duracion_segundos") or 0)
+	return {
+		"name": c["name"],
+		"cuando": frappe.utils.format_datetime(c["fecha_inicio"], "dd/MM HH:mm"),
+		"fecha_iso": str(c["fecha_inicio"]),
+		"alcance": c.get("alcance") or "Todas",
+		"historica": historica,
+		"nuevas": None if historica else int(c.get("insertados") or 0),
+		"actualizadas": None if historica else int(c.get("actualizados") or 0),
+		"saltadas": None if historica else int(c.get("saltados") or 0),
+		"errores": None if historica else int(c.get("errores") or 0),
+		"items": None if historica else int(c.get("items_total") or 0),
+		"coste": f"{float(c.get('coste_usd') or 0):.3f}",
+		"coste_real": int(c.get("coste_real") or 0),
+		"estado": c.get("estado") or "",
+		"duracion": f"{dur // 60}m {dur % 60}s" if dur >= 60 else f"{dur}s",
+	}
+
+
+def _ultimas_importaciones(limite=8):
+	filas = frappe.db.sql("""
+		SELECT name, fecha_inicio, estado, alcance, disparada_por, duracion_segundos,
+		       coste_usd, coste_real, items_total, insertados, actualizados,
+		       saltados, errores
+		FROM `tabRadar Corrida`
+		ORDER BY fecha_inicio DESC
+		LIMIT %s
+	""", (int(limite),), as_dict=True)
+	return [_fila_importacion(c) for c in filas]
+
+
+@frappe.whitelist()
+def ultimas_importaciones(limite=8):
+	"""Refresca la tarjeta sin recargar toda la pagina."""
+	if not _has_role(VIEW_ROLES):
+		frappe.throw("Acceso denegado", frappe.PermissionError)
+	return _ultimas_importaciones(int(limite))
+
+
+@frappe.whitelist()
+def estado_importacion():
+	"""Progreso de la corrida en curso + resumen de la ultima terminada.
+
+	Lee la misma clave de cache que la barra de /radar/settings, pero con los
+	roles de esta pagina: aca solo se mira, no se lanza nada.
+
+	`colgada` avisa de la corrida que se quedo a medias — el worker `long` se
+	ha muerto mas de una vez y sin esto el aviso no llegaria jamas y la barra
+	se quedaria clavada para siempre.
+	"""
+	if not _has_role(VIEW_ROLES):
+		frappe.throw("Acceso denegado", frappe.PermissionError)
+
+	from marketinghub.api.radar_scraper import PROGRESO_KEY
+
+	progreso = {"pct": 0, "paso": "", "estado": "idle"}
+	try:
+		raw = frappe.cache().get_value(PROGRESO_KEY)
+		if raw:
+			progreso = json.loads(raw)
+	except Exception:
+		pass
+
+	colgada = False
+	if progreso.get("estado") == "corriendo":
+		import time
+		colgada = (time.time() - float(progreso.get("ts") or 0)) > 900
+
+	ultimas = _ultimas_importaciones(8)
+	return {
+		"progreso": progreso,
+		"colgada": colgada,
+		"ultima": ultimas[0] if ultimas else None,
+		"importaciones": ultimas,
 	}
