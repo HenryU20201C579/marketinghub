@@ -711,9 +711,9 @@
           <div class="rad-card__head">
             <span class="rad-card__title">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-              Ultimas importaciones
+              Últimas importaciones
             </span>
-            <span class="rad-card__sub">cuantas trajo cada corrida</span>
+            <span class="rad-card__sub">cuántas trajo cada corrida</span>
           </div>
 
           <!-- El aviso solo existe mientras hay algo que avisar -->
@@ -852,8 +852,8 @@
     }
 
     function resumen(u) {
-      if (!u) return 'La importacion termino.';
-      if (u.historica) return 'Corrida historica importada de Apify.';
+      if (!u) return 'La importación terminó.';
+      if (u.historica) return 'Corrida histórica importada de Apify.';
       return '<strong>' + u.nuevas + '</strong> nuevas · ' + u.actualizadas + ' actualizadas' +
              (u.errores ? ' · <strong>' + u.errores + '</strong> con error' : '') +
              ' · $' + u.coste + ' · ' + u.duracion;
@@ -904,8 +904,8 @@
             // El worker `long` se ha muerto a medias mas de una vez: sin esto
             // la barra se quedaria clavada y el aviso no llegaria nunca.
             corriendo = false;
-            pintarAviso('La importacion lleva mas de 15 min sin avanzar. ' +
-                        'Puede que el worker se haya caido — revisa /radar/settings.', 'is-colgada');
+            pintarAviso('La importación lleva más de 15 min sin avanzar. ' +
+                        'Puede que el worker se haya caído — revisa /radar/settings.', 'is-colgada');
             programar(30000);
             return;
           }
@@ -914,7 +914,7 @@
             // Acaba de terminar mientras mirabamos: este es el aviso que se pidio.
             corriendo = false;
             var u = d.ultima || null;
-            pintarAviso('Importacion terminada · ' + resumen(u),
+            pintarAviso('Importación terminada · ' + resumen(u),
                         (u && u.estado === 'error') ? 'is-error' : 'is-ok');
             refrescarLista(d.importaciones, true);
             programar(30000);
