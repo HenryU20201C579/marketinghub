@@ -1338,18 +1338,18 @@ def estado_marca(marca):
 		""", {"nombres": [c["name"] for c in cuentas]}, as_dict=True):
 			guardado[f["cuenta_social"]] = f
 
-	# lo que trajo la última corrida de cada red. Si llenó el cupo justo, detrás
-	# quedó histórico que nadie pidió: es la pista que faltaba en la pantalla.
-	ultima = {}
+	# La corrida que más trajo de cada red es la que más lejos llegó hacia atrás:
+	# si llenó su cupo justo, el freno fue el límite y detrás quedó histórico que
+	# nadie pidió. No vale mirar la última corrida — una incremental devuelve dos
+	# posts con el cupo en 200 y parecería que ya está todo traído.
+	techo_alcanzado = {}
 	for f in frappe.db.sql("""
-		SELECT m.plataforma AS plataforma, m.items AS items, m.limite AS limite,
-		       c.fecha_inicio AS cuando
+		SELECT m.plataforma AS plataforma, m.items AS items, m.limite AS limite
 		FROM `tabRadar Corrida Marca` m
-		JOIN `tabRadar Corrida` c ON c.name = m.parent
 		WHERE m.marca = %s
-		ORDER BY c.fecha_inicio DESC
+		ORDER BY m.items DESC
 	""", (marca,), as_dict=True):
-		ultima.setdefault(f["plataforma"], f)
+		techo_alcanzado.setdefault(f["plataforma"], f)
 
 	redes = []
 	for plataforma in ("Instagram", "TikTok"):
@@ -1359,7 +1359,7 @@ def estado_marca(marca):
 		datos = [guardado.get(c["name"]) or {} for c in delcaso]
 		fechas_mn = [d["mn"] for d in datos if d.get("mn")]
 		fechas_mx = [d["mx"] for d in datos if d.get("mx")]
-		u = ultima.get(plataforma) or {}
+		u = techo_alcanzado.get(plataforma) or {}
 		items, cupo = int(u.get("items") or 0), int(u.get("limite") or 0)
 		redes.append({
 			"plataforma": plataforma,
@@ -1369,10 +1369,10 @@ def estado_marca(marca):
 			"desde": str(min(fechas_mn)) if fechas_mn else "",
 			"hasta": str(max(fechas_mx)) if fechas_mx else "",
 			"limite": _limite_de(delcaso[0], limites, limit_ig, limit_tt, techo),
-			# la corrida se comió el cupo entero: hay más histórico sin traer
+			# la mejor corrida se comió el cupo entero: hay más histórico sin traer
 			"truncada": bool(items and cupo and items >= cupo),
-			"ultimo_lote": items,
-			"ultimo_cupo": cupo,
+			"mejor_lote": items,
+			"mejor_cupo": cupo,
 		})
 
 	horas_min = int(s.get("horas_entre_corridas") or 0)
