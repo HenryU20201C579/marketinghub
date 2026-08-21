@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/radar/settings/configuracion.css?v=cfg7">
+<link rel="stylesheet" href="/radar/settings/configuracion.css?v=cfg8">
 <link rel="stylesheet" href="/radar/radar-sidebar.css?v=nav3">
 </head>
 <body class="cfg">
@@ -869,9 +869,13 @@
           : p === 'refrescar'
             ? 'Refrescar métricas · ≈$' + usd.toFixed(3)
             : 'Traer ' + limitePedido() + ' posts · ≈$' + usd.toFixed(3);
-        saldo.textContent = RESTANTE
-          ? 'Te quedarán ≈$' + Math.max(RESTANTE - usd, 0).toFixed(2) + ' de $' + TECHO
-          : '';
+        // el botón deshabilitado sin explicación es un callejón sin salida
+        saldo.textContent = excede && p === 'historico'
+          ? 'Ninguna marca puede pedir más de ' + est.techo + ': súbelo en «Máximo por marca».'
+          : RESTANTE
+            ? 'Te quedarán ≈$' + Math.max(RESTANTE - usd, 0).toFixed(2) + ' de $' + TECHO
+            : '';
+        saldo.classList.toggle('is-stop', excede && p === 'historico');
       }
 
       back.querySelectorAll('input[name=cfg-preset]').forEach(function (r) {

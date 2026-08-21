@@ -703,3 +703,4 @@
 .cfg-md-hist .cfg-input { width:auto; max-width:150px; }
 .cfg-md-campo__hint { font-size:11px; color:var(--faint); }
 .cfg-md-hist__nota { margin:2px 0 0; font-size:11.5px; color:var(--faint); line-height:1.45; }
+.cfg-md__saldo.is-stop { color:var(--top); font-weight:600; }
