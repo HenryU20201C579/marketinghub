@@ -749,10 +749,11 @@
       var avisos = [];
       if (truncadas.length) {
         avisos.push('<div class="cfg-md-aviso is-ojo"><strong>Falta histórico.</strong> ' +
-          esc(truncadas.map(function (r) { return r.corto; }).join(' y ')) +
-          ': la última corrida trajo justo el cupo que le pediste, así que hay ' +
-          'posts más antiguos que nunca se pidieron. «Solo lo nuevo» no los va a traer — ' +
-          'usa «Traer histórico».</div>');
+          esc(truncadas.map(function (r) {
+            return r.corto + ' se cortó en ' + r.mejor_lote;
+          }).join(' y ')) +
+          ': ninguna corrida llegó más atrás porque el cupo se llenó justo ahí. ' +
+          '«Solo lo nuevo» no va a traer esos posts — usa «Traer histórico».</div>');
       }
       if (est.espera_horas > 0) {
         avisos.push('<div class="cfg-md-aviso is-stop"><strong>Espaciado mínimo.</strong> ' +
