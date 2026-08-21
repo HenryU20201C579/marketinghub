@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/radar/settings/configuracion.css?v=cfg6">
+<link rel="stylesheet" href="/radar/settings/configuracion.css?v=cfg7">
 <link rel="stylesheet" href="/radar/radar-sidebar.css?v=nav3">
 </head>
 <body class="cfg">
@@ -74,7 +74,7 @@
             <span class="cfg-card__title"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16 M4 12h16 M4 17.5h10"/></svg>Posts por marca</span>
             <span class="cfg-card__meta">{{ marcas|length }} marcas activas</span>
           </div>
-          <p class="cfg-card__note">Cada marca se scrapea con el ▶ de su fila. <strong>0</strong> = usar el default general (IG {{ ig }} · TikTok {{ tt }}), que se ajusta más abajo. Las marcas en pausa no se scrapean ni cuentan para el estimado.</p>
+          <p class="cfg-card__note">El ▶ de cada fila abre un diálogo con lo que ya hay guardado de esa marca y las tres formas de pedirle datos: solo lo nuevo, refrescar métricas o traer histórico. <strong>0</strong> = usar el default general (IG {{ ig }} · TikTok {{ tt }}), que se ajusta más abajo. Las marcas en pausa no se scrapean ni cuentan para el estimado.</p>
           {% if can_edit and marcas %}
           {# Boton global: dispara ejecutar_scrape_ahora() sin marca; el JS pide
              confirmacion con el estimado total antes de gastar. Usa la misma
@@ -98,7 +98,7 @@
               <input class="cfg-input" type="date" id="v-hasta" name="v_hasta" aria-label="Hasta">
               <button class="cfg-btn cfg-btn--quiet" type="button" id="v-limpiar" title="Volver al modo normal">Limpiar</button>
             </div>
-            <p class="cfg-ventana__nota" id="v-nota">Vacío = solo posts nuevos. Con fechas, el ▶ trae ese rango aunque ya lo tengas.</p>
+            <p class="cfg-ventana__nota" id="v-nota">Rango para «Scrapear todas las marcas». El ▶ de una marca suelta lo trae ya propuesto en su diálogo, donde también se elige el límite.</p>
           </details>
           {% endif %}
           <div class="cfg-marca-head">
@@ -584,11 +584,11 @@
       }
       if (hayVentana && vWrap) vWrap.open = true;
       if (!hayVentana) {
-        vNota.textContent = 'Vacío = solo posts nuevos. Con fechas, el ▶ trae ese rango aunque ya lo tengas.';
+        vNota.textContent = 'Rango para «Scrapear todas las marcas». El ▶ de una marca suelta lo trae ya propuesto en su diálogo, donde también se elige el límite.';
         return;
       }
       // el actor va del post más nuevo hacia atrás: acotar por arriba no evita recorrer
-      var aviso = 'El ▶ traerá ' + (v.desde || 'desde el principio') + ' → ' + (v.hasta || 'hoy') +
+      var aviso = 'Se traerá ' + (v.desde || 'desde el principio') + ' → ' + (v.hasta || 'hoy') +
                   '. No es más barato que traer hasta hoy: el actor recorre desde el post más nuevo.';
       if (v.hasta) aviso += ' Instagram además ignora el «hasta».';
       vNota.textContent = aviso;
@@ -660,7 +660,7 @@
       sondear();
     }
 
-    function lanzar(marca) {
+    function lanzar(marca, extra) {
       bloquear(true);
       pintar({ pct: 1, paso: 'Encolando la corrida de ' + marca + '…', estado: 'corriendo' });
       // el scraper lee el límite y el tope de la base, no de la pantalla: si hay
@@ -668,12 +668,10 @@
       var previo = JSON.stringify(leerTodo()) !== INICIAL
         ? post(API + 'guardar_settings', payloadGuardar()).then(function () { INICIAL = JSON.stringify(leerTodo()); revisar(); })
         : Promise.resolve();
-      var v = ventana();
+      var datos = { marca: marca };
+      Object.keys(extra || {}).forEach(function (k) { datos[k] = extra[k]; });
       previo
-        .then(function () {
-          return post(API_SCRAPER + 'ejecutar_scrape_ahora',
-                      { marca: marca, desde: v.desde || '', hasta: v.hasta || '' });
-        })
+        .then(function () { return post(API_SCRAPER + 'ejecutar_scrape_ahora', datos); })
         .then(function () { seguir(); })
         .catch(function (e) {
           // aquí caen también los topes: el server rechaza antes de llamar a Apify
@@ -683,45 +681,225 @@
         });
     }
 
-    // antes de gastar: se dice cuánto cuesta y con cuánto crédito te quedas
-    function confirmar(fila, marca) {
-      // se recalcula: si hay cambios sin guardar, se cobrarán esos, no los del server
-      var est = estimadoDe(marca);
-      var v = ventana();
-      var hayVentana = !!(v.desde || v.hasta);
-      var lineas = ['Scrapear ' + marca + ': gastarás como mucho ≈$' + est.toFixed(3) + ' de crédito.'];
-      if (RESTANTE) {
-        lineas.push('Te quedarán ≈$' + Math.max(RESTANTE - est, 0).toFixed(2) + ' de $' + TECHO + '.');
-      }
-      lineas.push('');
-      if (hayVentana) {
-        lineas.push('Histórico: ' + (v.desde || 'todo') + ' → ' + (v.hasta || 'hoy') + '.');
-        lineas.push('Traerá posts que quizá ya tengas: es una corrida de relleno, no de ahorro.');
-      } else if (INCREMENTAL()) {
-        lineas.push('Modo «solo posts nuevos»: si no hay nada publicado desde la última');
-        lineas.push('corrida, Apify devuelve vacío y no se paga casi nada.');
-      } else {
-        lineas.push('Modo completo: re-pedirá los posts que ya tienes para refrescar métricas.');
-      }
-      if (fila.dataset.reciente === '1' && !hayVentana) {
-        lineas.push('');
-        lineas.push('Ojo: ya se scrapeó el ' + fila.dataset.ultima + ' (hace menos de 24 h).');
-      }
-      lineas.push('');
-      lineas.push('¿Correr igual?');
-      return window.confirm(lineas.join('\n'));
-    }
-
     function INCREMENTAL() {
       return !!(toggleInc && toggleInc.classList.contains('is-on'));
     }
 
-    botonesRun().forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var fila = btn.closest('.cfg-marca');
-        if (!confirmar(fila, btn.dataset.run)) return;
-        lanzar(btn.dataset.run);
+    // ================= DIÁLOGO DEL ▶ (una marca) =================
+    // El ▶ ya no dispara a ciegas: primero enseña qué hay guardado de esa marca
+    // y deja elegir qué pedir. El modo (incremental/completo) y el límite viajan
+    // en la llamada, así que el switch global solo decide el valor por defecto.
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
       });
+    }
+
+    // '2026-08-18' -> '18/08/26'
+    function fechaCorta(iso) {
+      if (!iso || iso.length < 10) return '';
+      return iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(2, 4);
+    }
+
+    // mismo cálculo que estimar_corrida(): perfiles × posts pedidos × precio
+    function costeModal(est, preset, limite) {
+      var total = 0;
+      est.redes.forEach(function (r) {
+        var precio = r.plataforma === 'Instagram' ? COSTE_ITEM.ig : COSTE_ITEM.tt;
+        var n = r.limite;
+        // «solo lo nuevo» no tiene coste previsible: depende de cuánto se haya
+        // publicado. 3 es la cota de un día normal, y se marca como aproximado.
+        if (preset === 'nuevos') n = Math.min(3, r.limite);
+        else if (preset === 'historico') n = limite || r.limite;
+        total += r.cuentas * n * precio;
+      });
+      return total;
+    }
+
+    function filaRed(r) {
+      var rango = r.desde
+        ? fechaCorta(r.desde) + ' → ' + fechaCorta(r.hasta)
+        : 'nada guardado todavía';
+      return '<div class="cfg-md-red">' +
+        '<span class="cfg-md-red__ico">' + esc(r.corto) + '</span>' +
+        '<span class="cfg-md-red__n"><strong>' + r.posts + '</strong> posts</span>' +
+        '<span class="cfg-md-red__rango">' + esc(rango) + '</span>' +
+        (r.truncada
+          ? '<span class="cfg-md-red__flag" title="La última corrida devolvió ' +
+            r.ultimo_lote + ' posts con el cupo en ' + r.ultimo_cupo +
+            ': se llenó justo, así que detrás quedó histórico sin pedir">a medias</span>'
+          : '') +
+        '</div>';
+    }
+
+    function abrirModal(marca) {
+      post(API_SCRAPER + 'estado_marca', { marca: marca })
+        .then(function (est) { pintarModal(marca, est); })
+        .catch(function (e) { toast(e.message); });
+    }
+
+    function pintarModal(marca, est) {
+      var v = ventana();
+      // si hay una ventana puesta arriba se respeta: era lo que el ▶ hacía antes
+      var hayVentana = !!(v.desde || v.hasta);
+      var truncadas = est.redes.filter(function (r) { return r.truncada; });
+      var guardados = est.redes.reduce(function (a, r) { return a + r.posts; }, 0);
+      var limiteBase = est.redes.reduce(function (a, r) { return Math.max(a, r.limite); }, 0);
+
+      var avisos = [];
+      if (truncadas.length) {
+        avisos.push('<div class="cfg-md-aviso is-ojo"><strong>Falta histórico.</strong> ' +
+          esc(truncadas.map(function (r) { return r.corto; }).join(' y ')) +
+          ': la última corrida trajo justo el cupo que le pediste, así que hay ' +
+          'posts más antiguos que nunca se pidieron. «Solo lo nuevo» no los va a traer — ' +
+          'usa «Traer histórico».</div>');
+      }
+      if (est.espera_horas > 0) {
+        avisos.push('<div class="cfg-md-aviso is-stop"><strong>Espaciado mínimo.</strong> ' +
+          'Se scrapeó el ' + esc(est.ultima) + ' y faltan ' + est.espera_horas +
+          ' h para poder repetir. El servidor rechazará la corrida; baja «Mínimo entre corridas» si quieres forzarla.</div>');
+      }
+
+      var opciones = [
+        { id: 'nuevos', tit: 'Solo lo nuevo',
+          sub: guardados
+            ? 'Pide únicamente lo publicado después del último post que ya tienes.'
+            : 'No tienes nada guardado de esta marca: traerá los últimos ' + limiteBase + ' posts.',
+          nota: 'Solo pagas lo que traiga.' },
+        { id: 'refrescar', tit: 'Refrescar métricas',
+          sub: 'Vuelve a pedir los últimos ' + limiteBase + ' posts por perfil y actualiza vistas, likes y comentarios de los que ya tienes.',
+          nota: 'No añade posts viejos.' },
+        { id: 'historico', tit: 'Traer histórico',
+          sub: 'Pide más posts hacia atrás. Es la única opción que rellena lo que falta.',
+          nota: '' }
+      ];
+
+      var sel = hayVentana ? 'historico' : 'nuevos';
+      var html =
+        '<div class="cfg-md-redes">' + est.redes.map(filaRed).join('') + '</div>' +
+        avisos.join('') +
+        '<div class="cfg-md-ops">' +
+        opciones.map(function (o) {
+          return '<label class="cfg-md-op' + (o.id === sel ? ' is-sel' : '') + '" data-op="' + o.id + '">' +
+            '<input type="radio" name="cfg-preset" value="' + o.id + '"' + (o.id === sel ? ' checked' : '') + '>' +
+            '<span class="cfg-md-op__txt">' +
+              '<span class="cfg-md-op__tit">' + esc(o.tit) + '</span>' +
+              '<span class="cfg-md-op__sub">' + esc(o.sub) + (o.nota ? ' <em>' + esc(o.nota) + '</em>' : '') + '</span>' +
+            '</span>' +
+            '<span class="cfg-md-op__usd" data-usd="' + o.id + '"></span>' +
+          '</label>';
+        }).join('') +
+        '</div>' +
+        '<div class="cfg-md-hist" id="cfg-md-hist">' +
+          '<label class="cfg-md-campo">Posts por perfil' +
+            '<input class="cfg-input cfg-input--num" type="text" id="cfg-md-lim" value="' + limiteBase + '">' +
+            (est.techo ? '<span class="cfg-md-campo__hint">máx ' + est.techo + '</span>' : '') +
+          '</label>' +
+          '<label class="cfg-md-campo">Desde (opcional)' +
+            '<input class="cfg-input" type="date" id="cfg-md-desde" value="' + esc(v.desde || '') + '">' +
+          '</label>' +
+          '<p class="cfg-md-hist__nota">Sin fecha trae los N más recientes. Con fecha, todo lo publicado a partir de ahí. ' +
+          'Instagram recorre siempre desde el post más nuevo: acotar por arriba no lo abarata.</p>' +
+        '</div>';
+
+      var back = document.createElement('div');
+      back.className = 'cfg-md-back';
+      back.innerHTML =
+        '<div class="cfg-md" role="dialog" aria-modal="true" aria-label="Corrida de ' + esc(marca) + '">' +
+          '<div class="cfg-md__head">' +
+            '<span class="cfg-md__tit">Corrida de ' + esc(marca) + '</span>' +
+            '<button class="cfg-md__x" type="button" aria-label="Cerrar">✕</button>' +
+          '</div>' +
+          '<div class="cfg-md__body">' + html + '</div>' +
+          '<div class="cfg-md__pie">' +
+            '<span class="cfg-md__saldo" id="cfg-md-saldo"></span>' +
+            '<button class="cfg-btn cfg-btn--quiet" type="button" data-act="cancel">Cancelar</button>' +
+            '<button class="cfg-btn" type="button" data-act="ok" id="cfg-md-ok"></button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(back);
+      requestAnimationFrame(function () { back.classList.add('is-on'); });
+
+      function cerrar() {
+        back.classList.remove('is-on');
+        document.removeEventListener('keydown', porTecla);
+        setTimeout(function () { back.remove(); }, 180);
+      }
+      function porTecla(e) { if (e.key === 'Escape') cerrar(); }
+      document.addEventListener('keydown', porTecla);
+      back.addEventListener('click', function (e) { if (e.target === back) cerrar(); });
+      back.querySelector('.cfg-md__x').addEventListener('click', cerrar);
+      back.querySelector('[data-act=cancel]').addEventListener('click', cerrar);
+
+      var inpLim = back.querySelector('#cfg-md-lim');
+      var inpDesde = back.querySelector('#cfg-md-desde');
+      var cajaHist = back.querySelector('#cfg-md-hist');
+      var btnOk = back.querySelector('#cfg-md-ok');
+      var saldo = back.querySelector('#cfg-md-saldo');
+
+      function preset() {
+        var r = back.querySelector('input[name=cfg-preset]:checked');
+        return r ? r.value : 'nuevos';
+      }
+
+      function limitePedido() {
+        var n = parseInt(inpLim.value, 10) || 0;
+        return n > 0 ? n : limiteBase;
+      }
+
+      function refrescar() {
+        var p = preset();
+        cajaHist.classList.toggle('is-on', p === 'historico');
+        back.querySelectorAll('.cfg-md-op').forEach(function (el) {
+          el.classList.toggle('is-sel', el.dataset.op === p);
+        });
+        // el precio de cada opción, siempre visible: se elige viendo el coste
+        ['nuevos', 'refrescar', 'historico'].forEach(function (id) {
+          var el = back.querySelector('[data-usd=' + id + ']');
+          var usd = costeModal(est, id, id === 'historico' ? limitePedido() : 0);
+          el.textContent = '≈$' + usd.toFixed(3);
+        });
+        var usd = costeModal(est, p, limitePedido());
+        var excede = !!(est.techo && limitePedido() > est.techo);
+        inpLim.classList.toggle('is-error', excede && p === 'historico');
+        btnOk.disabled = excede && p === 'historico';
+        btnOk.textContent = p === 'nuevos'
+          ? 'Traer lo nuevo · ≈$' + usd.toFixed(3)
+          : p === 'refrescar'
+            ? 'Refrescar métricas · ≈$' + usd.toFixed(3)
+            : 'Traer ' + limitePedido() + ' posts · ≈$' + usd.toFixed(3);
+        saldo.textContent = RESTANTE
+          ? 'Te quedarán ≈$' + Math.max(RESTANTE - usd, 0).toFixed(2) + ' de $' + TECHO
+          : '';
+      }
+
+      back.querySelectorAll('input[name=cfg-preset]').forEach(function (r) {
+        r.addEventListener('change', refrescar);
+      });
+      [inpLim, inpDesde].forEach(function (el) {
+        el.addEventListener('input', refrescar);
+        el.addEventListener('change', refrescar);
+      });
+      refrescar();
+
+      back.querySelector('[data-act=ok]').addEventListener('click', function () {
+        var p = preset();
+        var extra = p === 'nuevos'
+          ? { incremental: 1 }
+          // refrescar e histórico re-piden posts ya guardados: los dos van en
+          // modo completo, y el histórico añade además su límite y su fecha
+          : { completa: 1 };
+        if (p === 'historico') {
+          extra.limite = limitePedido();
+          extra.desde = inpDesde.value || '';
+        }
+        cerrar();
+        lanzar(marca, extra);
+      });
+    }
+
+    botonesRun().forEach(function (btn) {
+      btn.addEventListener('click', function () { abrirModal(btn.dataset.run); });
     });
 
     // ---- BOTON GLOBAL: scrapear todas las marcas (punto 4) ----

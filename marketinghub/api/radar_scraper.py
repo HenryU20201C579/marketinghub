@@ -315,16 +315,22 @@ def marcas_pausadas():
 	return set(filas)
 
 
-def _limite_de(cuenta, limites, limit_ig, limit_tt, techo=0):
+def _limite_de(cuenta, limites, limit_ig, limit_tt, techo=0, override=0):
 	"""El límite de la marca manda; si no tiene, el default global de su red.
+
+	`override` es el límite puntual que pide el diálogo del ▶ para una sola
+	corrida: manda sobre el de la marca pero no se guarda en el doctype.
 
 	`techo` (max_posts_marca) recorta el resultado venga de donde venga: es el
 	único punto por el que pasan todas las corridas, así que subir el límite por
-	la vía del doctype tampoco lo salta."""
-	propio = limites.get(cuenta.get("competidor")) or 0
-	limite = propio if propio > 0 else (
-		limit_ig if cuenta["plataforma"] == "Instagram" else limit_tt
-	)
+	la vía del doctype —o del override— tampoco lo salta."""
+	if override and int(override) > 0:
+		limite = int(override)
+	else:
+		propio = limites.get(cuenta.get("competidor")) or 0
+		limite = propio if propio > 0 else (
+			limit_ig if cuenta["plataforma"] == "Instagram" else limit_tt
+		)
 	return min(limite, techo) if techo else limite
 
 
@@ -334,7 +340,8 @@ def techo_posts():
 
 
 def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=None,
-                  solo_marca=None, desde=None, hasta=None, completa=False):
+                  solo_marca=None, desde=None, hasta=None, completa=False,
+                  limite=None, incremental=None):
 	"""Se invoca desde el scheduled job o manualmente. NO usa HTTP — corre in-process.
 
 	El scrapeo va marca por marca: cada marca en cada red es una llamada
@@ -343,7 +350,9 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 	propio, del default global de Radar Settings según la red.
 
 	limit_per_profile: fallback global si Radar Settings no tiene nada configurado.
-	solo_marca: si se pasa un Competidor, se scrapea únicamente esa marca."""
+	solo_marca: si se pasa un Competidor, se scrapea únicamente esa marca.
+	limite: límite puntual para esta corrida, sin tocar la config de la marca.
+	incremental: fuerza el modo para esta corrida (None = el de Radar Settings)."""
 	from frappe.utils.password import get_decrypted_password
 
 	inicio = time.time()
@@ -407,8 +416,13 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 	claves = sorted(grupos.keys())
 	ancho = 90.0 / len(claves)
 	techo = techo_posts()
-	# `completa` es la vía de escape para refrescar métricas de posts ya guardados
-	incremental = bool(int(settings.get("modo_incremental") or 0)) and not completa
+	# el override vive fuera del bucle: dentro, `limite` es el de cada grupo
+	override = int(limite or 0)
+	# `completa` es la vía de escape para refrescar métricas de posts ya guardados.
+	# El diálogo del ▶ manda su propio modo: el switch global es solo el default.
+	if incremental is None:
+		incremental = bool(int(settings.get("modo_incremental") or 0))
+	incremental = bool(int(incremental)) and not completa
 	por_marca = []
 	sin_credito = False
 	cancelada = False
@@ -422,7 +436,7 @@ def correr_scrape(limit_per_profile=None, origen="Programada", disparada_por=Non
 			break
 		base = 5 + ancho * i
 		delcaso = grupos[(marca, plataforma)]
-		limite = _limite_de(delcaso[0], limites, limit_ig, limit_tt, techo)
+		limite = _limite_de(delcaso[0], limites, limit_ig, limit_tt, techo, override)
 		g_desde, g_hasta, modo = _ventana_de(delcaso, incremental, desde, hasta)
 		antes = dict(stats)
 		fila = {"marca": marca, "plataforma": plataforma, "limite": limite,
@@ -786,8 +800,11 @@ def coste_item(forzar=False):
 	}
 
 
-def estimar_corrida(solo_marca=None):
+def estimar_corrida(solo_marca=None, limite=None):
 	"""Coste estimado de una corrida: perfiles activos × su límite × precio.
+
+	`limite` es el override puntual del diálogo del ▶: sin él se estima con la
+	config guardada, que es lo que usa la página al cargar.
 
 	Las marcas en pausa NO suman: no se scrapean, así que meterlas en el total
 	solo inflaba la cifra que se le enseña al usuario."""
@@ -813,6 +830,7 @@ def estimar_corrida(solo_marca=None):
 		)
 	}
 
+	override = int(limite or 0)
 	por_marca, total = {}, 0.0
 	for c in cuentas:
 		ajuste = ajustes.get(c["competidor"]) or {}
@@ -820,10 +838,10 @@ def estimar_corrida(solo_marca=None):
 			continue
 		propio = int(ajuste.get("limite_posts") or 0)
 		es_ig = c["plataforma"] == "Instagram"
-		limite = propio or (lim_ig if es_ig else lim_tt)
+		pide = override or propio or (lim_ig if es_ig else lim_tt)
 		if techo:
-			limite = min(limite, techo)
-		coste = limite * precio["Instagram" if es_ig else "TikTok"]
+			pide = min(pide, techo)
+		coste = pide * precio["Instagram" if es_ig else "TikTok"]
 		por_marca[c["competidor"]] = round(por_marca.get(c["competidor"], 0) + coste, 4)
 		total += coste
 
@@ -850,7 +868,7 @@ def _consumo_ciclo():
 	return float(gastado or 0), cred
 
 
-def _validar_tope_ciclo(solo_marca=None):
+def _validar_tope_ciclo(solo_marca=None, limite=None):
 	"""Bloquea la corrida si se pasa del tope del ciclo.
 
 	Se valida con el estimado porque el coste real solo se sabe cuando Apify ya
@@ -860,7 +878,7 @@ def _validar_tope_ciclo(solo_marca=None):
 		return
 
 	gastado, _ = _consumo_ciclo()
-	estimado = estimar_corrida(solo_marca)["total"]
+	estimado = estimar_corrida(solo_marca, limite)["total"]
 	if gastado + estimado > tope:
 		frappe.throw(
 			f"Este ciclo llevas ${gastado:.2f} y la corrida sumaría ≈${estimado:.3f}: "
@@ -1198,12 +1216,15 @@ def _validar_espaciado(marca):
 
 
 @frappe.whitelist()
-def ejecutar_scrape_ahora(marca=None, desde=None, hasta=None, completa=0):
+def ejecutar_scrape_ahora(marca=None, desde=None, hasta=None, completa=0,
+                          limite=None, incremental=None):
 	"""Endpoint para el botón ▶ de /radar/settings.
 
 	`marca` (un Competidor) limita la corrida a esa marca; sin ella van todas.
 	`desde`/`hasta` acotan la ventana de publicación (histórico). `completa`
-	ignora el modo incremental para refrescar métricas de posts ya guardados."""
+	ignora el modo incremental para refrescar métricas de posts ya guardados.
+	`limite` pide otro nº de posts solo para esta corrida y `incremental` fuerza
+	el modo: los dos los manda el diálogo del ▶, que decide por marca."""
 	roles = set(frappe.get_roles(frappe.session.user))
 	if not (roles & set(INGEST_ROLES)):
 		frappe.throw("Permiso denegado", frappe.PermissionError)
@@ -1215,9 +1236,10 @@ def ejecutar_scrape_ahora(marca=None, desde=None, hasta=None, completa=0):
 	hasta = _fecha_valida(hasta, "hasta")
 	if desde and hasta and desde > hasta:
 		frappe.throw(f"La fecha «desde» ({desde}) es posterior a «hasta» ({hasta}).")
+	limite = _limite_valido(limite)
 
 	# el tope se valida antes de encolar: una vez que Apify corre, ya cobró
-	_validar_tope_ciclo(marca)
+	_validar_tope_ciclo(marca, limite)
 	# una ventana de histórico es a propósito repetir: el espaciado no aplica
 	if not (desde or hasta):
 		_validar_espaciado(marca)
@@ -1242,6 +1264,8 @@ def ejecutar_scrape_ahora(marca=None, desde=None, hasta=None, completa=0):
 		desde=desde,
 		hasta=hasta,
 		completa=bool(int(completa or 0)),
+		limite=limite,
+		incremental=None if incremental is None else bool(int(incremental)),
 	)
 	return {"ok": True, "mensaje": f"Corrida de {marca} encolada." if marca else "Corrida encolada."}
 
@@ -1254,6 +1278,125 @@ def _fecha_valida(valor, etiqueta):
 		return str(frappe.utils.getdate(valor))
 	except Exception:
 		frappe.throw(f"La fecha «{etiqueta}» no es válida: {valor}")
+
+
+def _limite_valido(valor):
+	"""Límite puntual del diálogo. Vacío/0 -> None (se usa el de la marca)."""
+	if valor in (None, "") or not str(valor).strip():
+		return None
+	try:
+		n = int(float(str(valor).strip()))
+	except ValueError:
+		frappe.throw(f"El límite de posts debe ser un número: {valor}")
+	if n <= 0:
+		return None
+	techo = techo_posts()
+	if techo and n > techo:
+		frappe.throw(
+			f"Pediste {n} posts y el máximo por marca es {techo}. "
+			f"Súbelo en «Máximo por marca» si de verdad quieres pedir más."
+		)
+	return n
+
+
+@frappe.whitelist()
+def estado_marca(marca):
+	"""Lo que hace falta para decidir una corrida de esta marca, por red social.
+
+	Lo pinta el diálogo del ▶ en /radar/settings: cuántos posts hay guardados y
+	de qué fechas, si el histórico se quedó a medias, y qué frena la corrida
+	(pausa o espaciado mínimo). El coste de cada opción lo calcula la página con
+	el precio ya calibrado."""
+	roles = set(frappe.get_roles(frappe.session.user))
+	if not (roles & set(VIEW_ROLES)):
+		frappe.throw("Acceso denegado", frappe.PermissionError)
+	if not frappe.db.exists("Competidor", marca):
+		frappe.throw(f"La marca «{marca}» no existe.")
+
+	s = frappe.get_cached_doc("Radar Settings")
+	limit_ig = int(s.posts_por_perfil_ig or 20)
+	limit_tt = int(s.posts_por_perfil_tiktok or 20)
+	techo = techo_posts()
+	limites = limites_por_marca()
+
+	cuentas = frappe.db.get_all(
+		"Cuenta Social",
+		filters={"activo": 1, "competidor": marca,
+		         "plataforma": ["in", ("Instagram", "TikTok")]},
+		fields=["name", "competidor", "plataforma", "handle"],
+	)
+
+	# qué hay guardado de cada cuenta: cuántos posts y qué tramo cubren
+	guardado = {}
+	if cuentas:
+		for f in frappe.db.sql("""
+			SELECT cuenta_social, COUNT(*) AS n,
+			       MIN(fecha_publicacion) AS mn, MAX(fecha_publicacion) AS mx
+			FROM `tabPublicacion Competencia`
+			WHERE cuenta_social IN %(nombres)s
+			GROUP BY cuenta_social
+		""", {"nombres": [c["name"] for c in cuentas]}, as_dict=True):
+			guardado[f["cuenta_social"]] = f
+
+	# lo que trajo la última corrida de cada red. Si llenó el cupo justo, detrás
+	# quedó histórico que nadie pidió: es la pista que faltaba en la pantalla.
+	ultima = {}
+	for f in frappe.db.sql("""
+		SELECT m.plataforma AS plataforma, m.items AS items, m.limite AS limite,
+		       c.fecha_inicio AS cuando
+		FROM `tabRadar Corrida Marca` m
+		JOIN `tabRadar Corrida` c ON c.name = m.parent
+		WHERE m.marca = %s
+		ORDER BY c.fecha_inicio DESC
+	""", (marca,), as_dict=True):
+		ultima.setdefault(f["plataforma"], f)
+
+	redes = []
+	for plataforma in ("Instagram", "TikTok"):
+		delcaso = [c for c in cuentas if c["plataforma"] == plataforma]
+		if not delcaso:
+			continue
+		datos = [guardado.get(c["name"]) or {} for c in delcaso]
+		fechas_mn = [d["mn"] for d in datos if d.get("mn")]
+		fechas_mx = [d["mx"] for d in datos if d.get("mx")]
+		u = ultima.get(plataforma) or {}
+		items, cupo = int(u.get("items") or 0), int(u.get("limite") or 0)
+		redes.append({
+			"plataforma": plataforma,
+			"corto": "IG" if plataforma == "Instagram" else "TikTok",
+			"cuentas": len(delcaso),
+			"posts": sum(int(d.get("n") or 0) for d in datos),
+			"desde": str(min(fechas_mn)) if fechas_mn else "",
+			"hasta": str(max(fechas_mx)) if fechas_mx else "",
+			"limite": _limite_de(delcaso[0], limites, limit_ig, limit_tt, techo),
+			# la corrida se comió el cupo entero: hay más histórico sin traer
+			"truncada": bool(items and cupo and items >= cupo),
+			"ultimo_lote": items,
+			"ultimo_cupo": cupo,
+		})
+
+	horas_min = int(s.get("horas_entre_corridas") or 0)
+	cuando = frappe.db.sql("""
+		SELECT MAX(c.fecha_inicio) FROM `tabRadar Corrida Marca` m
+		JOIN `tabRadar Corrida` c ON c.name = m.parent
+		WHERE m.marca = %s
+	""", (marca,))[0][0]
+	espera = 0.0
+	if horas_min and cuando:
+		pasadas = (now_datetime() - cuando).total_seconds() / 3600
+		espera = round(max(horas_min - pasadas, 0), 1)
+
+	return {
+		"marca": marca,
+		"redes": redes,
+		"techo": techo,
+		"incremental": int(s.get("modo_incremental") or 0),
+		"horas_entre_corridas": horas_min,
+		# > 0 = el server rechazará la corrida hasta que pasen esas horas
+		"espera_horas": espera,
+		"ultima": frappe.utils.format_datetime(cuando, "dd/MM/yy HH:mm") if cuando else "",
+		"pausada": int(frappe.db.get_value("Competidor", marca, "pausar_radar") or 0),
+	}
 
 
 @frappe.whitelist()
